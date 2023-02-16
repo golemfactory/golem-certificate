@@ -8,9 +8,8 @@ pub fn validate_permissions(parent: &[Permission], child: &[Permission]) -> Resu
     let mut permitted_urls = HashSet::new();
 
     for parent_perm in parent {
-        match parent_perm {
-            Permission::Outbound(urls) => permitted_urls.extend(urls),
-            _ => {}
+        if let Permission::Outbound(urls) = parent_perm {
+            permitted_urls.extend(urls)
         }
     }
 
