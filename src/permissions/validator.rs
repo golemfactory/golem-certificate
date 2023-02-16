@@ -41,6 +41,7 @@ fn validate_outbound_permissions(
 #[cfg(test)]
 mod should {
     use super::*;
+    use utils::*;
 
     use test_case::test_case;
     use url::Url;
@@ -95,24 +96,8 @@ mod should {
         parent_urls: &[&str],
         child_urls: &[&str],
     ) {
-        let parent = Permissions::Object {
-            outbound: OutboundPermissions::Urls(
-                parent_urls
-                    .iter()
-                    .cloned()
-                    .map(|u| Url::parse(u).unwrap())
-                    .collect(),
-            ),
-        };
-        let child = Permissions::Object {
-            outbound: OutboundPermissions::Urls(
-                child_urls
-                    .iter()
-                    .cloned()
-                    .map(|u| Url::parse(u).unwrap())
-                    .collect(),
-            ),
-        };
+        let parent = url_list_to_outbound_permissions(parent_urls);
+        let child = url_list_to_outbound_permissions(child_urls);
 
         assert!(validate_permissions(&parent, &child).is_ok());
     }
@@ -124,25 +109,24 @@ mod should {
         parent_urls: &[&str],
         child_urls: &[&str],
     ) {
-        let parent = Permissions::Object {
-            outbound: OutboundPermissions::Urls(
-                parent_urls
-                    .iter()
-                    .cloned()
-                    .map(|u| Url::parse(u).unwrap())
-                    .collect(),
-            ),
-        };
-        let child = Permissions::Object {
-            outbound: OutboundPermissions::Urls(
-                child_urls
-                    .iter()
-                    .cloned()
-                    .map(|u| Url::parse(u).unwrap())
-                    .collect(),
-            ),
-        };
+        let parent = url_list_to_outbound_permissions(parent_urls);
+        let child = url_list_to_outbound_permissions(child_urls);
 
         assert!(validate_permissions(&parent, &child).is_err());
+    }
+
+    mod utils {
+        use super::*;
+
+        pub fn url_list_to_outbound_permissions(urls: &[&str]) -> Permissions {
+            Permissions::Object {
+                outbound: OutboundPermissions::Urls(
+                    urls.iter()
+                        .cloned()
+                        .map(|u| Url::parse(u).unwrap())
+                        .collect(),
+                ),
+            }
+        }
     }
 }
