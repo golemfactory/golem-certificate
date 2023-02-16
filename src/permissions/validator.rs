@@ -20,7 +20,10 @@ pub fn validate_permissions(parent: &[Permission], child: &[Permission]) -> Resu
             }
             Permission::Outbound(urls) => {
                 let urls: HashSet<_> = urls.iter().collect();
-                if !urls.is_subset(&permitted_urls) && !parent.contains(&Permission::All) {
+                if !urls.is_subset(&permitted_urls)
+                    && !parent.contains(&Permission::All)
+                    && !parent.contains(&Permission::OutboundUnrestricted)
+                {
                     return Err(anyhow!("Permitted urls cannot be extended"));
                 }
             }
@@ -65,6 +68,14 @@ mod should {
     #[test_case(&[Permission::Outbound(vec![Url::parse("https://1.net").unwrap(), Url::parse("https://2.net").unwrap()])], &[Permission::Outbound(vec![Url::parse("https://1.net").unwrap()])])]
     #[test_case(&[Permission::Outbound(vec![Url::parse("https://1.net").unwrap()]), Permission::Outbound(vec![Url::parse("https://2.net").unwrap()])], &[Permission::Outbound(vec![Url::parse("https://1.net").unwrap(), Url::parse("https://2.net").unwrap()])])]
     fn be_valid_because_child_outbound_url_list_is_subset_of_parent(
+        parent: &[Permission],
+        child: &[Permission],
+    ) {
+        assert!(validate_permissions(parent, child).is_ok());
+    }
+
+    #[test_case(&[Permission::OutboundUnrestricted], &[Permission::Outbound(vec![Url::parse("https://1.net").unwrap()])])]
+    fn be_valid_because_child_requests_specific_urls_and_parent_has_unrestricted(
         parent: &[Permission],
         child: &[Permission],
     ) {
