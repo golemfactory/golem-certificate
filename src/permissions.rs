@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -20,7 +22,7 @@ pub enum Permissions {
 #[serde(rename_all = "snake_case")]
 pub enum OutboundPermissions {
     Unrestricted,
-    Urls(Vec<Url>),
+    Urls(HashSet<Url>),
 }
 
 #[cfg(test)]
@@ -54,7 +56,9 @@ mod should {
     #[test]
     fn serialize_outbound_urls() {
         let permissions = Permissions::Object {
-            outbound: OutboundPermissions::Urls(vec![Url::parse("https://example.net/").unwrap()]),
+            outbound: OutboundPermissions::Urls(
+                [Url::parse("https://example.net/").unwrap()].into(),
+            ),
         };
 
         assert_eq!(
