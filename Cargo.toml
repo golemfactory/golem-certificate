@@ -13,3 +13,4 @@ url = { version = "2.2", features = ["serde"] }
 
 [dev-dependencies]
 test-case = "3.0"
+pretty_assertions = "1.3"
