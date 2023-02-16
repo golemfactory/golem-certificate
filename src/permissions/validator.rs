@@ -18,6 +18,13 @@ pub fn validate_permissions(parent: &[Permission], child: &[Permission]) -> Resu
             Permission::All => {
                 return Err(anyhow!("All permission cannot be passed down a chain"));
             }
+            Permission::OutboundUnrestricted => {
+                if !parent.contains(&Permission::OutboundUnrestricted)
+                    && !parent.contains(&Permission::All)
+                {
+                    return Err(anyhow!("Permissions cannot be extended"));
+                }
+            }
             Permission::Outbound(urls) => {
                 let urls: HashSet<_> = urls.iter().collect();
                 if !urls.is_subset(&permitted_urls)
@@ -25,13 +32,6 @@ pub fn validate_permissions(parent: &[Permission], child: &[Permission]) -> Resu
                     && !parent.contains(&Permission::OutboundUnrestricted)
                 {
                     return Err(anyhow!("Permitted urls cannot be extended"));
-                }
-            }
-            Permission::OutboundUnrestricted => {
-                if !parent.contains(&Permission::OutboundUnrestricted)
-                    && !parent.contains(&Permission::All)
-                {
-                    return Err(anyhow!("Permissions cannot be extended"));
                 }
             }
         }
