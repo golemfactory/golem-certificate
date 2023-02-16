@@ -5,7 +5,7 @@ use super::{OutboundPermissions, Permissions};
 pub fn validate_permissions(parent: &Permissions, child: &Permissions) -> Result<()> {
     match (parent, child) {
         (Permissions::All, _) => Ok(()),
-        (Permissions::Object { outbound: _ }, Permissions::All) => Err(anyhow!(
+        (Permissions::Object { .. }, Permissions::All) => Err(anyhow!(
             "Child cannot have 'All' permissions when parent doesn't have one"
         )),
         (
@@ -61,6 +61,7 @@ mod should {
         parent: Permissions,
     ) {
         let child = Permissions::All;
+
         assert!(validate_permissions(&parent, &child).is_err());
     }
 
@@ -76,15 +77,12 @@ mod should {
 
     #[test]
     fn reject_outbound_permissions_because_parent_has_urls_and_child_has_unrestricted() {
-        let parent = Permissions::Object {
-            outbound: OutboundPermissions::Urls(
-                [Url::parse("https://example.net").unwrap()].into(),
-            ),
-        };
+        let parent = url_list_to_outbound_permissions(&["https://example.net"]);
 
         let child = Permissions::Object {
             outbound: OutboundPermissions::Unrestricted,
         };
+
         assert!(validate_permissions(&parent, &child).is_err());
     }
 
