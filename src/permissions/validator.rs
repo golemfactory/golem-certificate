@@ -65,12 +65,14 @@ mod should {
         assert!(validate_permissions(&parent, &child).is_err());
     }
 
-    #[test_case(Permissions::Object{outbound: OutboundPermissions::Unrestricted})]
-    #[test_case(Permissions::Object{outbound: OutboundPermissions::Urls([Url::parse("https://1.net").unwrap()].into())})]
-    fn accept_outbound_permissions_because_parent_has_unrestricted(child: Permissions) {
+    #[test_case(OutboundPermissions::Unrestricted)]
+    #[test_case(OutboundPermissions::Urls([Url::parse("https://1.net").unwrap()].into()))]
+    fn accept_outbound_permissions_because_parent_has_unrestricted(child: OutboundPermissions) {
         let parent = Permissions::Object {
             outbound: OutboundPermissions::Unrestricted,
         };
+
+        let child = Permissions::Object { outbound: child };
 
         assert!(validate_permissions(&parent, &child).is_ok());
     }
