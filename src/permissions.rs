@@ -13,9 +13,13 @@ pub mod validator;
 pub enum Permissions {
     #[serde(with = "serde_utils::all")]
     All,
-    Object {
-        outbound: OutboundPermissions,
-    },
+    Object(PermissionDetails),
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct PermissionDetails {
+    pub outbound: Option<OutboundPermissions>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -41,9 +45,9 @@ mod should {
 
     #[test]
     fn serialize_outbound_unrestricted() {
-        let permissions = Permissions::Object {
-            outbound: OutboundPermissions::Unrestricted,
-        };
+        let permissions = Permissions::Object(PermissionDetails {
+            outbound: Some(OutboundPermissions::Unrestricted),
+        });
 
         assert_eq!(
             serde_json::to_value(&permissions).unwrap(),
@@ -55,11 +59,11 @@ mod should {
 
     #[test]
     fn serialize_outbound_urls() {
-        let permissions = Permissions::Object {
-            outbound: OutboundPermissions::Urls(
+        let permissions = Permissions::Object(PermissionDetails {
+            outbound: Some(OutboundPermissions::Urls(
                 [Url::parse("https://example.net/").unwrap()].into(),
-            ),
-        };
+            )),
+        });
 
         assert_eq!(
             serde_json::to_value(&permissions).unwrap(),
