@@ -3,7 +3,6 @@ use chrono::{DateTime, Utc};
 
 use super::Constraints;
 
-//TODO Rafał rename validity to constraints
 pub fn validate_constraints(
     parent: &Constraints,
     child: &Constraints,
