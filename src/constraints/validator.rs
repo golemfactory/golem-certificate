@@ -3,7 +3,11 @@ use chrono::{DateTime, Utc};
 
 use super::Constraints;
 
-pub fn validate_constraints(
+pub fn validate_constraints(parent: &Constraints, child: &Constraints) -> Result<()> {
+    validate_constraints_now(parent, child, Utc::now())
+}
+
+fn validate_constraints_now(
     parent: &Constraints,
     child: &Constraints,
     now: DateTime<Utc>,
@@ -63,7 +67,7 @@ mod should {
         };
         let now = dt("2000-01-01T02:02:02Z");
 
-        assert!(validate_constraints(parent, child, now).is_ok());
+        assert!(validate_constraints_now(parent, child, now).is_ok());
     }
 
     #[test]
@@ -78,7 +82,7 @@ mod should {
         };
         let now = dt("2000-01-01T02:02:02Z");
 
-        assert!(validate_constraints(parent, child, now).is_ok());
+        assert!(validate_constraints_now(parent, child, now).is_ok());
     }
 
     #[test]
@@ -93,7 +97,7 @@ mod should {
         };
         let now = dt("2000-01-01T02:02:02Z");
 
-        assert!(validate_constraints(parent, child, now).is_err());
+        assert!(validate_constraints_now(parent, child, now).is_err());
     }
 
     #[test]
@@ -108,7 +112,7 @@ mod should {
         };
         let now = dt("2000-01-01T02:02:02Z");
 
-        assert!(validate_constraints(parent, child, now).is_err());
+        assert!(validate_constraints_now(parent, child, now).is_err());
     }
 
     #[test]
@@ -123,7 +127,7 @@ mod should {
         };
         let now = dt("2000-01-01T04:04:04Z");
 
-        assert!(validate_constraints(parent, child, now).is_err());
+        assert!(validate_constraints_now(parent, child, now).is_err());
     }
 
     #[test]
@@ -138,7 +142,7 @@ mod should {
         };
         let now = dt("2000-01-01T00:00:00Z");
 
-        assert!(validate_constraints(parent, child, now).is_err());
+        assert!(validate_constraints_now(parent, child, now).is_err());
     }
 
     mod utils {
