@@ -5,7 +5,7 @@ pub mod validator;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub struct Constraints {
+pub struct TimeConstraints {
     pub not_before: DateTime<Utc>,
     pub not_after: DateTime<Utc>,
 }
