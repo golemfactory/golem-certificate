@@ -15,13 +15,7 @@ pub enum KeyUsage {
     Usages(HashSet<Usage>),
 }
 
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct Usages {
-//     pub usages: HashSet<Usage>,
-// }
-
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum Usage {
     SignCertificate,
