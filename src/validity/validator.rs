@@ -6,6 +6,7 @@ use super::Validity;
 //TODO Rafał rename validity to constraints
 pub fn validate_validity(parent: &Validity, child: &Validity) -> Result<()> {
     validate_not_before(&parent.not_before, &child.not_before)?;
+    validate_not_after(&parent.not_after, &child.not_after)?;
 
     Ok(())
 }
@@ -16,6 +17,16 @@ fn validate_not_before(parent: &DateTime<Utc>, child: &DateTime<Utc>) -> Result<
     } else {
         Err(anyhow!(
             "Child 'not_before' property cannot be earlier than parent one"
+        ))
+    }
+}
+
+fn validate_not_after(parent: &DateTime<Utc>, child: &DateTime<Utc>) -> Result<()> {
+    if child <= parent {
+        Ok(())
+    } else {
+        Err(anyhow!(
+            "Child 'not_after' property cannot be later than parent one"
         ))
     }
 }
@@ -63,6 +74,20 @@ mod should {
         let child = &Validity {
             not_before: dt("2000-01-01T00:00:00Z"),
             not_after: dt("2000-01-01T03:03:03Z"),
+        };
+
+        assert!(validate_validity(parent, child).is_err());
+    }
+
+    #[test]
+    fn reject_because_child_has_later_not_after() {
+        let parent = &Validity {
+            not_before: dt("2000-01-01T00:00:00Z"),
+            not_after: dt("2000-01-01T04:04:04Z"),
+        };
+        let child = &Validity {
+            not_before: dt("2000-01-01T01:01:01Z"),
+            not_after: dt("2000-01-01T05:05:05Z"),
         };
 
         assert!(validate_validity(parent, child).is_err());
