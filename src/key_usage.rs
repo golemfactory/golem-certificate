@@ -38,7 +38,7 @@ mod should {
     }
 
     #[test]
-    fn serialize_outbound_unrestricted() {
+    fn serialize_usages() {
         let key_usage = KeyUsage::Usages([Usage::SignCertificate].into());
 
         assert_eq!(
