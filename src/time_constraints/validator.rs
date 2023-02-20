@@ -7,17 +7,22 @@ pub fn validate_time_constraints(parent: &TimeConstraints, child: &TimeConstrain
     if parent.not_before <= child.not_before && child.not_after <= parent.not_after {
         Ok(())
     } else {
-        Err(anyhow!("Child cannot extend time constraints"))
+        Err(anyhow!(
+            "Child cannot extend time constraints, parent: {:?}, child: {:?}",
+            parent,
+            child
+        ))
     }
 }
 
-pub fn validate_timestamp(constraints: &TimeConstraints, now: DateTime<Utc>) -> Result<()> {
-    if now > constraints.not_after {
-        Err(anyhow!("Child is not valid anymore"))
-    } else if now < constraints.not_before {
-        Err(anyhow!("Child is not valid yet"))
-    } else {
+pub fn validate_timestamp(constraints: &TimeConstraints, ts: DateTime<Utc>) -> Result<()> {
+    if constraints.not_before <= ts && ts <= constraints.not_after {
         Ok(())
+    } else {
+        Err(anyhow!(
+            "Timestamp: {ts} is not between given constraints: {:?}",
+            constraints
+        ))
     }
 }
 
