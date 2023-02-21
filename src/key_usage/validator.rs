@@ -10,7 +10,11 @@ pub fn validate_certificates_key_usage(parent: &KeyUsage, child: &KeyUsage) -> R
         )),
         (KeyUsage::Usages(parent), KeyUsage::Usages(child)) => {
             if child.is_subset(parent) {
-                Ok(())
+                if parent.contains(&Usage::SignCertificate) {
+                    Ok(())
+                } else {
+                    Err(anyhow!("Parent cert cannot sign child certificate"))
+                }
             } else {
                 Err(anyhow!("Child cannot extend key usages"))
             }
@@ -58,11 +62,11 @@ mod should {
         assert!(validate_certificates_key_usage(&parent, &child).is_err());
     }
 
-    #[test_case(&[], &[])]
-    #[test_case(&[Usage::SignNode], &[])]
-    #[test_case(&[Usage::SignNode], &[Usage::SignNode])]
-    #[test_case(&[Usage::SignNode, Usage::SignCertificate], &[Usage::SignNode])]
-    #[test_case(&[Usage::SignNode, Usage::SignCertificate, Usage::SignManifest], &[Usage::SignNode, Usage::SignCertificate, Usage::SignManifest])]
+    #[test_case(&[Usage::SignCertificate], &[])]
+    #[test_case(&[Usage::SignCertificate], &[Usage::SignCertificate])]
+    #[test_case(&[Usage::SignCertificate, Usage::SignNode], &[Usage::SignNode])]
+    #[test_case(&[Usage::SignCertificate, Usage::SignNode], &[Usage::SignCertificate, Usage::SignNode])]
+    #[test_case(&[Usage::SignCertificate, Usage::SignNode, Usage::SignManifest], &[Usage::SignNode, Usage::SignCertificate, Usage::SignManifest])]
     fn accept_because_child_usages_are_subset_of_parent(parent: &[Usage], child: &[Usage]) {
         let parent = slice_to_usages(parent);
         let child = slice_to_usages(child);
@@ -74,6 +78,15 @@ mod should {
     #[test_case(&[Usage::SignCertificate], &[Usage::SignNode])]
     #[test_case(&[Usage::SignCertificate], &[Usage::SignNode, Usage::SignCertificate])]
     fn reject_because_child_usages_are_not_subset_of_parent(parent: &[Usage], child: &[Usage]) {
+        let parent = slice_to_usages(parent);
+        let child = slice_to_usages(child);
+
+        assert!(validate_certificates_key_usage(&parent, &child).is_err());
+    }
+
+    #[test_case(&[Usage::SignNode], &[Usage::SignNode])]
+    #[test_case(&[Usage::SignManifest], &[Usage::SignManifest])]
+    fn reject_because_parent_cannot_sign_certs(parent: &[Usage], child: &[Usage]) {
         let parent = slice_to_usages(parent);
         let child = slice_to_usages(child);
 
