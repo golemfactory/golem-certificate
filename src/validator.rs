@@ -1,5 +1,4 @@
 use anyhow::Result;
-use serde::__private::de::TagOrContentFieldVisitor;
 
 use crate::schemas::{
     certificate::Certificate,
