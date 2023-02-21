@@ -23,7 +23,7 @@ pub fn validate_envelope(data: &str) -> Result<()> {
         }
     }
 
-    todo!()
+    Ok(())
 }
 
 fn validate_certificate_chain(envelope: &SignedEnvelope) -> Result<Certificate> {
