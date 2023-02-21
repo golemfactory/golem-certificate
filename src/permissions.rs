@@ -3,12 +3,12 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-mod serde_utils;
+use crate::serde_utils;
 
 pub mod validator;
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 #[serde(untagged)]
 pub enum Permissions {
     #[serde(with = "serde_utils::all")]
@@ -17,13 +17,13 @@ pub enum Permissions {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct PermissionDetails {
     pub outbound: Option<OutboundPermissions>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum OutboundPermissions {
     Unrestricted,
     Urls(HashSet<Url>),
