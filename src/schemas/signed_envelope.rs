@@ -9,7 +9,8 @@ pub struct SignedEnvelope {
     //TODO add $schema
     //TODO add $schema inside signed_data
     pub signed_data: Box<RawValue>,
-    pub signatures: Vec<Signature>,
+    //TODO Rafał Change to vec
+    pub signatures: Box<Signature>,
 }
 
 #[derive(Serialize, Deserialize)]

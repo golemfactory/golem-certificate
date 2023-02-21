@@ -1,0 +1,39 @@
+use anyhow::Result;
+
+use crate::schemas::{
+    certificate::Certificate,
+    node_permissions::NodePermissions,
+    signed_envelope::{SignedEnvelope, Signer},
+};
+
+//TODO Rafał Proper return value
+pub fn validate_envelope(data: &str) -> Result<()> {
+    let envelope: SignedEnvelope = serde_json::from_str(data)?;
+
+    let node_permissions: NodePermissions = serde_json::from_str(envelope.signed_data.get())?;
+
+    let cert_envelope: SignedEnvelope = {
+        match envelope.signatures.signer {
+            Signer::SelfSigned => panic!("NODE JSON CANNOT BE SELF SIGNED"),
+            Signer::Certificate(cert_envelope) => cert_envelope,
+        }
+    };
+    let leaf = validate_certificate_chain(&cert_envelope)?;
+
+    //TODO checks here
+
+    todo!()
+}
+
+fn validate_certificate_chain(envelope: &SignedEnvelope) -> Result<Certificate> {
+    let parent = match &envelope.signatures.signer {
+        Signer::SelfSigned => serde_json::from_str(envelope.signed_data.get())?,
+        Signer::Certificate(parent_envelope) => validate_certificate_chain(&parent_envelope)?,
+    };
+
+    let child: Certificate = serde_json::from_str(envelope.signed_data.get())?;
+
+    //TODO checks here
+
+    Ok(child)
+}
