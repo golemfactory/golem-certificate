@@ -19,7 +19,7 @@ pub fn validate_envelope(data: &str) -> Result<()> {
             Signer::Certificate(cert_envelope) => {
                 let leaf = validate_certificate_chain(&cert_envelope)?;
 
-                //TODO checks here
+                //TODO node permission & leaf cert checks here
             }
         }
     }
