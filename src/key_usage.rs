@@ -12,7 +12,7 @@ pub mod validator;
 pub enum KeyUsage {
     #[serde(with = "serde_utils::all")]
     All,
-    Usages(HashSet<Usage>),
+    Limited(HashSet<Usage>),
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
@@ -39,7 +39,7 @@ mod should {
 
     #[test]
     fn serialize_usages() {
-        let key_usage = KeyUsage::Usages([Usage::SignCertificate].into());
+        let key_usage = KeyUsage::Limited([Usage::SignCertificate].into());
 
         assert_eq!(
             serde_json::to_value(&key_usage).unwrap(),
