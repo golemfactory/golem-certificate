@@ -23,7 +23,7 @@ pub struct Signature {
 #[serde(rename_all = "camelCase")]
 pub enum Signer {
     //TODO Rafał rename to self in serde + untagged
+    //TODO maybe add Other?
     SelfSigned,
     Certificate(SignedEnvelope),
-    Other(Box<RawValue>),
 }
