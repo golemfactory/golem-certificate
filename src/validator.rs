@@ -1,4 +1,5 @@
 use anyhow::Result;
+use serde::__private::de::TagOrContentFieldVisitor;
 
 use crate::schemas::{
     certificate::Certificate,
@@ -12,28 +13,32 @@ pub fn validate_envelope(data: &str) -> Result<()> {
 
     let node_permissions: NodePermissions = serde_json::from_str(envelope.signed_data.get())?;
 
-    let cert_envelope: SignedEnvelope = {
-        match envelope.signatures.signer {
+    for signature in &envelope.signatures {
+        match &signature.signer {
             Signer::SelfSigned => panic!("NODE JSON CANNOT BE SELF SIGNED"),
-            Signer::Certificate(cert_envelope) => cert_envelope,
-        }
-    };
-    let leaf = validate_certificate_chain(&cert_envelope)?;
+            Signer::Certificate(cert_envelope) => {
+                let leaf = validate_certificate_chain(&cert_envelope)?;
 
-    //TODO checks here
+                //TODO checks here
+            }
+        }
+    }
 
     todo!()
 }
 
 fn validate_certificate_chain(envelope: &SignedEnvelope) -> Result<Certificate> {
-    let parent = match &envelope.signatures.signer {
-        Signer::SelfSigned => serde_json::from_str(envelope.signed_data.get())?,
-        Signer::Certificate(parent_envelope) => validate_certificate_chain(&parent_envelope)?,
-    };
-
+    //TODO Rafał Optimize this algorithm (child is put on stack always)
     let child: Certificate = serde_json::from_str(envelope.signed_data.get())?;
 
-    //TODO checks here
+    for signature in &envelope.signatures {
+        let parent = match &signature.signer {
+            Signer::SelfSigned => serde_json::from_str(envelope.signed_data.get())?,
+            Signer::Certificate(parent_envelope) => validate_certificate_chain(&parent_envelope)?,
+        };
+
+        //TODO parent & child checks here
+    }
 
     Ok(child)
 }
