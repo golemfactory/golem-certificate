@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::value::RawValue;
 
 use crate::serde_utils;
 
