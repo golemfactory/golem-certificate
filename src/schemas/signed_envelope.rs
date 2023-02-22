@@ -1,29 +1,49 @@
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
 
+use crate::serde_utils;
+
 //TODO additionalproperties=false
 //TODO Rafał vec to set
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SignedEnvelope {
     //TODO add $schema
     //TODO add $schema inside signed_data
-    pub signed_data: Box<RawValue>,
+    pub signed_data: serde_json::Value,
     pub signatures: Vec<Signature>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Signature {
     //TODO add algorithm & signature
     pub signer: Signer,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[serde(untagged)]
 pub enum Signer {
-    //TODO Rafał rename to self in serde + untagged
     //TODO maybe add Other?
+    #[serde(with = "serde_utils::self_signed")]
     SelfSigned,
     Certificate(SignedEnvelope),
+}
+
+#[cfg(test)]
+mod should {
+    use super::*;
+
+    use pretty_assertions::assert_eq;
+    use serde_json::json;
+
+    #[test]
+    fn serialize_self() {
+        let signer = Signer::SelfSigned;
+        let json = json!("self");
+
+        assert_eq!(serde_json::to_value(&signer).unwrap(), json);
+        assert_eq!(serde_json::from_value::<Signer>(json).unwrap(), signer);
+    }
 }

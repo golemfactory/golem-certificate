@@ -33,4 +33,4 @@ macro_rules! named_unit_variant {
 }
 
 named_unit_variant!(all, "all");
-named_unit_variant!(selfSigned, "self");
+named_unit_variant!(self_signed, "self");
