@@ -40,10 +40,9 @@ pub fn validate(data: &str) -> Result<()> {
                 )),
             }
         }
-        "https://golem.network/schemas/v1/certificate.schema.json" => {
-            //TODO Do we want to validate certs without envelope?
-            Ok(())
-        }
+        "https://golem.network/schemas/v1/certificate.schema.json" => Err(anyhow!(
+            "Certificate schema validation outside envelope is not currently supported"
+        )),
         schema => Err(anyhow!("Following schema is not supported yet: {schema}")),
     }
 }
