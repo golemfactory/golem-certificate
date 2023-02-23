@@ -10,7 +10,7 @@ pub mod key_usage;
 #[serde(rename_all = "camelCase")]
 pub struct Certificate {
     //TODO Add $schema & publicKey & subject
-    pub validity: ValidityPeriods,
+    pub validity_period: ValidityPeriods,
     pub key_usage: KeyUsage,
     pub permissions: Permissions,
 }

@@ -1,9 +1,15 @@
 use anyhow::{anyhow, Result};
+use chrono::Utc;
 
 use crate::schemas::{
-    certificate::Certificate,
+    certificate::{
+        key_usage::validator::{validate_certificates_key_usage, validate_sign_node},
+        Certificate,
+    },
     node_permissions::NodePermissions,
+    permissions::validator::validate_permissions,
     signed_envelope::{SignedEnvelope, Signer},
+    validity_periods::validator::{validate_timestamp, validate_validity_periods},
 };
 
 //TODO Rafał proper return value
@@ -51,7 +57,14 @@ fn validate_node_permissions_envelope(envelope: SignedEnvelope) -> Result<()> {
             Signer::Certificate(cert_envelope) => {
                 let leaf = validate_certificate(&cert_envelope)?;
 
-                //TODO node permission & leaf cert checks here
+                //TODO Rafał Do we want to use UTC now here?
+                validate_timestamp(&node_permissions.validity_period, Utc::now())?;
+                validate_permissions(&leaf.permissions, &node_permissions.permissions)?;
+                validate_sign_node(&leaf.key_usage)?;
+                validate_validity_periods(
+                    &leaf.validity_period,
+                    &node_permissions.validity_period,
+                )?;
             }
         }
     }
@@ -69,7 +82,9 @@ fn validate_certificate(envelope: &SignedEnvelope) -> Result<Certificate> {
             Signer::Certificate(parent_envelope) => validate_certificate(&parent_envelope)?,
         };
 
-        //TODO parent & child checks here
+        validate_permissions(&parent.permissions, &child.permissions)?;
+        validate_certificates_key_usage(&parent.key_usage, &child.key_usage)?;
+        validate_validity_periods(&parent.validity_period, &child.validity_period)?;
     }
 
     Ok(child)
