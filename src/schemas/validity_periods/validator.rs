@@ -1,9 +1,9 @@
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 
-use super::ValidityPeriods;
+use super::ValidityPeriod;
 
-pub fn validate_validity_periods(parent: &ValidityPeriods, child: &ValidityPeriods) -> Result<()> {
+pub fn validate_validity_periods(parent: &ValidityPeriod, child: &ValidityPeriod) -> Result<()> {
     if parent.not_before <= child.not_before && child.not_after <= parent.not_after {
         Ok(())
     } else {
@@ -15,7 +15,7 @@ pub fn validate_validity_periods(parent: &ValidityPeriods, child: &ValidityPerio
     }
 }
 
-pub fn validate_timestamp(periods: &ValidityPeriods, ts: DateTime<Utc>) -> Result<()> {
+pub fn validate_timestamp(periods: &ValidityPeriod, ts: DateTime<Utc>) -> Result<()> {
     if periods.not_before <= ts && ts <= periods.not_after {
         Ok(())
     } else {
@@ -37,11 +37,11 @@ mod tests {
 
         #[test]
         pub(crate) fn accept_because_child_periods_are_subset_of_parent() {
-            let parent = &ValidityPeriods {
+            let parent = &ValidityPeriod {
                 not_before: dt("2000-01-01T00:00:00Z"),
                 not_after: dt("2000-01-01T04:04:04Z"),
             };
-            let child = &ValidityPeriods {
+            let child = &ValidityPeriod {
                 not_before: dt("2000-01-01T01:01:01Z"),
                 not_after: dt("2000-01-01T03:03:03Z"),
             };
@@ -51,11 +51,11 @@ mod tests {
 
         #[test]
         pub(crate) fn accept_because_child_periods_are_the_same_as_parent() {
-            let parent = &ValidityPeriods {
+            let parent = &ValidityPeriod {
                 not_before: dt("2000-01-01T00:00:00Z"),
                 not_after: dt("2000-01-01T04:04:04Z"),
             };
-            let child = &ValidityPeriods {
+            let child = &ValidityPeriod {
                 not_before: dt("2000-01-01T00:00:00Z"),
                 not_after: dt("2000-01-01T04:04:04Z"),
             };
@@ -65,11 +65,11 @@ mod tests {
 
         #[test]
         pub(crate) fn reject_because_child_has_earlier_not_before() {
-            let parent = &ValidityPeriods {
+            let parent = &ValidityPeriod {
                 not_before: dt("2000-01-01T01:01:01Z"),
                 not_after: dt("2000-01-01T04:04:04Z"),
             };
-            let child = &ValidityPeriods {
+            let child = &ValidityPeriod {
                 not_before: dt("2000-01-01T00:00:00Z"),
                 not_after: dt("2000-01-01T03:03:03Z"),
             };
@@ -79,11 +79,11 @@ mod tests {
 
         #[test]
         pub(crate) fn reject_because_child_has_later_not_after() {
-            let parent = &ValidityPeriods {
+            let parent = &ValidityPeriod {
                 not_before: dt("2000-01-01T00:00:00Z"),
                 not_after: dt("2000-01-01T04:04:04Z"),
             };
-            let child = &ValidityPeriods {
+            let child = &ValidityPeriod {
                 not_before: dt("2000-01-01T01:01:01Z"),
                 not_after: dt("2000-01-01T05:05:05Z"),
             };
@@ -97,7 +97,7 @@ mod tests {
 
         #[test]
         pub(crate) fn reject_timestamp_because_period_has_expired() {
-            let periods = &ValidityPeriods {
+            let periods = &ValidityPeriod {
                 not_before: dt("2000-01-01T01:01:01Z"),
                 not_after: dt("2000-01-01T03:03:03Z"),
             };
@@ -108,7 +108,7 @@ mod tests {
 
         #[test]
         pub(crate) fn reject_timestamp_because_period_is_not_valid_yet() {
-            let periods = &ValidityPeriods {
+            let periods = &ValidityPeriod {
                 not_before: dt("2000-01-01T01:01:01Z"),
                 not_after: dt("2000-01-01T03:03:03Z"),
             };
@@ -119,7 +119,7 @@ mod tests {
 
         #[test]
         pub(crate) fn accept_timestamp_because_it_fits_periods() {
-            let periods = &ValidityPeriods {
+            let periods = &ValidityPeriod {
                 not_before: dt("2000-01-01T01:01:01Z"),
                 not_after: dt("2000-01-01T03:03:03Z"),
             };
@@ -130,7 +130,7 @@ mod tests {
 
         #[test]
         pub(crate) fn accept_timestamp_because_it_is_the_same_as_not_before() {
-            let periods = &ValidityPeriods {
+            let periods = &ValidityPeriod {
                 not_before: dt("2000-01-01T01:01:01Z"),
                 not_after: dt("2000-01-01T03:03:03Z"),
             };
@@ -141,7 +141,7 @@ mod tests {
 
         #[test]
         pub(crate) fn accept_timestamp_because_it_is_the_same_as_not_after() {
-            let periods = &ValidityPeriods {
+            let periods = &ValidityPeriod {
                 not_before: dt("2000-01-01T01:01:01Z"),
                 not_after: dt("2000-01-01T03:03:03Z"),
             };
