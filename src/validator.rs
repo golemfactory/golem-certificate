@@ -12,6 +12,8 @@ use crate::schemas::{
     validity_periods::validator::{validate_timestamp, validate_validity_periods},
 };
 
+use self::{error::ValidationError, success::Success, certificate_descriptor::CertificateId};
+
 pub mod certificate_descriptor;
 pub mod error;
 pub mod success;
@@ -32,12 +34,13 @@ pub fn validate(data: &str) -> Result<()> {
             match signed_data_schema {
                 "https://golem.network/schemas/v1/node.schema.json" => {
                     let envelope: SignedEnvelope = serde_json::from_value(value)?;
-                    validate_node_permissions_envelope(envelope)},
+                    validate_node_permissions_envelope(envelope)?;
+                
+                Ok(())},
 
                 "https://golem.network/schemas/v1/certificate.schema.json" => {
                     let envelope: SignedEnvelope = serde_json::from_value(value)?;
-                    //TODO Rafał validate timestamp of last one also
-                    validate_certificate(&envelope)?;
+                    validate_certificate_envelope(envelope)?;
                     Ok(())
                 }
                 signed_data_schema => Err(anyhow!(
@@ -51,46 +54,57 @@ pub fn validate(data: &str) -> Result<()> {
     }
 }
 
-fn validate_node_permissions_envelope(envelope: SignedEnvelope) -> Result<()> {
+fn validate_node_permissions_envelope(envelope: SignedEnvelope) -> Result<Success> {
     let node_permissions: NodePermissions = serde_json::from_value(envelope.signed_data)?;
 
-    for signature in &envelope.signatures {
-        match &signature.signer {
-            Signer::SelfSigned => return Err(anyhow!("Node Permissions cannot be self-signed")),
-            Signer::Other(_) => return Err(anyhow!("Other form of signer is not supported yet")),
-            Signer::Certificate(cert_envelope) => {
-                let leaf = validate_certificate(&cert_envelope)?;
+    let mut certs = vec![];
 
-                validate_permissions(&leaf.permissions, &node_permissions.permissions)?;
-                validate_sign_node(&leaf.key_usage)?;
-                validate_validity_periods(
-                    &leaf.validity_period,
-                    &node_permissions.validity_period,
-                )?;
-            }
+    match &envelope.signature.signer {
+        Signer::SelfSigned => return Err(anyhow!("Node Permissions cannot be self-signed")),
+        Signer::Other(_) => return Err(anyhow!("Other form of signer is not supported yet")),
+        Signer::Certificate(cert_envelope) => {
+            let leaf = validate_certificate(&cert_envelope, &mut certs)?;
+
+            validate_permissions(&leaf.permissions, &node_permissions.permissions)?;
+            validate_sign_node(&leaf.key_usage)?;
+            validate_validity_periods(
+                &leaf.validity_period,
+                &node_permissions.validity_period,
+            )?;
         }
     }
 
     validate_timestamp(&node_permissions.validity_period, Utc::now())?;
 
-    Ok(())
+    Ok(Success::NodeDescriptor { node_id: node_permissions.node_id, permissions: node_permissions.permissions, certs })
 }
 
-fn validate_certificate(envelope: &SignedEnvelope) -> Result<Certificate> {
+fn validate_certificate_envelope(envelope: SignedEnvelope) -> Result<Success> {
+    let mut certs = vec![];
+
+    let leaf = validate_certificate(&envelope, &mut certs)?;
+
+    validate_timestamp(&leaf.validity_period, Utc::now())?;
+
+    Ok(Success::Certificate { permissions: leaf.permissions, certs })
+}
+
+fn validate_certificate(envelope: &SignedEnvelope, validated_certs: &mut Vec<CertificateId>) -> Result<Certificate> {
     //TODO Rafał Optimize this algorithm (child is put on stack always)
     let child: Certificate = serde_json::from_value(envelope.signed_data.clone())?;
 
-    for signature in &envelope.signatures {
-        let parent = match &signature.signer {
-            Signer::Other(_) => return Err(anyhow!("Other form of signer is not supported yet")),
-            Signer::SelfSigned => serde_json::from_value(envelope.signed_data.clone())?,
-            Signer::Certificate(parent_envelope) => validate_certificate(&parent_envelope)?,
-        };
+    let parent = match &envelope.signature.signer {
+        Signer::Other(_) => return Err(anyhow!("Other form of signer is not supported yet")),
+        Signer::SelfSigned => serde_json::from_value(envelope.signed_data.clone())?,
+        Signer::Certificate(parent_envelope) => validate_certificate(&parent_envelope, validated_certs)?,
+    };
 
-        validate_permissions(&parent.permissions, &child.permissions)?;
-        validate_certificates_key_usage(&parent.key_usage, &child.key_usage)?;
-        validate_validity_periods(&parent.validity_period, &child.validity_period)?;
-    }
+    validate_permissions(&parent.permissions, &child.permissions)?;
+    validate_certificates_key_usage(&parent.key_usage, &child.key_usage)?;
+    validate_validity_periods(&parent.validity_period, &child.validity_period)?;
+
+    let cert_id = child.create_cert_id()?;
+    validated_certs.push(cert_id);
 
     Ok(child)
 }

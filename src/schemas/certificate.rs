@@ -1,4 +1,7 @@
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
+
+use crate::validator::certificate_descriptor::CertificateId;
 
 use self::key_usage::KeyUsage;
 
@@ -13,4 +16,10 @@ pub struct Certificate {
     pub validity_period: ValidityPeriod,
     pub key_usage: KeyUsage,
     pub permissions: Permissions,
+}
+
+impl Certificate {
+    pub fn create_cert_id(&self) -> Result<CertificateId> {
+        todo!()
+    }
 }

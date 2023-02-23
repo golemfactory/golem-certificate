@@ -8,7 +8,7 @@ use crate::serde_utils;
 #[serde(rename_all = "camelCase")]
 pub struct SignedEnvelope {
     pub signed_data: serde_json::Value,
-    pub signatures: Vec<Signature>,
+    pub signature: Box<Signature>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
