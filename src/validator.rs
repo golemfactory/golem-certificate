@@ -19,7 +19,7 @@ pub mod error;
 pub mod success;
 
 //TODO Rafał proper return value
-pub fn validate(data: &str) -> Result<()> {
+pub fn validate(data: &str) -> Result<Success> {
     let value: serde_json::Value = serde_json::from_str(data)?;
     let schema = value["$schema"]
         .as_str()
@@ -34,14 +34,13 @@ pub fn validate(data: &str) -> Result<()> {
             match signed_data_schema {
                 "https://golem.network/schemas/v1/node.schema.json" => {
                     let envelope: SignedEnvelope = serde_json::from_value(value)?;
-                    validate_node_permissions_envelope(envelope)?;
+                    validate_node_permissions_envelope(envelope)
                 
-                Ok(())},
+                },
 
                 "https://golem.network/schemas/v1/certificate.schema.json" => {
                     let envelope: SignedEnvelope = serde_json::from_value(value)?;
-                    validate_certificate_envelope(envelope)?;
-                    Ok(())
+                    validate_certificate_envelope(envelope)
                 }
                 signed_data_schema => Err(anyhow!(
                     "Following schema in signed data in envelope is not supported yet: {signed_data_schema}"
