@@ -7,8 +7,6 @@ use crate::serde_utils;
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SignedEnvelope {
-    //TODO add $schema
-    //TODO add $schema inside signed_data
     pub signed_data: serde_json::Value,
     pub signatures: Vec<Signature>,
 }
@@ -24,10 +22,10 @@ pub struct Signature {
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
 pub enum Signer {
-    //TODO maybe add Other?
     #[serde(with = "serde_utils::self_signed")]
     SelfSigned,
     Certificate(SignedEnvelope),
+    Other(serde_json::Value),
 }
 
 #[cfg(test)]
