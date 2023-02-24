@@ -10,7 +10,6 @@ pub enum Success {
         certs: Vec<CertificateId>,
     },
     Certificate {
-        //TODO Rafał What is usecase of validation of certificates? permissions seems not valid here
         permissions: Permissions,
         certs: Vec<CertificateId>,
     },

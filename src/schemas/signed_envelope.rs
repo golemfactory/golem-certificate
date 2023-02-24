@@ -14,7 +14,6 @@ pub struct SignedEnvelope {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Signature {
-    //TODO add algorithm & signature
     pub signer: Signer,
 }
 
@@ -25,6 +24,7 @@ pub enum Signer {
     #[serde(with = "serde_utils::self_signed")]
     SelfSigned,
     Certificate(SignedEnvelope),
+    Other(serde_json::Value),
 }
 
 #[cfg(test)]
