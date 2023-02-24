@@ -20,8 +20,7 @@ pub struct Certificate {
 impl Certificate {
     pub fn create_cert_id(&self) -> Result<CertificateId> {
         Ok(CertificateId {
-            public_key: "public key todo".into(),
-            hash: "hash todo".into(),
+            fingerprint: "mock_fingerprint".into(),
         })
     }
 }

@@ -24,12 +24,10 @@ fn happy_path() {
             }),
             certs: vec![
                 CertificateId {
-                    public_key: "public key todo".into(),
-                    hash: "hash todo".into()
+                    fingerprint: "mock_fingerprint".into(),
                 },
                 CertificateId {
-                    public_key: "public key todo".into(),
-                    hash: "hash todo".into()
+                    fingerprint: "mock_fingerprint".into(),
                 }
             ]
         }
