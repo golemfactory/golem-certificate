@@ -1,0 +1,53 @@
+{
+    "$schema": "https://golem.network/schemas/v1/signed-envelope.schema.json",
+    "signedData": {
+        "$schema": "https://golem.network/schemas/v1/node.schema.json",
+        "nodeId": "0xbabe000000000000000000000000000000000000",
+        "validityPeriod": {
+            "notBefore": "2000-01-01T00:00:00Z",
+            "notAfter": "2030-01-01T00:00:00Z"
+        },
+        "permissions": {
+            "outbound": {
+                "urls": [
+                    "https://example.net"
+                ]
+            }
+        }
+    },
+    "signature": {
+        "signer": {
+            "$schema": "https://golem.network/schemas/v1/signed-envelope.schema.json",
+            "signedData": {
+                "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+                "validityPeriod": {
+                    "notBefore": "2000-01-01T00:00:00Z",
+                    "notAfter": "2030-01-01T00:00:00Z"
+                },
+                "keyUsage": [
+                    "signNode"
+                ],
+                "permissions": {
+                    "outbound": "unrestricted"
+                }
+            },
+            "signature": {
+                "signer": {
+                    "$schema": "https://golem.network/schemas/v1/signed-envelope.schema.json",
+                    "signedData": {
+                        "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+                        "validityPeriod": {
+                            "notBefore": "2000-01-01T00:00:00Z",
+                            "notAfter": "2030-01-01T00:00:00Z"
+                        },
+                        "keyUsage": "all",
+                        "permissions": "all"
+                    },
+                    "signature": {
+                        "signer": "self"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -60,7 +60,6 @@ fn validate_node_permissions_envelope(envelope: SignedEnvelope) -> Result<Succes
 
     match &envelope.signature.signer {
         Signer::SelfSigned => return Err(anyhow!("Node Permissions cannot be self-signed")),
-        Signer::Other(_) => return Err(anyhow!("Other form of signer is not supported yet")),
         Signer::Certificate(cert_envelope) => {
             let leaf = validate_certificate(&cert_envelope, &mut certs)?;
 
@@ -93,7 +92,6 @@ fn validate_certificate(envelope: &SignedEnvelope, validated_certs: &mut Vec<Cer
     let child: Certificate = serde_json::from_value(envelope.signed_data.clone())?;
 
     let parent = match &envelope.signature.signer {
-        Signer::Other(_) => return Err(anyhow!("Other form of signer is not supported yet")),
         Signer::SelfSigned => serde_json::from_value(envelope.signed_data.clone())?,
         Signer::Certificate(parent_envelope) => validate_certificate(&parent_envelope, validated_certs)?,
     };

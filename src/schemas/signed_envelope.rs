@@ -25,7 +25,6 @@ pub enum Signer {
     #[serde(with = "serde_utils::self_signed")]
     SelfSigned,
     Certificate(SignedEnvelope),
-    Other(serde_json::Value),
 }
 
 #[cfg(test)]

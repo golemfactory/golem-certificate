@@ -20,6 +20,9 @@ pub struct Certificate {
 
 impl Certificate {
     pub fn create_cert_id(&self) -> Result<CertificateId> {
-        todo!()
+        Ok(CertificateId {
+            public_key: "public key todo".into(),
+            hash: "hash todo".into(),
+        })
     }
 }
