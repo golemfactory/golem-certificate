@@ -1,19 +1,20 @@
-use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 
 use crate::validation_error::ValidationError;
 
 use super::ValidityPeriod;
 
-pub fn validate_validity_periods(parent: &ValidityPeriod, child: &ValidityPeriod) -> Result<()> {
+pub fn validate_validity_periods(
+    parent: &ValidityPeriod,
+    child: &ValidityPeriod,
+) -> Result<(), ValidationError> {
     if parent.not_before <= child.not_before && child.not_after <= parent.not_after {
         Ok(())
     } else {
-        Err(anyhow!(
-            "Child cannot extend time periods, parent: {:?}, child: {:?}",
-            parent,
-            child
-        ))
+        Err(ValidationError::ValidityPeriodExtended {
+            parent: parent.to_owned(),
+            child: child.to_owned(),
+        })
     }
 }
 
