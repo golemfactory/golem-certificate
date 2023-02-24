@@ -89,14 +89,13 @@ fn validate_certificate_envelope(envelope: SignedEnvelope) -> Result<Success> {
 }
 
 fn validate_certificate(envelope: &SignedEnvelope, validated_certs: &mut Vec<CertificateId>) -> Result<Certificate> {
-    //TODO Rafał Optimize this algorithm (child is put on stack always)
-    let child: Certificate = serde_json::from_value(envelope.signed_data.clone())?;
-
     let parent = match &envelope.signature.signer {
         Signer::Other(_) => return Err(anyhow!("Other form of signer is not supported yet")),
         Signer::SelfSigned => serde_json::from_value(envelope.signed_data.clone())?,
         Signer::Certificate(parent_envelope) => validate_certificate(&parent_envelope, validated_certs)?,
     };
+    
+    let child: Certificate = serde_json::from_value(envelope.signed_data.clone())?;
 
     validate_permissions(&parent.permissions, &child.permissions)?;
     validate_certificates_key_usage(&parent.key_usage, &child.key_usage)?;
