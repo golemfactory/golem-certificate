@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::serde_utils;
 
-//TODO additionalproperties=false
-//TODO Rafał vec to set
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SignedEnvelope {
+    #[serde(rename = "$schema")]
+    pub schema: String,
     pub signed_data: serde_json::Value,
     pub signature: Box<Signature>,
 }

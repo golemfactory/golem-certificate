@@ -6,7 +6,7 @@ use crate::schemas::{
         key_usage::validator::{validate_certificates_key_usage, validate_sign_node},
         Certificate,
     },
-    node_permissions::NodePermissions,
+    node_descriptor::NodeDescriptor,
     permissions::validator::validate_permissions,
     signed_envelope::{SignedEnvelope, Signer},
     validity_periods::validator::{validate_timestamp, validate_validity_periods},
@@ -34,7 +34,7 @@ pub fn validate(data: &str) -> Result<Success> {
             match signed_data_schema {
                 "https://golem.network/schemas/v1/node.schema.json" => {
                     let envelope: SignedEnvelope = serde_json::from_value(value)?;
-                    validate_node_permissions_envelope(envelope)
+                    validate_node_descriptor_envelope(envelope)
                 
                 },
 
@@ -53,8 +53,8 @@ pub fn validate(data: &str) -> Result<Success> {
     }
 }
 
-fn validate_node_permissions_envelope(envelope: SignedEnvelope) -> Result<Success> {
-    let node_permissions: NodePermissions = serde_json::from_value(envelope.signed_data)?;
+fn validate_node_descriptor_envelope(envelope: SignedEnvelope) -> Result<Success> {
+    let node_descriptor: NodeDescriptor = serde_json::from_value(envelope.signed_data)?;
 
     let mut certs = vec![];
 
@@ -64,18 +64,18 @@ fn validate_node_permissions_envelope(envelope: SignedEnvelope) -> Result<Succes
         Signer::Certificate(cert_envelope) => {
             let leaf = validate_certificate(&cert_envelope, &mut certs)?;
 
-            validate_permissions(&leaf.permissions, &node_permissions.permissions)?;
+            validate_permissions(&leaf.permissions, &node_descriptor.permissions)?;
             validate_sign_node(&leaf.key_usage)?;
             validate_validity_periods(
                 &leaf.validity_period,
-                &node_permissions.validity_period,
+                &node_descriptor.validity_period,
             )?;
         }
     }
 
-    validate_timestamp(&node_permissions.validity_period, Utc::now())?;
+    validate_timestamp(&node_descriptor.validity_period, Utc::now())?;
 
-    Ok(Success::NodeDescriptor { node_id: node_permissions.node_id, permissions: node_permissions.permissions, certs })
+    Ok(Success::NodeDescriptor { node_id: node_descriptor.node_id, permissions: node_descriptor.permissions, certs })
 }
 
 fn validate_certificate_envelope(envelope: SignedEnvelope) -> Result<Success> {
