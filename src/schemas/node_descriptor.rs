@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
+use ya_client_model::NodeId;
 
 use super::{permissions::Permissions, validity_periods::ValidityPeriod};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NodeDescriptor {
-    pub node_id: String, //TODO change to ya_client nodeid
+    pub node_id: NodeId,
     pub validity_period: ValidityPeriod,
     pub permissions: Permissions,
 }

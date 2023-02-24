@@ -12,6 +12,7 @@ serde = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order", "raw_value"] }
 url = { version = "2.2", features = ["serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+ya-client-model = "0.5"
 
 [dev-dependencies]
 test-case = "3.0"
