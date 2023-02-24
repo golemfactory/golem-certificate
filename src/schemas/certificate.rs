@@ -1,13 +1,13 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::validator::certificate_descriptor::CertificateId;
-
 use self::key_usage::KeyUsage;
 
 use super::{permissions::Permissions, validity_periods::ValidityPeriod};
 
 pub mod key_usage;
+
+pub type Fingerprint = String;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,9 +18,7 @@ pub struct Certificate {
 }
 
 impl Certificate {
-    pub fn create_cert_id(&self) -> Result<CertificateId> {
-        Ok(CertificateId {
-            fingerprint: "mock_fingerprint".into(),
-        })
+    pub fn create_cert_id(&self) -> Result<Fingerprint> {
+        Ok("mock_fingerprint".into())
     }
 }

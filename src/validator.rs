@@ -4,7 +4,7 @@ use chrono::Utc;
 use crate::schemas::{
     certificate::{
         key_usage::validator::{validate_certificates_key_usage, validate_sign_node},
-        Certificate,
+        Certificate, Fingerprint,
     },
     node_descriptor::NodeDescriptor,
     permissions::validator::validate_permissions,
@@ -12,9 +12,8 @@ use crate::schemas::{
     validity_periods::validator::{validate_timestamp, validate_validity_periods},
 };
 
-use self::{error::ValidationError, success::Success, certificate_descriptor::CertificateId};
+use self::{error::ValidationError, success::Success};
 
-pub mod certificate_descriptor;
 pub mod error;
 pub mod success;
 
@@ -88,7 +87,7 @@ fn validate_certificate_envelope(envelope: SignedEnvelope) -> Result<Success> {
     Ok(Success::Certificate { permissions: leaf.permissions, certs })
 }
 
-fn validate_certificate(envelope: &SignedEnvelope, validated_certs: &mut Vec<CertificateId>) -> Result<Certificate> {
+fn validate_certificate(envelope: &SignedEnvelope, validated_certs: &mut Vec<Fingerprint>) -> Result<Certificate> {
     let parent = match &envelope.signature.signer {
         Signer::Other(_) => return Err(anyhow!("Other form of signer is not supported yet")),
         Signer::SelfSigned => serde_json::from_value(envelope.signed_data.clone())?,

@@ -1,6 +1,6 @@
 use golem_certificate::{
     schemas::permissions::{OutboundPermissions, PermissionDetails, Permissions},
-    validator::{certificate_descriptor::CertificateId, success::Success, validate},
+    validator::{success::Success, validate},
 };
 use url::Url;
 use ya_client_model::NodeId;
@@ -23,14 +23,7 @@ fn happy_path() {
                     [Url::parse("https://example.net/").unwrap()].into()
                 ))
             }),
-            certs: vec![
-                CertificateId {
-                    fingerprint: "mock_fingerprint".into(),
-                },
-                CertificateId {
-                    fingerprint: "mock_fingerprint".into(),
-                }
-            ]
+            certs: vec!["mock_fingerprint".into(), "mock_fingerprint".into(),]
         }
     );
 }
