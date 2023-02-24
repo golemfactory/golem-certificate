@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 
+use crate::validation_error::ValidationError;
+
 use super::ValidityPeriod;
 
 pub fn validate_validity_periods(parent: &ValidityPeriod, child: &ValidityPeriod) -> Result<()> {
@@ -15,14 +17,14 @@ pub fn validate_validity_periods(parent: &ValidityPeriod, child: &ValidityPeriod
     }
 }
 
-pub fn validate_timestamp(periods: &ValidityPeriod, ts: DateTime<Utc>) -> Result<()> {
-    if periods.not_before <= ts && ts <= periods.not_after {
+pub fn validate_timestamp(
+    period: &ValidityPeriod,
+    ts: DateTime<Utc>,
+) -> Result<(), ValidationError> {
+    if period.not_before <= ts && ts <= period.not_after {
         Ok(())
     } else {
-        Err(anyhow!(
-            "Timestamp: {ts} is not between given periods: {:?}",
-            periods
-        ))
+        Err(ValidationError::Expired(period.to_owned()))
     }
 }
 
