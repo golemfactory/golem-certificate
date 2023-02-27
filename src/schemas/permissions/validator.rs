@@ -21,7 +21,7 @@ pub fn validate_permissions(parent: &Permissions, child: &Permissions) -> Result
 mod should {
     use super::*;
 
-    use crate::permissions::{OutboundPermissions, PermissionDetails};
+    use super::super::{OutboundPermissions, PermissionDetails};
 
     use test_case::test_case;
     use url::Url;

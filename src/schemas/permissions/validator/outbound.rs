@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 
-use crate::permissions::OutboundPermissions;
+use super::super::OutboundPermissions;
 
 pub fn validate_outbound_permissions(
     parent: &Option<OutboundPermissions>,
@@ -38,8 +38,6 @@ fn validate_url_permissions(
 mod should {
     use super::*;
     use utils::*;
-
-    use crate::permissions::OutboundPermissions;
 
     use test_case::test_case;
     use url::Url;

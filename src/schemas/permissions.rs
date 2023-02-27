@@ -7,7 +7,7 @@ use crate::serde_utils;
 
 pub mod validator;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
 pub enum Permissions {
@@ -16,13 +16,13 @@ pub enum Permissions {
     Object(PermissionDetails),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PermissionDetails {
     pub outbound: Option<OutboundPermissions>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum OutboundPermissions {
     Unrestricted,
@@ -37,23 +37,30 @@ mod should {
     use serde_json::json;
 
     #[test]
-    fn serialize_all() {
+    fn serialize_and_deserialize_all() {
         let permissions = Permissions::All;
+        let json = json!("all");
 
-        assert_eq!(serde_json::to_value(&permissions).unwrap(), json!("all"));
+        assert_eq!(serde_json::to_value(&permissions).unwrap(), json);
+        assert_eq!(
+            serde_json::from_value::<Permissions>(json).unwrap(),
+            permissions
+        );
     }
 
     #[test]
-    fn serialize_outbound_unrestricted() {
+    fn serialize_and_deserialize_outbound_unrestricted() {
         let permissions = Permissions::Object(PermissionDetails {
             outbound: Some(OutboundPermissions::Unrestricted),
         });
+        let json = json!({
+            "outbound": "unrestricted"
+        });
 
+        assert_eq!(serde_json::to_value(&permissions).unwrap(), json);
         assert_eq!(
-            serde_json::to_value(&permissions).unwrap(),
-            json!({
-                "outbound": "unrestricted"
-            })
+            serde_json::from_value::<Permissions>(json).unwrap(),
+            permissions
         );
     }
 
@@ -64,14 +71,16 @@ mod should {
                 [Url::parse("https://example.net/").unwrap()].into(),
             )),
         });
+        let json = json!({
+            "outbound": {
+                "urls": ["https://example.net/"]
+            }
+        });
 
+        assert_eq!(serde_json::to_value(&permissions).unwrap(), json);
         assert_eq!(
-            serde_json::to_value(&permissions).unwrap(),
-            json!({
-                "outbound": {
-                    "urls": ["https://example.net/"]
-                }
-            })
+            serde_json::from_value::<Permissions>(json).unwrap(),
+            permissions
         );
     }
 }

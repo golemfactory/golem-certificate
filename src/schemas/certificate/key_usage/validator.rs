@@ -132,8 +132,6 @@ mod tests {
     mod utils {
         use super::*;
 
-        use crate::key_usage::KeyUsage;
-
         pub fn slice_to_usages(s: &[Usage]) -> KeyUsage {
             KeyUsage::Limited(s.iter().cloned().collect())
         }

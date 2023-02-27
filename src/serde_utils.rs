@@ -1,11 +1,11 @@
 macro_rules! named_unit_variant {
-    ($variant:ident) => {
+    ($variant:ident, $name:expr) => {
         pub mod $variant {
             pub fn serialize<S>(serializer: S) -> Result<S::Ok, S::Error>
             where
                 S: serde::Serializer,
             {
-                serializer.serialize_str(stringify!($variant))
+                serializer.serialize_str($name)
             }
 
             pub fn deserialize<'de, D>(deserializer: D) -> Result<(), D::Error>
@@ -16,10 +16,10 @@ macro_rules! named_unit_variant {
                 impl<'de> serde::de::Visitor<'de> for V {
                     type Value = ();
                     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                        f.write_str(concat!("\"", stringify!($variant), "\""))
+                        f.write_str($name)
                     }
                     fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                        if value == stringify!($variant) {
+                        if value == $name {
                             Ok(())
                         } else {
                             Err(E::invalid_value(serde::de::Unexpected::Str(value), &self))
@@ -32,4 +32,5 @@ macro_rules! named_unit_variant {
     };
 }
 
-named_unit_variant!(all);
+named_unit_variant!(all, "all");
+named_unit_variant!(self_signed, "self");
