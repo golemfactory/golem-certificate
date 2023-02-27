@@ -9,11 +9,12 @@ use crate::schemas::{
     node_descriptor::NodeDescriptor,
     permissions::validator::validate_permissions,
     signed_envelope::{SignedEnvelope, Signer},
-    validity_period::validator::{validate_timestamp, validate_validity_periods},
+    validity_periods::validator::{validate_timestamp, validate_validity_periods},
 };
 
-use self::success::Success;
+use self::{error::ValidationError, success::Success};
 
+pub mod error;
 pub mod success;
 
 //TODO Rafał proper return value
