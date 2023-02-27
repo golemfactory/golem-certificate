@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use self::key_usage::KeyUsage;
 
-use super::{permissions::Permissions, validity_periods::ValidityPeriod};
+use super::{permissions::Permissions, validity_period::ValidityPeriod};
 
 pub mod key_usage;
 
