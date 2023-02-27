@@ -12,12 +12,11 @@ use crate::schemas::{
     validity_period::validator::{validate_timestamp, validate_validity_period},
 };
 
-use self::success::Success;
+use self::validated_data::ValidatedData;
 
-pub mod success;
+pub mod validated_data;
 
-//TODO Rafał proper return value
-pub fn validate(data: &str) -> Result<Success> {
+pub fn validate(data: &str) -> Result<ValidatedData> {
     let value: serde_json::Value = serde_json::from_str(data)?;
     let schema = value["$schema"]
         .as_str()
@@ -51,7 +50,7 @@ pub fn validate(data: &str) -> Result<Success> {
     }
 }
 
-fn validate_node_descriptor_envelope(envelope: SignedEnvelope) -> Result<Success> {
+fn validate_node_descriptor_envelope(envelope: SignedEnvelope) -> Result<ValidatedData> {
     let node_descriptor: NodeDescriptor = serde_json::from_value(envelope.signed_data)?;
 
     let mut certs = vec![];
@@ -73,17 +72,17 @@ fn validate_node_descriptor_envelope(envelope: SignedEnvelope) -> Result<Success
 
     validate_timestamp(&node_descriptor.validity_period, Utc::now())?;
 
-    Ok(Success::NodeDescriptor { node_id: node_descriptor.node_id, permissions: node_descriptor.permissions, certs })
+    Ok(ValidatedData::NodeDescriptor { node_id: node_descriptor.node_id, permissions: node_descriptor.permissions, certs })
 }
 
-fn validate_certificate_envelope(envelope: SignedEnvelope) -> Result<Success> {
+fn validate_certificate_envelope(envelope: SignedEnvelope) -> Result<ValidatedData> {
     let mut certs = vec![];
 
     let leaf = validate_certificate(&envelope, &mut certs)?;
 
     validate_timestamp(&leaf.validity_period, Utc::now())?;
 
-    Ok(Success::Certificate { permissions: leaf.permissions, certs })
+    Ok(ValidatedData::Certificate { permissions: leaf.permissions, certs })
 }
 
 fn validate_certificate(envelope: &SignedEnvelope, validated_certs: &mut Vec<Fingerprint>) -> Result<Certificate> {

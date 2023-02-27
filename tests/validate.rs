@@ -1,6 +1,6 @@
 use golem_certificate::{
     schemas::permissions::{OutboundPermissions, PermissionDetails, Permissions},
-    validator::{success::Success, validate},
+    validator::{validate, validated_data::ValidatedData},
 };
 use url::Url;
 use ya_client_model::NodeId;
@@ -14,7 +14,7 @@ fn happy_path() {
 
     assert_eq!(
         result,
-        Success::NodeDescriptor {
+        ValidatedData::NodeDescriptor {
             node_id: "0xbabe000000000000000000000000000000000000"
                 .parse::<NodeId>()
                 .unwrap(),
