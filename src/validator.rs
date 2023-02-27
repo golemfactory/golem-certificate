@@ -9,12 +9,11 @@ use crate::schemas::{
     node_descriptor::NodeDescriptor,
     permissions::validator::validate_permissions,
     signed_envelope::{SignedEnvelope, Signer},
-    validity_periods::validator::{validate_timestamp, validate_validity_periods},
+    validity_period::validator::{validate_timestamp, validate_validity_period},
 };
 
-use self::{error::ValidationError, success::Success};
+use self::success::Success;
 
-pub mod error;
 pub mod success;
 
 //TODO Rafał proper return value
@@ -65,7 +64,7 @@ fn validate_node_descriptor_envelope(envelope: SignedEnvelope) -> Result<Success
 
             validate_permissions(&leaf.permissions, &node_descriptor.permissions)?;
             validate_sign_node(&leaf.key_usage)?;
-            validate_validity_periods(
+            validate_validity_period(
                 &leaf.validity_period,
                 &node_descriptor.validity_period,
             )?;
@@ -98,7 +97,7 @@ fn validate_certificate(envelope: &SignedEnvelope, validated_certs: &mut Vec<Fin
 
     validate_permissions(&parent.permissions, &child.permissions)?;
     validate_certificates_key_usage(&parent.key_usage, &child.key_usage)?;
-    validate_validity_periods(&parent.validity_period, &child.validity_period)?;
+    validate_validity_period(&parent.validity_period, &child.validity_period)?;
 
     let cert_id = child.create_cert_id()?;
     validated_certs.push(cert_id);
