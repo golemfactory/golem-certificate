@@ -1,6 +1,10 @@
 use ya_client_model::NodeId;
 
-use crate::schemas::{certificate::Fingerprint, permissions::Permissions};
+use crate::schemas::{
+    certificate::{Certificate, Fingerprint},
+    node_descriptor::NodeDescriptor,
+    permissions::Permissions,
+};
 
 #[derive(Debug, PartialEq)]
 pub enum ValidatedData {
@@ -13,4 +17,16 @@ pub enum ValidatedData {
         permissions: Permissions,
         certs: Vec<Fingerprint>,
     },
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ValidatedCert {
+    pub cert: Certificate,
+    pub chain: Vec<Fingerprint>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ValidatedNodeDescriptor {
+    pub descriptor: NodeDescriptor,
+    pub chain: Vec<Fingerprint>,
 }

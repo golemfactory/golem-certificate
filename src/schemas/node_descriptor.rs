@@ -3,7 +3,7 @@ use ya_client_model::NodeId;
 
 use super::{permissions::Permissions, validity_period::ValidityPeriod};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct NodeDescriptor {
     pub node_id: NodeId,
