@@ -9,7 +9,7 @@ pub mod key_usage;
 
 pub type Fingerprint = String;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Certificate {
     pub validity_period: ValidityPeriod,

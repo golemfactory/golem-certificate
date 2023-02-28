@@ -7,7 +7,7 @@ use crate::serde_utils;
 
 pub mod validator;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
 pub enum Permissions {
@@ -16,13 +16,13 @@ pub enum Permissions {
     Object(PermissionDetails),
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PermissionDetails {
     pub outbound: Option<OutboundPermissions>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum OutboundPermissions {
     Unrestricted,
