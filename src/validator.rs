@@ -1,105 +1,117 @@
 use anyhow::{anyhow, Result};
 use chrono::Utc;
+use hex::ToHex;
+use serde_json::Value;
 
-use crate::schemas::{
+use crate::{schemas::{
     certificate::{
         key_usage::validator::{validate_certificates_key_usage, validate_sign_node},
         Certificate, Fingerprint,
     },
     node_descriptor::NodeDescriptor,
     permissions::validator::validate_permissions,
-    signed_envelope::{SignedEnvelope, Signer},
+    signature::{SignedCertificate, SignedNodeDescriptor, Signer},
     validity_period::validator::{validate_timestamp, validate_validity_period},
-};
+}, cryptography::{ create_default_hash, verify_signature_json }};
 
-use self::validated_data::ValidatedData;
+use self::validated_data::{ ValidatedCertificate, ValidatedNodeDescriptor };
 
 pub mod validated_data;
 
-pub fn validate(data: &str) -> Result<ValidatedData> {
+pub fn validate_certificate(data: &str) -> Result<ValidatedCertificate> {
     let value: serde_json::Value = serde_json::from_str(data)?;
-    let schema = value["$schema"]
-        .as_str()
-        .ok_or(anyhow!("no schema provided"))?;
-
-    match schema {
-        "https://golem.network/schemas/v1/signed-envelope.schema.json" => {
-            let signed_data_schema = value["signedData"]["$schema"]
-                .as_str()
-                .ok_or(anyhow!("no schema provided"))?;
-
-            match signed_data_schema {
-                "https://golem.network/schemas/v1/node.schema.json" => {
-                    let envelope: SignedEnvelope = serde_json::from_value(value)?;
-                    validate_node_descriptor_envelope(envelope)
-                
-                },
-
-                "https://golem.network/schemas/v1/certificate.schema.json" => {
-                    let envelope: SignedEnvelope = serde_json::from_value(value)?;
-                    validate_certificate_envelope(envelope)
-                }
-                signed_data_schema => Err(anyhow!(
-                    "Following schema in signed data in envelope is not supported yet: {signed_data_schema}"
-                )),
-            }
-        }
-        schema => Err(anyhow!(
-            "Following schema is not supported yet for validation: {schema}"
-        )),
-    }
+    validate_schema(&value, "https://golem.network/schemas/v1/certificate.schema.json", "certificate")?;
+    let signed_certificate: SignedCertificate = serde_json::from_value(value)?;
+    let mut validated_certificate = validate_signed_certificate(&signed_certificate)?;
+    validated_certificate.certificate_chain_fingerprints.reverse();
+    Ok(validated_certificate)
 }
 
-fn validate_node_descriptor_envelope(envelope: SignedEnvelope) -> Result<ValidatedData> {
-    let node_descriptor: NodeDescriptor = serde_json::from_value(envelope.signed_data)?;
+pub fn validate_node_descriptor(data: &str) -> Result<ValidatedNodeDescriptor> {
+    let value: serde_json::Value = serde_json::from_str(data)?;
+    validate_schema(&value, "https://golem.network/schemas/v1/node.schema.json", "node descriptor")?;
+    let signed_node_descriptor: SignedNodeDescriptor = serde_json::from_value(value)?;
+    let mut validated_node_descriptor = validate_signed_node_descriptor(signed_node_descriptor)?;
+    validated_node_descriptor.certificate_chain_fingerprints.reverse();
+    Ok(validated_node_descriptor)
+}
 
-    let mut certs = vec![];
+fn validate_schema(value: &Value, schema_id: &str, structure_name: &str) -> Result<()> {
+    value["$schema"]
+        .as_str()
+        .map(|schema| {
+            if schema == schema_id {
+                Ok(())
+            } else {
+                Err(anyhow!("Unknown {structure_name} structure with schema: {schema}"))
+            }
+        })
+        .unwrap_or(Err(anyhow!("Cannot verify {structure_name} structure, schema is not defined")))
+}
 
-    match &envelope.signature.signer {
-        Signer::Other(_) => return Err(anyhow!("Other form of signer is not supported yet")),
-        Signer::SelfSigned => return Err(anyhow!("Node Permissions cannot be self-signed")),
-        Signer::Certificate(cert_envelope) => {
-            let leaf = validate_certificate(cert_envelope, &mut certs)?;
+fn validate_signed_node_descriptor(signed_node_descriptor: SignedNodeDescriptor) -> Result<ValidatedNodeDescriptor> {
+    let node_descriptor: NodeDescriptor = serde_json::from_value(signed_node_descriptor.node_descriptor)?;
 
-            validate_permissions(&leaf.permissions, &node_descriptor.permissions)?;
-            validate_sign_node(&leaf.key_usage)?;
-            validate_validity_period(
-                &leaf.validity_period,
-                &node_descriptor.validity_period,
-            )?;
-        }
-    }
+    let signing_certificate = signed_node_descriptor.signature.signer;
+    let validated_certificate = validate_signed_certificate(&signing_certificate)?;
+
+    validate_permissions(&validated_certificate.permissions, &node_descriptor.permissions)?;
+    validate_sign_node(&validated_certificate.key_usage)?;
+    validate_validity_period(
+        &validated_certificate.validity_period,
+        &node_descriptor.validity_period,
+    )?;
 
     validate_timestamp(&node_descriptor.validity_period, Utc::now())?;
 
-    Ok(ValidatedData::NodeDescriptor { node_id: node_descriptor.node_id, permissions: node_descriptor.permissions, certs })
+    Ok(ValidatedNodeDescriptor {
+        certificate_chain_fingerprints: validated_certificate.certificate_chain_fingerprints,
+        permissions: node_descriptor.permissions,
+        node_id: node_descriptor.node_id,
+    })
 }
 
-fn validate_certificate_envelope(envelope: SignedEnvelope) -> Result<ValidatedData> {
-    let mut certs = vec![];
-
-    let leaf = validate_certificate(&envelope, &mut certs)?;
-
-    validate_timestamp(&leaf.validity_period, Utc::now())?;
-
-    Ok(ValidatedData::Certificate { permissions: leaf.permissions, certs })
+fn create_certificate_fingerprint(signed_certificate: &SignedCertificate) -> Result<Fingerprint> {
+    create_fingerprint_for_value(&signed_certificate.certificate)
 }
 
-fn validate_certificate(envelope: &SignedEnvelope, validated_certs: &mut Vec<Fingerprint>) -> Result<Certificate> {
-    let parent = match &envelope.signature.signer {
-        Signer::Other(_) => return Err(anyhow!("Other form of signer is not supported yet")),
-        Signer::SelfSigned => serde_json::from_value(envelope.signed_data.clone())?,
-        Signer::Certificate(parent_envelope) => validate_certificate(parent_envelope, validated_certs)?,
+fn create_fingerprint_for_value(value: &Value) -> Result<Fingerprint> {
+    create_default_hash(value).map(|binary| binary.encode_hex())
+}
+
+fn validate_signed_certificate(signed_certificate: &SignedCertificate) -> Result<ValidatedCertificate> {
+    let parent = match &signed_certificate.signature.signer {
+        Signer::SelfSigned => {
+            let certificate: Certificate = serde_json::from_value(signed_certificate.certificate.clone())?;
+            verify_signature_json(&signed_certificate.certificate, &signed_certificate.signature.value, &certificate.public_key)?;
+            ValidatedCertificate {
+                certificate_chain_fingerprints: vec![],
+                permissions: certificate.permissions,
+                key_usage: certificate.key_usage,
+                validity_period: certificate.validity_period,
+            }
+        }
+        Signer::Certificate(signed_parent) => {
+            let parent: Certificate = serde_json::from_value(signed_parent.certificate.clone())?;
+            verify_signature_json(&signed_certificate.certificate, &signed_certificate.signature.value, &parent.public_key)?;
+            validate_signed_certificate(signed_parent)?
+        }
     };
-    
-    let child: Certificate = serde_json::from_value(envelope.signed_data.clone())?;
 
-    validate_permissions(&parent.permissions, &child.permissions)?;
-    validate_certificates_key_usage(&parent.key_usage, &child.key_usage)?;
-    validate_validity_period(&parent.validity_period, &child.validity_period)?;
+    let certificate: Certificate = serde_json::from_value(signed_certificate.certificate.clone())?;
 
-    let cert_id = child.create_cert_id()?;
-    validated_certs.push(cert_id);
+    validate_permissions(&parent.permissions, &certificate.permissions)?;
+    validate_certificates_key_usage(&parent.key_usage, &certificate.key_usage)?;
+    validate_validity_period(&parent.validity_period, &certificate.validity_period)?;
+    validate_timestamp(&certificate.validity_period, Utc::now())?;
 
-    Ok(child)
+    let mut fingerprints = parent.certificate_chain_fingerprints;
+    fingerprints.push(create_certificate_fingerprint(&signed_certificate)?);
+
+    Ok(ValidatedCertificate {
+        certificate_chain_fingerprints: fingerprints,
+        permissions: certificate.permissions,
+        key_usage: certificate.key_usage,
+        validity_period: certificate.validity_period,
+    })
 }

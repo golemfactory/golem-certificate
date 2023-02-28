@@ -1,6 +1,8 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
+use crate::cryptography::Key;
+
 use self::key_usage::KeyUsage;
 
 use super::{permissions::Permissions, validity_period::ValidityPeriod};
@@ -15,10 +17,5 @@ pub struct Certificate {
     pub validity_period: ValidityPeriod,
     pub key_usage: KeyUsage,
     pub permissions: Permissions,
-}
-
-impl Certificate {
-    pub fn create_cert_id(&self) -> Result<Fingerprint> {
-        Ok("mock_fingerprint".into())
-    }
+    pub public_key: Key,
 }

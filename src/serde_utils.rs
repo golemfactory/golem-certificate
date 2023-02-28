@@ -1,3 +1,6 @@
+use hex::{FromHex, ToHex};
+use serde::{ Deserializer, Deserialize, Serializer };
+
 macro_rules! named_unit_variant {
     ($variant:ident, $name:expr) => {
         pub mod $variant {
@@ -34,3 +37,18 @@ macro_rules! named_unit_variant {
 
 named_unit_variant!(all, "all");
 named_unit_variant!(self_signed, "self");
+
+pub fn bytes_to_hex<T, S>(buffer: &T, serializer: S) -> Result<S::Ok, S::Error>
+  where T: AsRef<[u8]>,
+        S: Serializer
+{
+  serializer.serialize_str(&buffer.encode_hex::<String>())
+}
+
+pub fn hex_to_bytes<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+  where D: Deserializer<'de>
+{
+  use serde::de::Error;
+  String::deserialize(deserializer)
+    .and_then(|string| Vec::from_hex(&string).map_err(|err| Error::custom(err.to_string())))
+}
