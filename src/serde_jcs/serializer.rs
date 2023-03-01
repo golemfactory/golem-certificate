@@ -1,4 +1,4 @@
-use core::mem::replace;
+use core::mem::take;
 use core::num::FpCategory;
 use serde::Serialize;
 use serde_json::from_str;
@@ -398,8 +398,8 @@ impl Formatter for JcsFormatter {
     {
         let entry: &mut Entry = self.entry_mut()?;
 
-        let key: Vec<u8> = replace(&mut entry.next_key, Vec::new());
-        let val: Vec<u8> = replace(&mut entry.next_val, Vec::new());
+        let key: Vec<u8> = take(&mut entry.next_key);
+        let val: Vec<u8> = take(&mut entry.next_val);
 
         entry.object.insert(key, val);
 

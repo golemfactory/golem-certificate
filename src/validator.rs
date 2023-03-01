@@ -142,7 +142,7 @@ fn validate_signed_certificate(
     validate_timestamp(&certificate.validity_period, Utc::now())?;
 
     let mut fingerprints = parent.certificate_chain_fingerprints;
-    fingerprints.push(create_certificate_fingerprint(&signed_certificate)?);
+    fingerprints.push(create_certificate_fingerprint(signed_certificate)?);
 
     Ok(ValidatedCertificate {
         certificate_chain_fingerprints: fingerprints,

@@ -39,7 +39,7 @@ enum EncryptionAlgorithm {
     EdDSA,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Key {
     algorithm: EncryptionAlgorithm,
     #[serde(serialize_with = "bytes_to_hex", deserialize_with = "hex_to_bytes")]
@@ -78,7 +78,7 @@ pub fn create_default_hash(value: &Value) -> Result<Vec<u8>> {
 
 pub fn create_hash(value: &Value, hash_algorithm: &HashAlgorithm) -> Result<Vec<u8>> {
     let canonical_json = serde_jcs::to_vec(value)?;
-    Ok(create_digest(&canonical_json, hash_algorithm))
+    Ok(create_digest(canonical_json, hash_algorithm))
 }
 
 fn create_digest(input: impl AsRef<[u8]>, hash_algorithm: &HashAlgorithm) -> Vec<u8> {
@@ -119,7 +119,7 @@ pub fn verify_signature_json(
     let canonical_json = serde_jcs::to_vec(value)?;
     let eddsa_signature = EdDSASignature::from_bytes(signature_value.as_ref())?;
     let public_key = PublicKey::from_bytes(&public_key.key)?;
-    verify_bytes(&canonical_json, &eddsa_signature, &public_key)
+    verify_bytes(canonical_json, &eddsa_signature, &public_key)
 }
 
 fn verify_bytes(
