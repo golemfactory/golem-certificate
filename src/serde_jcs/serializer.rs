@@ -21,6 +21,7 @@ use super::entry::Entry;
 /// # Errors
 ///
 /// Serialization can fail if `T`'s implementation of `Serialize` fails.
+#[allow(dead_code)]
 #[inline]
 pub fn to_string<T>(value: &T) -> anyhow::Result<String>
 where
