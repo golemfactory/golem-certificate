@@ -1,6 +1,10 @@
 use ya_client_model::NodeId;
 
-use crate::schemas::{certificate::{Fingerprint, key_usage::KeyUsage}, permissions::Permissions, validity_period::ValidityPeriod};
+use crate::schemas::{
+    certificate::{key_usage::KeyUsage, Fingerprint},
+    permissions::Permissions,
+    validity_period::ValidityPeriod,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct ValidatedNodeDescriptor {

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::serde_utils::{ bytes_to_hex, hex_to_bytes };
+use crate::serde_utils::{bytes_to_hex, hex_to_bytes};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -48,7 +48,7 @@ pub enum Signer {
 mod should {
     use super::*;
 
-    use pretty_assertions::{ assert_eq, assert_matches };
+    use pretty_assertions::{assert_eq, assert_matches};
     use serde_json::json;
 
     #[test]
@@ -57,6 +57,9 @@ mod should {
         let json = json!("self");
 
         assert_eq!(serde_json::to_value(&signer).unwrap(), json);
-        assert_matches!(serde_json::from_value::<Signer>(json).unwrap(), Signer::SelfSigned);
+        assert_matches!(
+            serde_json::from_value::<Signer>(json).unwrap(),
+            Signer::SelfSigned
+        );
     }
 }

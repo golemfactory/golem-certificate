@@ -25,7 +25,10 @@ fn happy_path() {
                     [Url::parse("https://example.net/").unwrap()].into()
                 ))
             }),
-            certificate_chain_fingerprints: vec!["mock_fingerprint".into(), "mock_fingerprint".into(),]
+            certificate_chain_fingerprints: vec![
+                "mock_fingerprint".into(),
+                "mock_fingerprint".into(),
+            ]
         }
     );
 }

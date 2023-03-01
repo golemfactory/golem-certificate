@@ -3,36 +3,51 @@ use chrono::Utc;
 use hex::ToHex;
 use serde_json::Value;
 
-use crate::{schemas::{
-    certificate::{
-        key_usage::validator::{validate_certificates_key_usage, validate_sign_node},
-        Certificate, Fingerprint,
+use crate::{
+    cryptography::{create_default_hash, verify_signature_json},
+    schemas::{
+        certificate::{
+            key_usage::validator::{validate_certificates_key_usage, validate_sign_node},
+            Certificate, Fingerprint,
+        },
+        node_descriptor::NodeDescriptor,
+        permissions::validator::validate_permissions,
+        signature::{SignedCertificate, SignedNodeDescriptor, Signer},
+        validity_period::validator::{validate_timestamp, validate_validity_period},
     },
-    node_descriptor::NodeDescriptor,
-    permissions::validator::validate_permissions,
-    signature::{SignedCertificate, SignedNodeDescriptor, Signer},
-    validity_period::validator::{validate_timestamp, validate_validity_period},
-}, cryptography::{ create_default_hash, verify_signature_json }};
+};
 
-use self::validated_data::{ ValidatedCertificate, ValidatedNodeDescriptor };
+use self::validated_data::{ValidatedCertificate, ValidatedNodeDescriptor};
 
 pub mod validated_data;
 
 pub fn validate_certificate(data: &str) -> Result<ValidatedCertificate> {
     let value: serde_json::Value = serde_json::from_str(data)?;
-    validate_schema(&value, "https://golem.network/schemas/v1/certificate.schema.json", "certificate")?;
+    validate_schema(
+        &value,
+        "https://golem.network/schemas/v1/certificate.schema.json",
+        "certificate",
+    )?;
     let signed_certificate: SignedCertificate = serde_json::from_value(value)?;
     let mut validated_certificate = validate_signed_certificate(&signed_certificate)?;
-    validated_certificate.certificate_chain_fingerprints.reverse();
+    validated_certificate
+        .certificate_chain_fingerprints
+        .reverse();
     Ok(validated_certificate)
 }
 
 pub fn validate_node_descriptor(data: &str) -> Result<ValidatedNodeDescriptor> {
     let value: serde_json::Value = serde_json::from_str(data)?;
-    validate_schema(&value, "https://golem.network/schemas/v1/node.schema.json", "node descriptor")?;
+    validate_schema(
+        &value,
+        "https://golem.network/schemas/v1/node.schema.json",
+        "node descriptor",
+    )?;
     let signed_node_descriptor: SignedNodeDescriptor = serde_json::from_value(value)?;
     let mut validated_node_descriptor = validate_signed_node_descriptor(signed_node_descriptor)?;
-    validated_node_descriptor.certificate_chain_fingerprints.reverse();
+    validated_node_descriptor
+        .certificate_chain_fingerprints
+        .reverse();
     Ok(validated_node_descriptor)
 }
 
@@ -43,19 +58,29 @@ fn validate_schema(value: &Value, schema_id: &str, structure_name: &str) -> Resu
             if schema == schema_id {
                 Ok(())
             } else {
-                Err(anyhow!("Unknown {structure_name} structure with schema: {schema}"))
+                Err(anyhow!(
+                    "Unknown {structure_name} structure with schema: {schema}"
+                ))
             }
         })
-        .unwrap_or(Err(anyhow!("Cannot verify {structure_name} structure, schema is not defined")))
+        .unwrap_or(Err(anyhow!(
+            "Cannot verify {structure_name} structure, schema is not defined"
+        )))
 }
 
-fn validate_signed_node_descriptor(signed_node_descriptor: SignedNodeDescriptor) -> Result<ValidatedNodeDescriptor> {
-    let node_descriptor: NodeDescriptor = serde_json::from_value(signed_node_descriptor.node_descriptor)?;
+fn validate_signed_node_descriptor(
+    signed_node_descriptor: SignedNodeDescriptor,
+) -> Result<ValidatedNodeDescriptor> {
+    let node_descriptor: NodeDescriptor =
+        serde_json::from_value(signed_node_descriptor.node_descriptor)?;
 
     let signing_certificate = signed_node_descriptor.signature.signer;
     let validated_certificate = validate_signed_certificate(&signing_certificate)?;
 
-    validate_permissions(&validated_certificate.permissions, &node_descriptor.permissions)?;
+    validate_permissions(
+        &validated_certificate.permissions,
+        &node_descriptor.permissions,
+    )?;
     validate_sign_node(&validated_certificate.key_usage)?;
     validate_validity_period(
         &validated_certificate.validity_period,
@@ -79,11 +104,18 @@ fn create_fingerprint_for_value(value: &Value) -> Result<Fingerprint> {
     create_default_hash(value).map(|binary| binary.encode_hex())
 }
 
-fn validate_signed_certificate(signed_certificate: &SignedCertificate) -> Result<ValidatedCertificate> {
+fn validate_signed_certificate(
+    signed_certificate: &SignedCertificate,
+) -> Result<ValidatedCertificate> {
     let parent = match &signed_certificate.signature.signer {
         Signer::SelfSigned => {
-            let certificate: Certificate = serde_json::from_value(signed_certificate.certificate.clone())?;
-            verify_signature_json(&signed_certificate.certificate, &signed_certificate.signature.value, &certificate.public_key)?;
+            let certificate: Certificate =
+                serde_json::from_value(signed_certificate.certificate.clone())?;
+            verify_signature_json(
+                &signed_certificate.certificate,
+                &signed_certificate.signature.value,
+                &certificate.public_key,
+            )?;
             ValidatedCertificate {
                 certificate_chain_fingerprints: vec![],
                 permissions: certificate.permissions,
@@ -93,7 +125,11 @@ fn validate_signed_certificate(signed_certificate: &SignedCertificate) -> Result
         }
         Signer::Certificate(signed_parent) => {
             let parent: Certificate = serde_json::from_value(signed_parent.certificate.clone())?;
-            verify_signature_json(&signed_certificate.certificate, &signed_certificate.signature.value, &parent.public_key)?;
+            verify_signature_json(
+                &signed_certificate.certificate,
+                &signed_certificate.signature.value,
+                &parent.public_key,
+            )?;
             validate_signed_certificate(signed_parent)?
         }
     };

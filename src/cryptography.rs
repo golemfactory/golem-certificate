@@ -1,22 +1,31 @@
 use anyhow::Result;
 
-use serde::{ Deserialize, Serialize };
-use serde_json::{ json, Value };
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 
-use sha2::{ Digest, Sha224, Sha256, Sha384, Sha512 };
-use sha3::{ Sha3_224, Sha3_256, Sha3_384, Sha3_512 };
+use sha2::{Digest, Sha224, Sha256, Sha384, Sha512};
+use sha3::{Sha3_224, Sha3_256, Sha3_384, Sha3_512};
 
+use ed25519_dalek::{
+    ExpandedSecretKey, Keypair, PublicKey, SecretKey, Signature as EdDSASignature, Verifier,
+};
 use rand::rngs::OsRng;
-use ed25519_dalek::{ ExpandedSecretKey, Keypair, PublicKey, SecretKey, Signature as EdDSASignature, Verifier };
 
-use crate::serde_jcs;
-use crate::serde_utils::{ bytes_to_hex, hex_to_bytes };
 use crate::schemas::signature::SignatureAlgorithm;
+use crate::serde_jcs;
+use crate::serde_utils::{bytes_to_hex, hex_to_bytes};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum HashAlgorithm {
-    Sha224, Sha256, Sha384, Sha512, Sha3_224, Sha3_256, Sha3_384, Sha3_512
+    Sha224,
+    Sha256,
+    Sha384,
+    Sha512,
+    Sha3_224,
+    Sha3_256,
+    Sha3_384,
+    Sha3_512,
 }
 
 impl Default for HashAlgorithm {
@@ -27,7 +36,7 @@ impl Default for HashAlgorithm {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 enum EncryptionAlgorithm {
-    EdDSA
+    EdDSA,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -45,7 +54,7 @@ pub struct KeyPair {
 }
 
 pub fn create_key_pair() -> KeyPair {
-    let mut csprng = OsRng { };
+    let mut csprng = OsRng {};
     let keypair = Keypair::generate(&mut csprng);
     let public_key = Key {
         algorithm: EncryptionAlgorithm::EdDSA,
@@ -57,7 +66,10 @@ pub fn create_key_pair() -> KeyPair {
         parameters: Some(json!({ "scheme": "Ed25519" })),
         key: keypair.secret.to_bytes().into(),
     };
-    KeyPair { public_key, private_key }
+    KeyPair {
+        public_key,
+        private_key,
+    }
 }
 
 pub fn create_default_hash(value: &Value) -> Result<Vec<u8>> {
@@ -99,13 +111,23 @@ fn sign_bytes(bytes: impl AsRef<[u8]>, secret_key: &SecretKey) -> Vec<u8> {
     signature_value.to_bytes().into()
 }
 
-pub fn verify_signature_json(value: &Value, signature_value: impl AsRef<[u8]>, public_key: &Key) -> Result<()> {
+pub fn verify_signature_json(
+    value: &Value,
+    signature_value: impl AsRef<[u8]>,
+    public_key: &Key,
+) -> Result<()> {
     let canonical_json = serde_jcs::to_vec(value)?;
     let eddsa_signature = EdDSASignature::from_bytes(signature_value.as_ref())?;
     let public_key = PublicKey::from_bytes(&public_key.key)?;
     verify_bytes(&canonical_json, &eddsa_signature, &public_key)
 }
 
-fn verify_bytes(bytes: impl AsRef<[u8]>, signature: &EdDSASignature, public_key: &PublicKey) -> Result<()> {
-    public_key.verify(bytes.as_ref(), signature).map_err(Into::into)
+fn verify_bytes(
+    bytes: impl AsRef<[u8]>,
+    signature: &EdDSASignature,
+    public_key: &PublicKey,
+) -> Result<()> {
+    public_key
+        .verify(bytes.as_ref(), signature)
+        .map_err(Into::into)
 }
