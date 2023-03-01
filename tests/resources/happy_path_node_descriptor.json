@@ -1,7 +1,6 @@
 {
-    "$schema": "https://golem.network/schemas/v1/signed-envelope.schema.json",
-    "signedData": {
-        "$schema": "https://golem.network/schemas/v1/node.schema.json",
+    "$schema": "https://golem.network/schemas/v1/node.schema.json",
+    "nodeDescriptor": {
         "nodeId": "0xbabe000000000000000000000000000000000000",
         "validityPeriod": {
             "notBefore": "2000-01-01T00:00:00Z",
@@ -17,9 +16,8 @@
     },
     "signature": {
         "signer": {
-            "$schema": "https://golem.network/schemas/v1/signed-envelope.schema.json",
-            "signedData": {
-                "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+            "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+            "certificate": {
                 "validityPeriod": {
                     "notBefore": "2000-01-01T00:00:00Z",
                     "notAfter": "2030-01-01T00:00:00Z"
