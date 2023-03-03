@@ -13,7 +13,7 @@ pub struct ValidatedNodeDescriptor {
     pub node_id: NodeId,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ValidatedCertificate {
     pub certificate_chain_fingerprints: Vec<Fingerprint>,
     pub permissions: Permissions,
