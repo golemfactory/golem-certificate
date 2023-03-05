@@ -52,7 +52,7 @@ fn determine_file_type(json_data: &Value) -> Result<FileType> {
         "https://golem.network/schemas/v1/certificate.schema.json" => Ok(FileType::Certificate),
         "https://golem.network/schemas/v1/node-descriptor.schema.json" => Ok(FileType::NodeDescriptor),
         _ => Err(anyhow!("Unknown json structure {schema}")),
-    }).unwrap_or(Err(anyhow!("Unknown json structure, missing $schema property")))
+    }).unwrap_or_else(|| Err(anyhow!("Unknown json structure, missing $schema property")))
 }
 
 fn save_json_to_file<C: ?Sized + Serialize>(path: impl AsRef<Path>, content: &C) -> Result<()> {
@@ -63,20 +63,20 @@ fn save_json_to_file<C: ?Sized + Serialize>(path: impl AsRef<Path>, content: &C)
     Ok(())
 }
 
-fn save_json_with_extension<C: ?Sized + Serialize>(path: &PathBuf, content: &C, extension: &str) -> Result<()> {
-    let mut modified_path = path.clone();
+fn save_json_with_extension<C: ?Sized + Serialize>(path: &Path, content: &C, extension: &str) -> Result<()> {
+    let mut modified_path = path.to_path_buf();
     modified_path.set_extension(extension);
     save_json_to_file(modified_path, content)
 }
 
-fn create_key_pair(key_pair_path: &PathBuf) -> Result<()> {
+fn create_key_pair(key_pair_path: &Path) -> Result<()> {
     let key_pair = gcert::create_key_pair();
     save_json_with_extension(key_pair_path, &key_pair.public_key, "pub")?;
     save_json_with_extension(key_pair_path, &key_pair.private_key, "key")
 }
 
 fn print_fingerprint(input_file_path: &PathBuf) -> Result<()> {
-    let input_json = deserialize_from_file::<Value>(&input_file_path)?;
+    let input_json = deserialize_from_file::<Value>(input_file_path)?;
     let signed_property = determine_file_type(&input_json)?.signed_property();
     let signed_data = &input_json[signed_property];
     let fingerprint = gcert::create_default_hash(signed_data)?;
@@ -84,7 +84,7 @@ fn print_fingerprint(input_file_path: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn save_signed_json<C: ?Sized + Serialize>(path: &PathBuf, content: &C) -> Result<()> {
+fn save_signed_json<C: ?Sized + Serialize>(path: &Path, content: &C) -> Result<()> {
     save_json_with_extension(path, content, "signed.json")
 }
 
@@ -94,7 +94,7 @@ fn deserialize_from_file<T: for <'de> Deserialize<'de>>(path: &PathBuf) -> Resul
 }
 
 fn sign_json_value(value: &Value, private_key_path: &PathBuf) -> Result<(gcert::SignatureAlgorithm, Vec<u8>)> {
-    let private_key = deserialize_from_file(&private_key_path)?;
+    let private_key = deserialize_from_file(private_key_path)?;
     gcert::sign_json(value, &private_key)
 }
 
@@ -129,7 +129,7 @@ fn sign_json(sign_arguments: &SignArguments) -> Result<()> {
 }
 
 fn verify_signature(signed_file: &PathBuf) -> Result<()> {
-    let signed_json = deserialize_from_file::<Value>(&signed_file)?;
+    let signed_json = deserialize_from_file::<Value>(signed_file)?;
     match determine_file_type(&signed_json)? {
         FileType::Certificate => gcert::validate_certificate(signed_json).map(|result| println!("{:?}", result)),
         FileType::NodeDescriptor => gcert::validate_node_descriptor(signed_json).map(|result| println!("{:?}", result)),

@@ -71,7 +71,7 @@ fn validate_schema(value: &Value, schema_id: &str, structure_name: &str) -> Resu
                 ))
             }
         })
-        .unwrap_or(Err(anyhow!(
+        .unwrap_or_else(|| Err(anyhow!(
             "Cannot verify {structure_name} structure, schema is not defined"
         )))
 }
