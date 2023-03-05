@@ -23,13 +23,25 @@ pub struct Signature<T> {
 
 impl Signature<Signer> {
     pub fn create_self_signed(algorithm: SignatureAlgorithm, value: Vec<u8>) -> Self {
-        Signature::<Signer> { algorithm, value, signer: Signer::SelfSigned }
+        Signature::<Signer> {
+            algorithm,
+            value,
+            signer: Signer::SelfSigned,
+        }
     }
 }
 
 impl Signature<SignedCertificate> {
-    pub fn create(algorithm: SignatureAlgorithm, value: Vec<u8>, certificate: SignedCertificate) -> Self {
-        Signature::<SignedCertificate> { algorithm, value, signer: certificate }
+    pub fn create(
+        algorithm: SignatureAlgorithm,
+        value: Vec<u8>,
+        certificate: SignedCertificate,
+    ) -> Self {
+        Signature::<SignedCertificate> {
+            algorithm,
+            value,
+            signer: certificate,
+        }
     }
 }
 

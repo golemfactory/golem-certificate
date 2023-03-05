@@ -99,7 +99,11 @@ pub fn sign_json(value: &Value, private_key: &Key) -> Result<(SignatureAlgorithm
     let canonical_json = serde_jcs::to_vec(value)?;
     let secret_key = SecretKey::from_bytes(&private_key.key)?;
     let signature_value = sign_bytes(canonical_json, &secret_key);
-    Ok((SignatureAlgorithm { hash: HashAlgorithm::Sha512, encryption: EncryptionAlgorithm::EdDSA }, signature_value))
+    let algorithm = SignatureAlgorithm {
+        hash: HashAlgorithm::Sha512,
+        encryption: EncryptionAlgorithm::EdDSA,
+    };
+    Ok((algorithm, signature_value))
 }
 
 fn sign_bytes(bytes: impl AsRef<[u8]>, secret_key: &SecretKey) -> Vec<u8> {

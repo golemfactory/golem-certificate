@@ -25,7 +25,6 @@ struct SelfSignArguments {
     private_key_path: PathBuf,
 }
 
-
 #[derive(Args)]
 struct SignArguments {
     input_file_path: PathBuf,
@@ -34,7 +33,8 @@ struct SignArguments {
 }
 
 enum FileType {
-    Certificate, NodeDescriptor
+    Certificate,
+    NodeDescriptor,
 }
 
 impl FileType {
@@ -42,17 +42,22 @@ impl FileType {
         match self {
             FileType::Certificate => "certificate",
             FileType::NodeDescriptor => "nodeDescriptor",
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
 fn determine_file_type(json_data: &Value) -> Result<FileType> {
-    json_data["$schema"].as_str().map(|schema|
-    match schema {
-        "https://golem.network/schemas/v1/certificate.schema.json" => Ok(FileType::Certificate),
-        "https://golem.network/schemas/v1/node-descriptor.schema.json" => Ok(FileType::NodeDescriptor),
-        _ => Err(anyhow!("Unknown json structure {schema}")),
-    }).unwrap_or_else(|| Err(anyhow!("Unknown json structure, missing $schema property")))
+    json_data["$schema"]
+        .as_str()
+        .map(|schema| match schema {
+            "https://golem.network/schemas/v1/certificate.schema.json" => Ok(FileType::Certificate),
+            "https://golem.network/schemas/v1/node-descriptor.schema.json" => {
+                Ok(FileType::NodeDescriptor)
+            }
+            _ => Err(anyhow!("Unknown json structure {schema}")),
+        })
+        .unwrap_or_else(|| Err(anyhow!("Unknown json structure, missing $schema property")))
 }
 
 fn save_json_to_file<C: ?Sized + Serialize>(path: impl AsRef<Path>, content: &C) -> Result<()> {
@@ -63,7 +68,11 @@ fn save_json_to_file<C: ?Sized + Serialize>(path: impl AsRef<Path>, content: &C)
     Ok(())
 }
 
-fn save_json_with_extension<C: ?Sized + Serialize>(path: &Path, content: &C, extension: &str) -> Result<()> {
+fn save_json_with_extension<C: ?Sized + Serialize>(
+    path: &Path,
+    content: &C,
+    extension: &str,
+) -> Result<()> {
     let mut modified_path = path.to_path_buf();
     modified_path.set_extension(extension);
     save_json_to_file(modified_path, content)
@@ -88,12 +97,15 @@ fn save_signed_json<C: ?Sized + Serialize>(path: &Path, content: &C) -> Result<(
     save_json_with_extension(path, content, "signed.json")
 }
 
-fn deserialize_from_file<T: for <'de> Deserialize<'de>>(path: &PathBuf) -> Result<T> {
+fn deserialize_from_file<T: for<'de> Deserialize<'de>>(path: &PathBuf) -> Result<T> {
     let json_string = fs::read_to_string(path)?;
     serde_json::from_str(&json_string).map_err(Into::into)
 }
 
-fn sign_json_value(value: &Value, private_key_path: &PathBuf) -> Result<(gcert::SignatureAlgorithm, Vec<u8>)> {
+fn sign_json_value(
+    value: &Value,
+    private_key_path: &PathBuf,
+) -> Result<(gcert::SignatureAlgorithm, Vec<u8>)> {
     let private_key = deserialize_from_file(private_key_path)?;
     gcert::sign_json(value, &private_key)
 }
@@ -108,10 +120,14 @@ fn self_sign_certificate(self_sign_arguments: &SelfSignArguments) -> Result<()> 
     let file_type = determine_file_type(&certificate)?;
     let signed_property = match file_type {
         FileType::Certificate => Ok(file_type.signed_property()),
-        _ => Err(anyhow!("Provided path does not point to a Golem Certificate {:?}", self_sign_arguments.certificate_path)),
+        _ => Err(anyhow!(
+            "Provided path does not point to a Golem Certificate {:?}",
+            self_sign_arguments.certificate_path
+        )),
     }?;
     let signed_data = &certificate[signed_property];
-    let (algorithm, signature_value) = sign_json_value(signed_data, &self_sign_arguments.private_key_path)?;
+    let (algorithm, signature_value) =
+        sign_json_value(signed_data, &self_sign_arguments.private_key_path)?;
     let signature = gcert::Signature::create_self_signed(algorithm, signature_value);
     add_signature(&mut certificate, signature)?;
     save_signed_json(&self_sign_arguments.certificate_path, &certificate)
@@ -121,7 +137,8 @@ fn sign_json(sign_arguments: &SignArguments) -> Result<()> {
     let mut input_json = deserialize_from_file::<Value>(&sign_arguments.input_file_path)?;
     let signed_property = determine_file_type(&input_json)?.signed_property();
     let signed_data = &input_json[signed_property];
-    let (algorithm, signature_value) = sign_json_value(signed_data, &sign_arguments.private_key_path)?;
+    let (algorithm, signature_value) =
+        sign_json_value(signed_data, &sign_arguments.private_key_path)?;
     let certificate = deserialize_from_file(&sign_arguments.certificate_path)?;
     let signature = gcert::Signature::create(algorithm, signature_value, certificate);
     add_signature(&mut input_json, signature)?;
@@ -131,8 +148,12 @@ fn sign_json(sign_arguments: &SignArguments) -> Result<()> {
 fn verify_signature(signed_file: &PathBuf) -> Result<()> {
     let signed_json = deserialize_from_file::<Value>(signed_file)?;
     match determine_file_type(&signed_json)? {
-        FileType::Certificate => gcert::validate_certificate(signed_json).map(|result| println!("{:?}", result)),
-        FileType::NodeDescriptor => gcert::validate_node_descriptor(signed_json).map(|result| println!("{:?}", result)),
+        FileType::Certificate => {
+            gcert::validate_certificate(signed_json).map(|result| println!("{:?}", result))
+        }
+        FileType::NodeDescriptor => {
+            gcert::validate_node_descriptor(signed_json).map(|result| println!("{:?}", result))
+        }
     }
 }
 
@@ -140,9 +161,10 @@ fn main() -> Result<()> {
     match GolemCertificateCli::parse() {
         GolemCertificateCli::CreateKeyPair { key_pair_path } => create_key_pair(&key_pair_path),
         GolemCertificateCli::Fingerprint { input_file_path } => print_fingerprint(&input_file_path),
-        GolemCertificateCli::SelfSignCertificate(self_sign_arguments) => self_sign_certificate(&self_sign_arguments),
+        GolemCertificateCli::SelfSignCertificate(self_sign_arguments) => {
+            self_sign_certificate(&self_sign_arguments)
+        }
         GolemCertificateCli::Sign(sign_arguments) => sign_json(&sign_arguments),
         GolemCertificateCli::Verify { signed_file_path } => verify_signature(&signed_file_path),
     }
 }
-

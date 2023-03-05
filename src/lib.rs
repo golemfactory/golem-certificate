@@ -1,6 +1,6 @@
+mod cryptography;
 mod serde_jcs;
 mod serde_utils;
-mod cryptography;
 
 pub mod schemas;
 pub mod validator;
