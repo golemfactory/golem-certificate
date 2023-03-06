@@ -21,8 +21,12 @@ use self::validated_data::{ValidatedCertificate, ValidatedNodeDescriptor};
 
 pub mod validated_data;
 
-pub fn validate_certificate(data: &str) -> Result<ValidatedCertificate> {
-    let value: serde_json::Value = serde_json::from_str(data)?;
+pub fn validate_certificate_str(data: &str) -> Result<ValidatedCertificate> {
+    let value: Value = serde_json::from_str(data)?;
+    validate_certificate(value)
+}
+
+pub fn validate_certificate(value: Value) -> Result<ValidatedCertificate> {
     validate_schema(
         &value,
         "https://golem.network/schemas/v1/certificate.schema.json",
@@ -36,11 +40,15 @@ pub fn validate_certificate(data: &str) -> Result<ValidatedCertificate> {
     Ok(validated_certificate)
 }
 
-pub fn validate_node_descriptor(data: &str) -> Result<ValidatedNodeDescriptor> {
-    let value: serde_json::Value = serde_json::from_str(data)?;
+pub fn validate_node_descriptor_str(data: &str) -> Result<ValidatedNodeDescriptor> {
+    let value: Value = serde_json::from_str(data)?;
+    validate_node_descriptor(value)
+}
+
+pub fn validate_node_descriptor(value: Value) -> Result<ValidatedNodeDescriptor> {
     validate_schema(
         &value,
-        "https://golem.network/schemas/v1/node.schema.json",
+        "https://golem.network/schemas/v1/node-descriptor.schema.json",
         "node descriptor",
     )?;
     let signed_node_descriptor: SignedNodeDescriptor = serde_json::from_value(value)?;
@@ -63,9 +71,11 @@ fn validate_schema(value: &Value, schema_id: &str, structure_name: &str) -> Resu
                 ))
             }
         })
-        .unwrap_or(Err(anyhow!(
-            "Cannot verify {structure_name} structure, schema is not defined"
-        )))
+        .unwrap_or_else(|| {
+            Err(anyhow!(
+                "Cannot verify {structure_name} structure, schema is not defined"
+            ))
+        })
 }
 
 fn validate_signed_node_descriptor(

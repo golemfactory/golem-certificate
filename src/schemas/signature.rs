@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::cryptography::{EncryptionAlgorithm, HashAlgorithm};
 use crate::serde_utils::{bytes_to_hex, hex_to_bytes};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -20,6 +21,30 @@ pub struct Signature<T> {
     pub signer: T,
 }
 
+impl Signature<Signer> {
+    pub fn create_self_signed(algorithm: SignatureAlgorithm, value: Vec<u8>) -> Self {
+        Signature::<Signer> {
+            algorithm,
+            value,
+            signer: Signer::SelfSigned,
+        }
+    }
+}
+
+impl Signature<SignedCertificate> {
+    pub fn create(
+        algorithm: SignatureAlgorithm,
+        value: Vec<u8>,
+        certificate: SignedCertificate,
+    ) -> Self {
+        Signature::<SignedCertificate> {
+            algorithm,
+            value,
+            signer: certificate,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SignedCertificate {
@@ -31,8 +56,8 @@ pub struct SignedCertificate {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignatureAlgorithm {
-    pub hash: String,
-    pub encryption: String,
+    pub hash: HashAlgorithm,
+    pub encryption: EncryptionAlgorithm,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

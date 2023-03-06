@@ -35,7 +35,7 @@ impl Default for HashAlgorithm {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-enum EncryptionAlgorithm {
+pub enum EncryptionAlgorithm {
     EdDSA,
 }
 
@@ -99,9 +99,11 @@ pub fn sign_json(value: &Value, private_key: &Key) -> Result<(SignatureAlgorithm
     let canonical_json = serde_jcs::to_vec(value)?;
     let secret_key = SecretKey::from_bytes(&private_key.key)?;
     let signature_value = sign_bytes(canonical_json, &secret_key);
-    let hash = serde_json::to_string(&HashAlgorithm::Sha512)?;
-    let encryption = serde_json::to_string(&EncryptionAlgorithm::EdDSA)?;
-    Ok((SignatureAlgorithm { hash, encryption }, signature_value))
+    let algorithm = SignatureAlgorithm {
+        hash: HashAlgorithm::Sha512,
+        encryption: EncryptionAlgorithm::EdDSA,
+    };
+    Ok((algorithm, signature_value))
 }
 
 fn sign_bytes(bytes: impl AsRef<[u8]>, secret_key: &SecretKey) -> Vec<u8> {
