@@ -16,7 +16,7 @@ ryu-js = { version = "0.2", default-features = false }
 sha2 = "0.10.6"
 sha3 = "0.10.6"
 serde = "1.0"
-serde_json = { version = "1.0", features = ["preserve_order"] }
+serde_json = "1.0"
 thiserror = "1.0"
 url = { version = "2.2", features = ["serde"] }
 ya-client-model = "0.5"
