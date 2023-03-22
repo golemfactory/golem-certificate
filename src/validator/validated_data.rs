@@ -3,6 +3,7 @@ use ya_client_model::NodeId;
 use crate::schemas::{
     certificate::{key_usage::KeyUsage, Fingerprint},
     permissions::Permissions,
+    subject::Subject,
     validity_period::ValidityPeriod,
 };
 
@@ -19,4 +20,5 @@ pub struct ValidatedCertificate {
     pub permissions: Permissions,
     pub key_usage: KeyUsage,
     pub validity_period: ValidityPeriod,
+    pub subject: Subject,
 }
