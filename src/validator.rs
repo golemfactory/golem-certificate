@@ -160,6 +160,6 @@ fn validate_signed_certificate(
         permissions: certificate.permissions,
         key_usage: certificate.key_usage,
         validity_period: certificate.validity_period,
-        subject: certificate.subject
+        subject: certificate.subject,
     })
 }
