@@ -6,7 +6,7 @@ use crate::serde_utils;
 
 pub mod validator;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
 pub enum KeyUsage {
