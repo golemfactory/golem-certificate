@@ -24,7 +24,7 @@ fn happy_path() {
         ValidatedCertificate {
             subject: Subject {
                 display_name: "Example partner cert".into(),
-                contact: Contact { email: "example@partner.tld".into() },
+                contact: Contact { email: "example@partner.tld".into(), other: Default::default() },
                 legal_entity: None,
             },
             validity_period: ValidityPeriod {
