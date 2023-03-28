@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod validator;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidityPeriod {
     pub not_before: DateTime<Utc>,

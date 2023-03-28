@@ -4,7 +4,7 @@ use crate::cryptography::Key;
 
 use self::key_usage::KeyUsage;
 
-use super::{permissions::Permissions, validity_period::ValidityPeriod};
+use super::{permissions::Permissions, subject::Subject, validity_period::ValidityPeriod};
 
 pub mod key_usage;
 
@@ -17,4 +17,5 @@ pub struct Certificate {
     pub key_usage: KeyUsage,
     pub permissions: Permissions,
     pub public_key: Key,
+    pub subject: Subject,
 }
