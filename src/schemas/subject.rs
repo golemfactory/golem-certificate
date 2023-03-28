@@ -21,7 +21,7 @@ pub struct Contact {
     /// "Contact email"
     pub email: String,
     #[serde(flatten)]
-    pub other: HashMap<String, Value>,
+    pub additional_properties: HashMap<String, Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
