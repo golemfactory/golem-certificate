@@ -10,8 +10,9 @@ pub struct Subject {
     pub display_name: String,
     /// "Contact information of the subject"
     pub contact: Contact,
-    /// "The legal entity of the subject"
-    pub legal_entity: Option<LegalEntity>,
+    /// additional properties included in the certificate
+    #[serde(flatten)]
+    pub additional_properties: HashMap<String, Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
