@@ -23,21 +23,3 @@ pub struct Contact {
     #[serde(flatten)]
     pub additional_properties: HashMap<String, Value>,
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct LegalEntity {
-    /// "Name of the legal entity"
-    pub name: Option<String>,
-    /// "Official address of the legal entity"
-    pub address: Option<Address>,
-    #[serde(flatten)]
-    pub other: HashMap<String, Value>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub enum Address {
-    Basic(String),
-    Complex(serde_json::value::Map<String, Value>),
-}

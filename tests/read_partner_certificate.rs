@@ -24,8 +24,8 @@ fn happy_path() {
         ValidatedCertificate {
             subject: Subject {
                 display_name: "Example partner cert".into(),
-                contact: Contact { email: "example@partner.tld".into(), other: Default::default() },
-                legal_entity: None,
+                contact: Contact { email: "example@partner.tld".into(), additional_properties: Default::default() },
+                additional_properties: Default::default(),
             },
             validity_period: ValidityPeriod {
                 not_before: DateTime::parse_from_rfc3339("2023-01-01T00:00:00Z").unwrap().with_timezone(&Utc),
