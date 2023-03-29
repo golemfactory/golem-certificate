@@ -87,8 +87,7 @@ fn validate_signed_node_descriptor(
     let signing_certificate = signed_node_descriptor.signature.signer;
     let validated_certificate = validate_signed_certificate(&signing_certificate)?;
 
-    let leaf_certificate: Certificate =
-        serde_json::from_value(signing_certificate.certificate.clone())?;
+    let leaf_certificate: Certificate = serde_json::from_value(signing_certificate.certificate)?;
     verify_signature_json(
         &signed_node_descriptor.node_descriptor,
         &signed_node_descriptor.signature.value,
