@@ -82,10 +82,18 @@ fn validate_signed_node_descriptor(
     signed_node_descriptor: SignedNodeDescriptor,
 ) -> Result<ValidatedNodeDescriptor> {
     let node_descriptor: NodeDescriptor =
-        serde_json::from_value(signed_node_descriptor.node_descriptor)?;
+        serde_json::from_value(signed_node_descriptor.node_descriptor.clone())?;
 
     let signing_certificate = signed_node_descriptor.signature.signer;
     let validated_certificate = validate_signed_certificate(&signing_certificate)?;
+
+    let leaf_certificate: Certificate =
+        serde_json::from_value(signing_certificate.certificate.clone())?;
+    verify_signature_json(
+        &signed_node_descriptor.node_descriptor,
+        &signed_node_descriptor.signature.value,
+        &leaf_certificate.public_key,
+    )?;
 
     validate_permissions(
         &validated_certificate.permissions,
