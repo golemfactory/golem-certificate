@@ -49,6 +49,7 @@ fn happy_path() {
 #[test_case("invalid_key_usage.signed.json")]
 #[test_case("invalid_permissions.signed.json")]
 #[test_case("extended_validity_period.signed.json")]
+#[test_case("cert_cannot_sign_other_cert.signed.json")]
 fn should_return_err(filename: &str) {
     let certificate =
         std::fs::read_to_string(format!("tests/resources/certificate/{filename}")).unwrap();
