@@ -12,14 +12,14 @@
       "outbound": "unrestricted"
     },
     "subject": {
-      "displayName": "Example partner cert",
+      "displayName": "Example leaf cert",
       "contact": {
-        "email": "example@partner.tld"
+        "email": "example@leaf.tld"
       }
     },
     "publicKey": {
       "algorithm": "EdDSA",
-      "key": "1ea5e52503bb6cc26c3e29cadd3a3142a60dfbbc5956b1f15d791cef13abb0ea",
+      "key": "c6cd286a2474d13ffc8dcd417a446df461751a78dec46d039603ca53a373ac52",
       "parameters": {
         "scheme": "Ed25519"
       }

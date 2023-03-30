@@ -6,12 +6,9 @@
       "notAfter": "2025-01-01T00:00:00Z"
     },
     "keyUsage": [
-      "signNode",
-      "signManifest"
+      "signNode"
     ],
-    "permissions": {
-      "outbound": "unrestricted"
-    },
+    "permissions": "all",
     "subject": {
       "displayName": "Example leaf cert",
       "contact": {
@@ -31,7 +28,7 @@
       "hash": "sha512",
       "encryption": "EdDSA"
     },
-    "value": "2cbd3bdef7b08643d8409cdd315b6c19693332d216d7dc07b55b804afd8b1f51e593ba8ea5bb0e73b314e293bf03e91ba250a1b1a1d9dbd7b4a613872da0180a",
+    "value": "bb003d5f0e84ebb619be7acd58abd64105157bc232b0713e348370adb3c09e85a3be321a07f20f69f20e1efafc094f82fb6d912ef506d6923cf8957750a5bc07",
     "signer": {
       "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
       "certificate": {
