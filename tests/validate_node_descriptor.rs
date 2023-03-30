@@ -8,7 +8,8 @@ use ya_client_model::NodeId;
 #[test]
 fn happy_path() {
     let node_descriptor =
-        std::fs::read_to_string("tests/resources/happy_path_node_descriptor.json").unwrap();
+        std::fs::read_to_string("tests/resources/node_descriptors/happy_path_node_descriptor.json")
+            .unwrap();
 
     let result = validate_node_descriptor_str(&node_descriptor).unwrap();
 
