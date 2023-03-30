@@ -1,28 +1,29 @@
-use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 
 use super::ValidityPeriod;
+use crate::Error;
 
-pub fn validate_validity_period(parent: &ValidityPeriod, child: &ValidityPeriod) -> Result<()> {
+pub fn validate_validity_period(
+    parent: &ValidityPeriod,
+    child: &ValidityPeriod,
+) -> Result<(), Error> {
     if parent.not_before <= child.not_before && child.not_after <= parent.not_after {
         Ok(())
     } else {
-        Err(anyhow!(
-            "Child cannot extend time periods, parent: {:?}, child: {:?}",
-            parent,
-            child
-        ))
+        Err(Error::ValidityPeriodExtended {
+            parent: parent.to_owned(),
+            child: child.to_owned(),
+        })
     }
 }
 
-pub fn validate_timestamp(period: &ValidityPeriod, ts: DateTime<Utc>) -> Result<()> {
-    if period.not_before <= ts && ts <= period.not_after {
-        Ok(())
+pub fn validate_timestamp(period: &ValidityPeriod, ts: DateTime<Utc>) -> Result<(), Error> {
+    if period.not_before > ts {
+        Err(Error::NotValidYet(period.not_before))
+    } else if ts > period.not_after {
+        Err(Error::Expired(period.not_after))
     } else {
-        Err(anyhow!(
-            "Timestamp: {ts} is not between given period: {:?}",
-            period
-        ))
+        Ok(())
     }
 }
 
