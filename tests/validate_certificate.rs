@@ -14,8 +14,7 @@ use golem_certificate::{
 #[test]
 fn happy_path() {
     let node_descriptor =
-        std::fs::read_to_string("tests/resources/certificates/happy_path_certificate.signed.json")
-            .unwrap();
+        std::fs::read_to_string("tests/resources/certificate_happy_path.signed.json").unwrap();
 
     let result = validate_certificate_str(&node_descriptor).unwrap();
 

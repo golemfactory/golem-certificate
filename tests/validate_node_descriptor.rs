@@ -8,8 +8,7 @@ use ya_client_model::NodeId;
 #[test]
 fn happy_path() {
     let node_descriptor =
-        std::fs::read_to_string("tests/resources/node_descriptors/happy_path_node_descriptor.json")
-            .unwrap();
+        std::fs::read_to_string("tests/resources/node_descriptor_happy_path.signed.json").unwrap();
 
     let result = validate_node_descriptor_str(&node_descriptor).unwrap();
 
@@ -30,4 +29,15 @@ fn happy_path() {
             ]
         }
     );
+}
+
+#[test]
+fn error_when_node_signature_is_invalid() {
+    let node_descriptor =
+        std::fs::read_to_string("tests/resources/node_descriptor_invalid_signature.signed.json")
+            .unwrap();
+
+    let result = validate_node_descriptor_str(&node_descriptor);
+
+    assert!(result.is_err());
 }
