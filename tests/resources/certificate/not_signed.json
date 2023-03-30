@@ -1,0 +1,28 @@
+{
+  "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+  "certificate": {
+    "validityPeriod": {
+      "notBefore": "2023-01-01T00:00:00Z",
+      "notAfter": "2025-01-01T00:00:00Z"
+    },
+    "keyUsage": [
+      "signNode"
+    ],
+    "permissions": {
+      "outbound": "unrestricted"
+    },
+    "subject": {
+      "displayName": "Example partner cert",
+      "contact": {
+        "email": "example@partner.tld"
+      }
+    },
+    "publicKey": {
+      "algorithm": "EdDSA",
+      "key": "1ea5e52503bb6cc26c3e29cadd3a3142a60dfbbc5956b1f15d791cef13abb0ea",
+      "parameters": {
+        "scheme": "Ed25519"
+      }
+    }
+  }
+}

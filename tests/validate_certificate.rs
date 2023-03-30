@@ -10,13 +10,14 @@ use golem_certificate::{
     },
     validator::{validate_certificate_str, validated_data::ValidatedCertificate},
 };
+use test_case::test_case;
 
 #[test]
 fn happy_path() {
-    let node_descriptor =
+    let certificate =
         std::fs::read_to_string("tests/resources/certificate/happy_path.signed.json").unwrap();
 
-    let result = validate_certificate_str(&node_descriptor).unwrap();
+    let result = validate_certificate_str(&certificate).unwrap();
 
     assert_eq!(
         result,
@@ -38,4 +39,14 @@ fn happy_path() {
             key_usage: KeyUsage::Limited(HashSet::from_iter(vec![Usage::SignNode].into_iter())),
         }
     );
+}
+
+#[test_case("not_signed.json")]
+fn should_return_err(filename: &str) {
+    let certificate =
+        std::fs::read_to_string(format!("tests/resources/node_descriptor/{filename}")).unwrap();
+
+    let result = validate_certificate_str(&certificate);
+
+    assert!(result.is_err());
 }
