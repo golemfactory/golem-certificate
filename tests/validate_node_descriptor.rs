@@ -9,7 +9,7 @@ use ya_client_model::NodeId;
 #[test]
 fn happy_path() {
     let node_descriptor =
-        std::fs::read_to_string("tests/resources/node_descriptor_happy_path.signed.json").unwrap();
+        std::fs::read_to_string("tests/resources/node_descriptor/happy_path.signed.json").unwrap();
 
     let result = validate_node_descriptor_str(&node_descriptor).unwrap();
 
@@ -32,12 +32,14 @@ fn happy_path() {
     );
 }
 
-#[test_case("node_descriptor_invalid_signature.signed.json")]
-#[test_case("node_descriptor_expired.signed.json")]
-#[test_case("node_descriptor_invalid_permissions_chain.signed.json")]
-#[test_case("node_descriptor_invalid_cert_chain_signature.signed.json")]
+#[test_case("invalid_signature.signed.json")]
+#[test_case("expired.signed.json")]
+#[test_case("invalid_permissions_chain.signed.json")]
+#[test_case("invalid_cert_chain_signature.signed.json")]
+#[test_case("not_signed.json")]
 fn should_return_err(filename: &str) {
-    let node_descriptor = std::fs::read_to_string(format!("tests/resources/{filename}")).unwrap();
+    let node_descriptor =
+        std::fs::read_to_string(format!("tests/resources/node_descriptor/{filename}")).unwrap();
 
     let result = validate_node_descriptor_str(&node_descriptor);
 
