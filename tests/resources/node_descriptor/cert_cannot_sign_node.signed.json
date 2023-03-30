@@ -1,0 +1,91 @@
+{
+  "$schema": "https://golem.network/schemas/v1/node-descriptor.schema.json",
+  "nodeDescriptor": {
+    "nodeId": "0x338e02f29b63155beec8253af7ad367dd44b40c6",
+    "validityPeriod": {
+      "notBefore": "2023-01-01T00:00:00Z",
+      "notAfter": "2025-01-01T00:00:00Z"
+    },
+    "permissions": {
+      "outbound": {
+        "urls": [
+          "https://example.net"
+        ]
+      }
+    }
+  },
+  "signature": {
+    "algorithm": {
+      "hash": "sha512",
+      "encryption": "EdDSA"
+    },
+    "value": "54e75991c843de45f1b662a94a13c867912e758356c450e995c9f942222a54b5eabde6f881281d91c423b5b8fbd51d299a7b3d65fdd521bb1f9ff0d092c54606",
+    "signer": {
+      "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+      "certificate": {
+        "validityPeriod": {
+          "notBefore": "2023-01-01T00:00:00Z",
+          "notAfter": "2025-01-01T00:00:00Z"
+        },
+        "keyUsage": [
+          "signCertificate"
+        ],
+        "permissions": {
+          "outbound": "unrestricted"
+        },
+        "subject": {
+          "displayName": "Example no-sign-node cert",
+          "contact": {
+            "email": "example@no-sign-node.tld"
+          }
+        },
+        "publicKey": {
+          "algorithm": "EdDSA",
+          "key": "d0680fe3c1aa0181c9f0dfc90a7ea669a0d5b3c81257324b55e32180e00ebce8",
+          "parameters": {
+            "scheme": "Ed25519"
+          }
+        }
+      },
+      "signature": {
+        "algorithm": {
+          "hash": "sha512",
+          "encryption": "EdDSA"
+        },
+        "value": "3d0783074bd4fdce1cc03c734fe7a3244d8e284b8426c9bdad97de19efdb59b9835ac9b3089dbbcf70b0678b1e5038a643b28929aa5069de46956d311572cb00",
+        "signer": {
+          "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+          "certificate": {
+            "validityPeriod": {
+              "notBefore": "2000-01-01T00:00:00Z",
+              "notAfter": "2030-01-01T00:00:00Z"
+            },
+            "keyUsage": "all",
+            "permissions": "all",
+            "subject": {
+              "displayName": "Example root cert",
+              "contact": {
+                "email": "root-example@golem.network"
+              }
+            },
+            "publicKey": {
+              "algorithm": "EdDSA",
+              "key": "1497d5430205a082dc58cf571b3a579d7fe6fbf2ad3edec7cb7fbf5ec4ccba72",
+              "parameters": {
+                "scheme": "Ed25519"
+              }
+            }
+          },
+          "signature": {
+            "algorithm": {
+              "hash": "sha512",
+              "encryption": "EdDSA"
+            },
+            "value": "b9b2d783d4dc7f6b139a74c01ef6340aeed19dc0e3fd117eefe7fe109f8686da9ec2b942cb18c7d3c705c9d28f6e13b579903b6f3c1595dbe5ce24da3501bc0e",
+            "signer": "self"
+          }
+        }
+      }
+    }
+  }
+}
