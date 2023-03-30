@@ -35,6 +35,7 @@ fn happy_path() {
 #[test_case("node_descriptor_invalid_signature.signed.json")]
 #[test_case("node_descriptor_expired.signed.json")]
 #[test_case("node_descriptor_invalid_permissions_chain.signed.json")]
+#[test_case("node_descriptor_invalid_cert_chain_signature.signed.json")]
 fn should_return_err(filename: &str) {
     let node_descriptor = std::fs::read_to_string(format!("tests/resources/{filename}")).unwrap();
 
