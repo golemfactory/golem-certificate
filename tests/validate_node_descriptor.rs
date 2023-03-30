@@ -41,3 +41,13 @@ fn error_when_node_signature_is_invalid() {
 
     assert!(result.is_err());
 }
+
+#[test]
+fn error_when_descriptor_is_expired() {
+    let node_descriptor =
+        std::fs::read_to_string("tests/resources/node_descriptor_expired.signed.json").unwrap();
+
+    let result = validate_node_descriptor_str(&node_descriptor);
+
+    assert!(result.is_err());
+}
