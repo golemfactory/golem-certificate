@@ -2,6 +2,7 @@ use golem_certificate::{
     schemas::permissions::{OutboundPermissions, PermissionDetails, Permissions},
     validator::{validate_node_descriptor_str, validated_data::ValidatedNodeDescriptor},
 };
+use test_case::test_case;
 use url::Url;
 use ya_client_model::NodeId;
 
@@ -31,21 +32,11 @@ fn happy_path() {
     );
 }
 
-#[test]
-fn error_when_node_signature_is_invalid() {
-    let node_descriptor =
-        std::fs::read_to_string("tests/resources/node_descriptor_invalid_signature.signed.json")
-            .unwrap();
-
-    let result = validate_node_descriptor_str(&node_descriptor);
-
-    assert!(result.is_err());
-}
-
-#[test]
-fn error_when_descriptor_is_expired() {
-    let node_descriptor =
-        std::fs::read_to_string("tests/resources/node_descriptor_expired.signed.json").unwrap();
+#[test_case("node_descriptor_invalid_signature.signed.json")]
+#[test_case("node_descriptor_expired.signed.json")]
+#[test_case("node_descriptor_invalid_permissions_chain.signed.json")]
+fn should_return_err(filename: &str) {
+    let node_descriptor = std::fs::read_to_string(format!("tests/resources/{filename}")).unwrap();
 
     let result = validate_node_descriptor_str(&node_descriptor);
 
