@@ -13,14 +13,12 @@ pub enum Error {
         parent: ValidityPeriod,
         child: ValidityPeriod,
     },
+    #[error("Permissions extended: {0}")]
+    PermissionsExtended(String),
     #[error("TODO")]
-    PermissionsExtended,
+    NotPermitted,
     #[error("TODO")]
     InvalidSignature,
     #[error("TODO")]
     InvalidSchema,
-    #[error("TODO")]
-    CertificateSigningNotPermitted,
-    #[error("TODO")]
-    NodeDescriptorSigningNotPermitted,
 }

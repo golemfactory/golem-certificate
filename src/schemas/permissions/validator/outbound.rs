@@ -1,15 +1,14 @@
-use anyhow::{anyhow, Result};
-
 use super::super::OutboundPermissions;
+use crate::Error;
 
 pub fn validate_outbound_permissions(
     parent: &Option<OutboundPermissions>,
     child: &Option<OutboundPermissions>,
-) -> Result<()> {
+) -> Result<(), Error> {
     match (&parent, &child) {
         (_, None) => Ok(()),
-        (None, Some(_)) => Err(anyhow!(
-            "Child wants to have outbound permissions, but parent doesn't have ones"
+        (None, Some(_)) => Err(Error::PermissionsExtended(
+            "Child wants to have outbound permissions, but parent doesn't have ones".to_owned(),
         )),
         (Some(parent), Some(child)) => validate_url_permissions(parent, child),
     }
@@ -18,17 +17,19 @@ pub fn validate_outbound_permissions(
 fn validate_url_permissions(
     parent: &OutboundPermissions,
     child: &OutboundPermissions,
-) -> Result<()> {
+) -> Result<(), Error> {
     match (parent, child) {
         (OutboundPermissions::Unrestricted, _) => Ok(()),
-        (OutboundPermissions::Urls(_), OutboundPermissions::Unrestricted) => {
-            Err(anyhow!("Child cannot extend outbound permissions"))
-        }
+        (OutboundPermissions::Urls(_), OutboundPermissions::Unrestricted) => Err(
+            Error::PermissionsExtended("Child cannot extend outbound permissions".to_owned()),
+        ),
         (OutboundPermissions::Urls(parent_urls), OutboundPermissions::Urls(child_urls)) => {
             if child_urls.is_subset(parent_urls) {
                 Ok(())
             } else {
-                Err(anyhow!("Child cannot extend outbound permitted urls"))
+                Err(Error::PermissionsExtended(
+                    "Child cannot extend outbound permitted urls".to_owned(),
+                ))
             }
         }
     }
