@@ -10,10 +10,9 @@ pub fn validate_validity_period(
     if parent.not_before <= child.not_before && child.not_after <= parent.not_after {
         Ok(())
     } else {
-        Err(Error::ValidityPeriodExtended {
-            parent: parent.to_owned(),
-            child: child.to_owned(),
-        })
+        Err(Error::ValidityPeriodExtended(format!(
+            "Parent: {parent:?} Child: {child:?}"
+        )))
     }
 }
 
