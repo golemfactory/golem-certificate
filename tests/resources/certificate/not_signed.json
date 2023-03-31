@@ -1,0 +1,28 @@
+{
+  "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+  "certificate": {
+    "validityPeriod": {
+      "notBefore": "2023-01-01T00:00:00Z",
+      "notAfter": "2025-01-01T00:00:00Z"
+    },
+    "keyUsage": [
+      "signNode"
+    ],
+    "permissions": {
+      "outbound": "unrestricted"
+    },
+    "subject": {
+      "displayName": "Example leaf cert",
+      "contact": {
+        "email": "example@leaf.tld"
+      }
+    },
+    "publicKey": {
+      "algorithm": "EdDSA",
+      "key": "c6cd286a2474d13ffc8dcd417a446df461751a78dec46d039603ca53a373ac52",
+      "parameters": {
+        "scheme": "Ed25519"
+      }
+    }
+  }
+}
