@@ -17,10 +17,10 @@ pub enum Error {
     PermissionsExtended(String),
     #[error("Key usage extended: {0}")]
     KeyUsageExtended(String),
-    #[error("Not permitted: ")]
+    #[error("Not permitted: {0}")]
     NotPermitted(String),
-    #[error("TODO")]
+    #[error("Invalid signature: {0}")]
     InvalidSignature(String),
-    #[error("TODO")]
+    #[error("Invalid schema: {0}")]
     InvalidSchema(String),
 }
