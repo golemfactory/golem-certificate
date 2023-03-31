@@ -149,10 +149,11 @@ fn verify_signature(signed_file: &PathBuf) -> Result<()> {
     let signed_json = deserialize_from_file::<Value>(signed_file)?;
     match determine_file_type(&signed_json)? {
         FileType::Certificate => {
-            gcert::validate_certificate(signed_json).map(|result| println!("{:?}", result))
+            Ok(gcert::validate_certificate(signed_json).map(|result| println!("{:?}", result))?)
         }
         FileType::NodeDescriptor => {
-            gcert::validate_node_descriptor(signed_json).map(|result| println!("{:?}", result))
+            Ok(gcert::validate_node_descriptor(signed_json)
+                .map(|result| println!("{:?}", result))?)
         }
     }
 }

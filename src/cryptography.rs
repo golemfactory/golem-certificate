@@ -14,6 +14,7 @@ use rand::rngs::OsRng;
 use crate::schemas::signature::SignatureAlgorithm;
 use crate::serde_jcs;
 use crate::serde_utils::{bytes_to_hex, hex_to_bytes};
+use crate::Error;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -72,12 +73,13 @@ pub fn create_key_pair() -> KeyPair {
     }
 }
 
-pub fn create_default_hash(value: &Value) -> Result<Vec<u8>> {
+pub fn create_default_hash(value: &Value) -> Result<Vec<u8>, Error> {
     create_hash(value, &HashAlgorithm::default())
 }
 
-pub fn create_hash(value: &Value, hash_algorithm: &HashAlgorithm) -> Result<Vec<u8>> {
-    let canonical_json = serde_jcs::to_vec(value)?;
+pub fn create_hash(value: &Value, hash_algorithm: &HashAlgorithm) -> Result<Vec<u8>, Error> {
+    let canonical_json =
+        serde_jcs::to_vec(value).map_err(|e| Error::InvalidSchema(e.to_string()))?;
     Ok(create_digest(canonical_json, hash_algorithm))
 }
 
@@ -117,10 +119,13 @@ pub fn verify_signature_json(
     value: &Value,
     signature_value: impl AsRef<[u8]>,
     public_key: &Key,
-) -> Result<()> {
-    let canonical_json = serde_jcs::to_vec(value)?;
-    let eddsa_signature = EdDSASignature::from_bytes(signature_value.as_ref())?;
-    let public_key = PublicKey::from_bytes(&public_key.key)?;
+) -> Result<(), Error> {
+    let canonical_json =
+        serde_jcs::to_vec(value).map_err(|e| Error::InvalidSchema(e.to_string()))?;
+    let eddsa_signature = EdDSASignature::from_bytes(signature_value.as_ref())
+        .map_err(|e| Error::InvalidSchema(e.to_string()))?;
+    let public_key =
+        PublicKey::from_bytes(&public_key.key).map_err(|e| Error::InvalidSchema(e.to_string()))?;
     verify_bytes(canonical_json, &eddsa_signature, &public_key)
 }
 
@@ -128,8 +133,8 @@ fn verify_bytes(
     bytes: impl AsRef<[u8]>,
     signature: &EdDSASignature,
     public_key: &PublicKey,
-) -> Result<()> {
+) -> Result<(), Error> {
     public_key
         .verify(bytes.as_ref(), signature)
-        .map_err(Into::into)
+        .map_err(|e| Error::InvalidSignature(e.to_string()))
 }

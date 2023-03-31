@@ -20,7 +20,7 @@ pub enum Error {
     #[error("Not permitted: ")]
     NotPermitted(String),
     #[error("TODO")]
-    InvalidSignature,
+    InvalidSignature(String),
     #[error("TODO")]
-    InvalidSchema,
+    InvalidSchema(String),
 }
