@@ -15,8 +15,10 @@ pub enum Error {
     },
     #[error("Permissions extended: {0}")]
     PermissionsExtended(String),
-    #[error("TODO")]
-    NotPermitted,
+    #[error("Key usage extended: {0}")]
+    KeyUsageExtended(String),
+    #[error("Not permitted: ")]
+    NotPermitted(String),
     #[error("TODO")]
     InvalidSignature,
     #[error("TODO")]
