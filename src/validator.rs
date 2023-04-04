@@ -75,10 +75,9 @@ fn validate_schema(value: &Value, schema_id: &str, structure_name: &str) -> Resu
             }
         })
         .unwrap_or_else(|| {
-            Err(Error::UnsupportedSchema {
-                schema: "".to_owned(),
-                structure_name: structure_name.to_owned(),
-            })
+            Err(Error::JsonDoesNotConformToSchema(format!(
+                "Missing `schema` property in {structure_name}"
+            )))
         })
 }
 
