@@ -1,16 +1,14 @@
-use anyhow::{anyhow, Result};
-
 use super::super::OutboundPermissions;
+
+pub struct OutboundPermissionsExtendedError(());
 
 pub fn validate_outbound_permissions(
     parent: &Option<OutboundPermissions>,
     child: &Option<OutboundPermissions>,
-) -> Result<()> {
+) -> Result<(), OutboundPermissionsExtendedError> {
     match (&parent, &child) {
         (_, None) => Ok(()),
-        (None, Some(_)) => Err(anyhow!(
-            "Child wants to have outbound permissions, but parent doesn't have ones"
-        )),
+        (None, Some(_)) => Err(OutboundPermissionsExtendedError(())),
         (Some(parent), Some(child)) => validate_url_permissions(parent, child),
     }
 }
@@ -18,17 +16,17 @@ pub fn validate_outbound_permissions(
 fn validate_url_permissions(
     parent: &OutboundPermissions,
     child: &OutboundPermissions,
-) -> Result<()> {
+) -> Result<(), OutboundPermissionsExtendedError> {
     match (parent, child) {
         (OutboundPermissions::Unrestricted, _) => Ok(()),
         (OutboundPermissions::Urls(_), OutboundPermissions::Unrestricted) => {
-            Err(anyhow!("Child cannot extend outbound permissions"))
+            Err(OutboundPermissionsExtendedError(()))
         }
         (OutboundPermissions::Urls(parent_urls), OutboundPermissions::Urls(child_urls)) => {
             if child_urls.is_subset(parent_urls) {
                 Ok(())
             } else {
-                Err(anyhow!("Child cannot extend outbound permitted urls"))
+                Err(OutboundPermissionsExtendedError(()))
             }
         }
     }

@@ -9,6 +9,7 @@ use golem_certificate::{
         validity_period::ValidityPeriod,
     },
     validator::{validate_certificate_str, validated_data::ValidatedCertificate},
+    Error,
 };
 use pretty_assertions::assert_eq;
 use test_case::test_case;
@@ -43,18 +44,24 @@ fn happy_path() {
     );
 }
 
-#[test_case("not_signed.json")]
-#[test_case("expired.signed.json")]
-#[test_case("invalid_signature.signed.json")]
-#[test_case("invalid_key_usage.signed.json")]
-#[test_case("invalid_permissions.signed.json")]
-#[test_case("extended_validity_period.signed.json")]
-#[test_case("cert_cannot_sign_other_cert.signed.json")]
-fn should_return_err(filename: &str) {
+#[test_case("not_signed.json", Error::JsonDoesNotConformToSchema("missing field `signature`".to_string()))]
+#[test_case("expired.signed.json", Error::Expired("2023-01-02T00:00:00Z".parse().unwrap()))]
+#[test_case("invalid_signature.signed.json", Error::InvalidSignature)]
+#[test_case(
+    "invalid_key_usage.signed.json",
+   Error::KeyUsageExtended{parent: KeyUsage::Limited([Usage::SignNode, Usage::SignCertificate].into_iter().collect()), child: KeyUsage::Limited([Usage::SignNode, Usage::SignManifest].into_iter().collect())}
+)]
+#[test_case(
+    "invalid_permissions.signed.json",
+   Error::PermissionsExtended{parent: Permissions::Object(PermissionDetails{outbound: Some(OutboundPermissions::Unrestricted)}), child: Permissions::All}
+)]
+#[test_case("extended_validity_period.signed.json", Error::ValidityPeriodExtended{parent: ValidityPeriod{not_before: "2023-01-01T00:00:00Z".parse().unwrap(), not_after: "2025-01-01T00:00:00Z".parse().unwrap()}, child: ValidityPeriod{not_before: "2023-01-01T00:00:00Z".parse().unwrap(), not_after: "2099-01-01T00:00:00Z".parse().unwrap()}})]
+#[test_case("cert_cannot_sign_other_cert.signed.json", Error::CertSignNotPermitted)]
+fn should_return_err(filename: &str, expected_err: Error) {
     let certificate =
         std::fs::read_to_string(format!("tests/resources/certificate/{filename}")).unwrap();
 
     let result = validate_certificate_str(&certificate);
 
-    assert!(result.is_err());
+    assert_eq!(result.unwrap_err(), expected_err);
 }

@@ -2,6 +2,7 @@ mod cryptography;
 mod serde_jcs;
 mod serde_utils;
 
+pub mod error;
 pub mod schemas;
 pub mod validator;
 
@@ -21,3 +22,5 @@ pub use validator::validate_certificate;
 pub use validator::validate_certificate_str;
 pub use validator::validate_node_descriptor;
 pub use validator::validate_node_descriptor_str;
+
+pub use error::Error;

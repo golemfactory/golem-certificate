@@ -1,18 +1,22 @@
-use anyhow::{anyhow, Result};
-
 use super::Permissions;
+use crate::Error;
 
 mod outbound;
 use outbound::validate_outbound_permissions;
 
-pub fn validate_permissions(parent: &Permissions, child: &Permissions) -> Result<()> {
+pub fn validate_permissions(parent: &Permissions, child: &Permissions) -> Result<(), Error> {
     match (parent, child) {
         (Permissions::All, _) => Ok(()),
-        (Permissions::Object { .. }, Permissions::All) => Err(anyhow!(
-            "Child cannot have 'All' permissions when parent doesn't have one"
-        )),
-        (Permissions::Object(parent), Permissions::Object(child)) => {
-            validate_outbound_permissions(&parent.outbound, &child.outbound)
+        (Permissions::Object { .. }, Permissions::All) => Err(Error::PermissionsExtended {
+            parent: parent.to_owned(),
+            child: child.to_owned(),
+        }),
+        (Permissions::Object(parent_details), Permissions::Object(child_details)) => {
+            validate_outbound_permissions(&parent_details.outbound, &child_details.outbound)
+                .map_err(|_| Error::PermissionsExtended {
+                    parent: parent.to_owned(),
+                    child: child.to_owned(),
+                })
         }
     }
 }

@@ -1,35 +1,38 @@
-use anyhow::{anyhow, Result};
-
 use super::{KeyUsage, Usage};
+use crate::Error;
 
-pub fn validate_certificates_key_usage(parent: &KeyUsage, child: &KeyUsage) -> Result<()> {
+pub fn validate_certificates_key_usage(parent: &KeyUsage, child: &KeyUsage) -> Result<(), Error> {
     match (parent, child) {
         (KeyUsage::All, _) => Ok(()),
-        (KeyUsage::Limited(_), KeyUsage::All) => Err(anyhow!(
-            "Child cannot have 'All' key usage when parent doesn't have one"
-        )),
-        (KeyUsage::Limited(parent), KeyUsage::Limited(child)) => {
-            if child.is_subset(parent) {
-                if parent.contains(&Usage::SignCertificate) {
+        (KeyUsage::Limited(_), KeyUsage::All) => Err(Error::KeyUsageExtended {
+            parent: parent.to_owned(),
+            child: child.to_owned(),
+        }),
+        (KeyUsage::Limited(parent_limited), KeyUsage::Limited(child_limited)) => {
+            if child_limited.is_subset(parent_limited) {
+                if parent_limited.contains(&Usage::SignCertificate) {
                     Ok(())
                 } else {
-                    Err(anyhow!("Parent cert cannot sign child certificate"))
+                    Err(Error::CertSignNotPermitted)
                 }
             } else {
-                Err(anyhow!("Child cannot extend key usages"))
+                Err(Error::KeyUsageExtended {
+                    parent: parent.to_owned(),
+                    child: child.to_owned(),
+                })
             }
         }
     }
 }
 
-pub fn validate_sign_node(key_usage: &KeyUsage) -> Result<()> {
+pub fn validate_sign_node(key_usage: &KeyUsage) -> Result<(), Error> {
     match key_usage {
         KeyUsage::All => Ok(()),
         KeyUsage::Limited(usages) => {
             if usages.contains(&Usage::SignNode) {
                 Ok(())
             } else {
-                Err(anyhow!("Key usage does not allow to sign nodes"))
+                Err(Error::NodeSignNotPermitted)
             }
         }
     }

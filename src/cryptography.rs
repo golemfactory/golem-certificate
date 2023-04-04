@@ -14,6 +14,7 @@ use rand::rngs::OsRng;
 use crate::schemas::signature::SignatureAlgorithm;
 use crate::serde_jcs;
 use crate::serde_utils::{bytes_to_hex, hex_to_bytes};
+use crate::Error;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -72,13 +73,14 @@ pub fn create_key_pair() -> KeyPair {
     }
 }
 
-pub fn create_default_hash(value: &Value) -> Result<Vec<u8>> {
+pub fn create_default_hash(value: &Value) -> Result<Vec<u8>, Error> {
     create_hash(value, &HashAlgorithm::default())
 }
 
-pub fn create_hash(value: &Value, hash_algorithm: &HashAlgorithm) -> Result<Vec<u8>> {
-    let canonical_json = serde_jcs::to_vec(value)?;
-    Ok(create_digest(canonical_json, hash_algorithm))
+pub fn create_hash(value: &Value, hash_algorithm: &HashAlgorithm) -> Result<Vec<u8>, Error> {
+    serde_jcs::to_vec(value)
+        .map(|canonical_json| create_digest(canonical_json, hash_algorithm))
+        .map_err(|e| Error::JcsSerializationError(e.to_string()))
 }
 
 fn create_digest(input: impl AsRef<[u8]>, hash_algorithm: &HashAlgorithm) -> Vec<u8> {
@@ -117,10 +119,12 @@ pub fn verify_signature_json(
     value: &Value,
     signature_value: impl AsRef<[u8]>,
     public_key: &Key,
-) -> Result<()> {
-    let canonical_json = serde_jcs::to_vec(value)?;
-    let eddsa_signature = EdDSASignature::from_bytes(signature_value.as_ref())?;
-    let public_key = PublicKey::from_bytes(&public_key.key)?;
+) -> Result<(), Error> {
+    let canonical_json =
+        serde_jcs::to_vec(value).map_err(|e| Error::JcsSerializationError(e.to_string()))?;
+    let eddsa_signature = EdDSASignature::from_bytes(signature_value.as_ref())
+        .map_err(|_| Error::InvalidSignature)?;
+    let public_key = PublicKey::from_bytes(&public_key.key).map_err(|_| Error::InvalidSignature)?;
     verify_bytes(canonical_json, &eddsa_signature, &public_key)
 }
 
@@ -128,8 +132,8 @@ fn verify_bytes(
     bytes: impl AsRef<[u8]>,
     signature: &EdDSASignature,
     public_key: &PublicKey,
-) -> Result<()> {
+) -> Result<(), Error> {
     public_key
         .verify(bytes.as_ref(), signature)
-        .map_err(Into::into)
+        .map_err(|_| Error::InvalidSignature)
 }
