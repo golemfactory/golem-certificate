@@ -78,7 +78,8 @@ pub fn create_default_hash(value: &Value) -> Result<Vec<u8>, Error> {
 }
 
 pub fn create_hash(value: &Value, hash_algorithm: &HashAlgorithm) -> Result<Vec<u8>, Error> {
-    let canonical_json = serde_jcs::to_vec(value).map_err(|e| Error::InvalidJson(e.to_string()))?;
+    let canonical_json =
+        serde_jcs::to_vec(value).map_err(|e| Error::InvalidFormat(e.to_string()))?;
     Ok(create_digest(canonical_json, hash_algorithm))
 }
 
@@ -119,10 +120,12 @@ pub fn verify_signature_json(
     signature_value: impl AsRef<[u8]>,
     public_key: &Key,
 ) -> Result<(), Error> {
-    let canonical_json = serde_jcs::to_vec(value).map_err(|e| Error::InvalidJson(e.to_string()))?;
-    let eddsa_signature =
-        EdDSASignature::from_bytes(signature_value.as_ref()).map_err(|e| Error::Todo)?;
-    let public_key = PublicKey::from_bytes(&public_key.key).map_err(|e| Error::Todo)?;
+    let canonical_json =
+        serde_jcs::to_vec(value).map_err(|e| Error::InvalidFormat(e.to_string()))?;
+    let eddsa_signature = EdDSASignature::from_bytes(signature_value.as_ref())
+        .map_err(|e| Error::InvalidFormat(e.to_string()))?;
+    let public_key =
+        PublicKey::from_bytes(&public_key.key).map_err(|e| Error::InvalidFormat(e.to_string()))?;
     verify_bytes(canonical_json, &eddsa_signature, &public_key)
 }
 

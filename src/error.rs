@@ -35,19 +35,11 @@ pub enum Error {
     NodeSignNotPermitted,
     #[error("Invalid signature")]
     InvalidSignature,
-    #[error("Missing property: {0}")]
-    MissingProperty(String),
-    #[error("Deserialization failed: {0}")]
-    DeserializationFailed(String),
-    #[error("Invalid json: {0}")]
-    InvalidJson(String),
+    #[error("Invalid format: {0}")]
+    InvalidFormat(String),
     #[error("Unsupported schema for structure {structure_name}: {schema}")]
     UnsupportedSchema {
         schema: String,
         structure_name: String,
     },
-    #[error("Unsupported encryption algorithm: {0}")]
-    UnsupportedEncryptionAlgorithm(String), //TODO Rafał
-    #[error("Todo")]
-    Todo, //TODO Rafał
 }
