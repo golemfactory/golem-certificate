@@ -30,6 +30,8 @@ pub enum Error {
     InvalidSignature,
     #[error("Invalid json: {0}")]
     InvalidJson(String),
+    #[error("JCS serialization error: {0}")]
+    JcsSerializationError(String),
     #[error("Json does not conform to schema: {0}")]
     JsonDoesNotConformToSchema(String),
     #[error("Unsupported schema for structure {structure_name}: {schema}")]

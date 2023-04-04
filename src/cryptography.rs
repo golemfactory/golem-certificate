@@ -78,9 +78,9 @@ pub fn create_default_hash(value: &Value) -> Result<Vec<u8>, Error> {
 }
 
 pub fn create_hash(value: &Value, hash_algorithm: &HashAlgorithm) -> Result<Vec<u8>, Error> {
-    let canonical_json =
-        serde_jcs::to_vec(value).map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
-    Ok(create_digest(canonical_json, hash_algorithm))
+    serde_jcs::to_vec(value)
+        .map(|canonical_json| create_digest(canonical_json, hash_algorithm))
+        .map_err(|e| Error::JcsSerializationError(e.to_string()))
 }
 
 fn create_digest(input: impl AsRef<[u8]>, hash_algorithm: &HashAlgorithm) -> Vec<u8> {
