@@ -1,6 +1,7 @@
 use golem_certificate::{
     schemas::permissions::{OutboundPermissions, PermissionDetails, Permissions},
     validator::{validate_node_descriptor_str, validated_data::ValidatedNodeDescriptor},
+    Error,
 };
 use test_case::test_case;
 use url::Url;
@@ -32,17 +33,19 @@ fn happy_path() {
     );
 }
 
-#[test_case("not_signed.json")]
-#[test_case("invalid_signature.signed.json")]
-#[test_case("expired.signed.json")]
-#[test_case("invalid_permissions_chain.signed.json")]
-#[test_case("invalid_cert_chain_signature.signed.json")]
-#[test_case("cert_cannot_sign_node.signed.json")]
-fn should_return_err(filename: &str) {
+#[test_case("not_signed.json", Error::JsonDoesNotConformToSchema("missing field `signature`".to_string()))]
+#[test_case("invalid_signature.signed.json", Error::InvalidSignature)]
+#[test_case("expired.signed.json", Error::Expired("2023-01-02T00:00:00Z".parse().unwrap()))]
+#[test_case("invalid_permissions_chain.signed.json",
+   Error::PermissionsExtended{parent: Permissions::Object(PermissionDetails{outbound: Some(OutboundPermissions::Unrestricted)}), child: Permissions::All}
+)]
+#[test_case("invalid_cert_chain_signature.signed.json", Error::InvalidSignature)]
+#[test_case("cert_cannot_sign_node.signed.json", Error::NodeSignNotPermitted)]
+fn should_return_err(filename: &str, expected_err: Error) {
     let node_descriptor =
         std::fs::read_to_string(format!("tests/resources/node_descriptor/{filename}")).unwrap();
 
     let result = validate_node_descriptor_str(&node_descriptor);
 
-    assert!(result.is_err());
+    assert_eq!(result.unwrap_err(), expected_err);
 }

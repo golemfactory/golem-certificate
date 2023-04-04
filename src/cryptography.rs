@@ -123,9 +123,8 @@ pub fn verify_signature_json(
     let canonical_json =
         serde_jcs::to_vec(value).map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
     let eddsa_signature = EdDSASignature::from_bytes(signature_value.as_ref())
-        .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
-    let public_key = PublicKey::from_bytes(&public_key.key)
-        .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
+        .map_err(|_| Error::InvalidSignature)?;
+    let public_key = PublicKey::from_bytes(&public_key.key).map_err(|_| Error::InvalidSignature)?;
     verify_bytes(canonical_json, &eddsa_signature, &public_key)
 }
 
