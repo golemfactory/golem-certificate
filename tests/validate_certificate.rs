@@ -43,18 +43,27 @@ fn happy_path() {
     );
 }
 
-#[test_case("not_signed.json")]
-#[test_case("expired.signed.json")]
-#[test_case("invalid_signature.signed.json")]
-#[test_case("invalid_key_usage.signed.json")]
-#[test_case("invalid_permissions.signed.json")]
-#[test_case("extended_validity_period.signed.json")]
-#[test_case("cert_cannot_sign_other_cert.signed.json")]
-fn should_return_err(filename: &str) {
+#[test_case("not_signed.json", "Invalid schema: missing field `signature`")]
+#[test_case("expired.signed.json", "Expired: was valid to 2023-01-02 00:00:00 UTC")]
+#[test_case("invalid_signature.signed.json", "Invalid signature: signature error")]
+#[test_case(
+    "invalid_key_usage.signed.json",
+    "Key usage extended: Child cannot extend key usages"
+)]
+#[test_case(
+    "invalid_permissions.signed.json",
+    "Permissions extended: Child cannot have 'All' permissions when parent doesn't have one"
+)]
+#[test_case("extended_validity_period.signed.json", "Validity period extended: Parent: ValidityPeriod { not_before: 2023-01-01T00:00:00Z, not_after: 2025-01-01T00:00:00Z } Child: ValidityPeriod { not_before: 2023-01-01T00:00:00Z, not_after: 2099-01-01T00:00:00Z }")]
+#[test_case(
+    "cert_cannot_sign_other_cert.signed.json",
+    "Not permitted: Parent cert cannot sign child certificate"
+)]
+fn should_return_err(filename: &str, expected_err: &str) {
     let certificate =
         std::fs::read_to_string(format!("tests/resources/certificate/{filename}")).unwrap();
 
     let result = validate_certificate_str(&certificate);
 
-    assert!(result.is_err());
+    assert_eq!(result.unwrap_err().to_string(), expected_err);
 }

@@ -4,22 +4,22 @@ use crate::Error;
 pub fn validate_certificates_key_usage(parent: &KeyUsage, child: &KeyUsage) -> Result<(), Error> {
     match (parent, child) {
         (KeyUsage::All, _) => Ok(()),
-        (KeyUsage::Limited(_), KeyUsage::All) => Err(Error::KeyUsageExtended(
-            "Child cannot have 'All' key usage when parent doesn't have one".to_owned(),
-        )),
-        (KeyUsage::Limited(parent), KeyUsage::Limited(child)) => {
-            if child.is_subset(parent) {
-                if parent.contains(&Usage::SignCertificate) {
+        (KeyUsage::Limited(_), KeyUsage::All) => Err(Error::KeyUsageExtended {
+            parent: parent.to_owned(),
+            child: child.to_owned(),
+        }),
+        (KeyUsage::Limited(parent_limited), KeyUsage::Limited(child_limited)) => {
+            if child_limited.is_subset(parent_limited) {
+                if parent_limited.contains(&Usage::SignCertificate) {
                     Ok(())
                 } else {
-                    Err(Error::NotPermitted(
-                        "Parent cert cannot sign child certificate".to_owned(),
-                    ))
+                    Err(Error::CertSignNotPermitted)
                 }
             } else {
-                Err(Error::KeyUsageExtended(
-                    "Child cannot extend key usages".to_owned(),
-                ))
+                Err(Error::KeyUsageExtended {
+                    parent: parent.to_owned(),
+                    child: child.to_owned(),
+                })
             }
         }
     }
@@ -32,9 +32,7 @@ pub fn validate_sign_node(key_usage: &KeyUsage) -> Result<(), Error> {
             if usages.contains(&Usage::SignNode) {
                 Ok(())
             } else {
-                Err(Error::NotPermitted(
-                    "Key usage does not allow to sign nodes".to_owned(),
-                ))
+                Err(Error::NodeSignNotPermitted)
             }
         }
     }

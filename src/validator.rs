@@ -22,8 +22,7 @@ use self::validated_data::{ValidatedCertificate, ValidatedNodeDescriptor};
 pub mod validated_data;
 
 pub fn validate_certificate_str(data: &str) -> Result<ValidatedCertificate, Error> {
-    let value: Value =
-        serde_json::from_str(data).map_err(|e| Error::InvalidSchema(e.to_string()))?;
+    let value: Value = serde_json::from_str(data).map_err(|e| Error::InvalidJson(e.to_string()))?;
     validate_certificate(value)
 }
 
@@ -34,7 +33,7 @@ pub fn validate_certificate(value: Value) -> Result<ValidatedCertificate, Error>
         "certificate",
     )?;
     let signed_certificate: SignedCertificate =
-        serde_json::from_value(value).map_err(|e| Error::InvalidSchema(e.to_string()))?;
+        serde_json::from_value(value).map_err(|e| Error::MissingProperty(e.to_string()))?;
     let mut validated_certificate = validate_signed_certificate(&signed_certificate)?;
     validated_certificate
         .certificate_chain_fingerprints
@@ -43,8 +42,7 @@ pub fn validate_certificate(value: Value) -> Result<ValidatedCertificate, Error>
 }
 
 pub fn validate_node_descriptor_str(data: &str) -> Result<ValidatedNodeDescriptor, Error> {
-    let value: Value =
-        serde_json::from_str(data).map_err(|e| Error::InvalidSchema(e.to_string()))?;
+    let value: Value = serde_json::from_str(data).map_err(|e| Error::InvalidJson(e.to_string()))?;
     validate_node_descriptor(value)
 }
 
@@ -55,7 +53,7 @@ pub fn validate_node_descriptor(value: Value) -> Result<ValidatedNodeDescriptor,
         "node descriptor",
     )?;
     let signed_node_descriptor: SignedNodeDescriptor =
-        serde_json::from_value(value).map_err(|e| Error::InvalidSchema(e.to_string()))?;
+        serde_json::from_value(value).map_err(|e| Error::MissingProperty(e.to_string()))?;
     let mut validated_node_descriptor = validate_signed_node_descriptor(signed_node_descriptor)?;
     validated_node_descriptor
         .certificate_chain_fingerprints
@@ -70,15 +68,17 @@ fn validate_schema(value: &Value, schema_id: &str, structure_name: &str) -> Resu
             if schema == schema_id {
                 Ok(())
             } else {
-                Err(Error::InvalidSchema(format!(
-                    "Unknown {structure_name} structure with schema: {schema}"
-                )))
+                Err(Error::UnsupportedSchema {
+                    schema: schema.to_owned(),
+                    structure_name: structure_name.to_owned(),
+                })
             }
         })
         .unwrap_or_else(|| {
-            Err(Error::InvalidSchema(format!(
-                "Cannot verify {structure_name} structure, schema is not defined"
-            )))
+            Err(Error::UnsupportedSchema {
+                schema: "".to_owned(),
+                structure_name: structure_name.to_owned(),
+            })
         })
 }
 
@@ -87,13 +87,13 @@ fn validate_signed_node_descriptor(
 ) -> Result<ValidatedNodeDescriptor, Error> {
     let node_descriptor: NodeDescriptor =
         serde_json::from_value(signed_node_descriptor.node_descriptor.clone())
-            .map_err(|e| Error::InvalidSchema(e.to_string()))?;
+            .map_err(|e| Error::MissingProperty(e.to_string()))?;
 
     let signing_certificate = signed_node_descriptor.signature.signer;
     let validated_certificate = validate_signed_certificate(&signing_certificate)?;
 
     let leaf_certificate: Certificate = serde_json::from_value(signing_certificate.certificate)
-        .map_err(|e| Error::InvalidSchema(e.to_string()))?;
+        .map_err(|e| Error::MissingProperty(e.to_string()))?;
     verify_signature_json(
         &signed_node_descriptor.node_descriptor,
         &signed_node_descriptor.signature.value,
@@ -136,7 +136,7 @@ fn validate_signed_certificate(
         Signer::SelfSigned => {
             let certificate: Certificate =
                 serde_json::from_value(signed_certificate.certificate.clone())
-                    .map_err(|e| Error::InvalidSchema(e.to_string()))?;
+                    .map_err(|e| Error::MissingProperty(e.to_string()))?;
             verify_signature_json(
                 &signed_certificate.certificate,
                 &signed_certificate.signature.value,
@@ -152,7 +152,7 @@ fn validate_signed_certificate(
         }
         Signer::Certificate(signed_parent) => {
             let parent: Certificate = serde_json::from_value(signed_parent.certificate.clone())
-                .map_err(|e| Error::InvalidSchema(e.to_string()))?;
+                .map_err(|e| Error::MissingProperty(e.to_string()))?;
             verify_signature_json(
                 &signed_certificate.certificate,
                 &signed_certificate.signature.value,
@@ -163,7 +163,7 @@ fn validate_signed_certificate(
     };
 
     let certificate: Certificate = serde_json::from_value(signed_certificate.certificate.clone())
-        .map_err(|e| Error::InvalidSchema(e.to_string()))?;
+        .map_err(|e| Error::MissingProperty(e.to_string()))?;
 
     validate_permissions(&parent.permissions, &certificate.permissions)?;
     validate_certificates_key_usage(&parent.key_usage, &certificate.key_usage)?;
