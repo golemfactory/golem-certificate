@@ -1,16 +1,14 @@
 use super::super::OutboundPermissions;
-use crate::Error;
+
+pub struct OutboundPermissionsExtendedError(());
 
 pub fn validate_outbound_permissions(
     parent: &Option<OutboundPermissions>,
     child: &Option<OutboundPermissions>,
-) -> Result<(), Error> {
+) -> Result<(), OutboundPermissionsExtendedError> {
     match (&parent, &child) {
         (_, None) => Ok(()),
-        (None, Some(_)) => Err(Error::OutboundPermissionsExtended {
-            parent: parent.to_owned(),
-            child: child.to_owned(),
-        }),
+        (None, Some(_)) => Err(OutboundPermissionsExtendedError(())),
         (Some(parent), Some(child)) => validate_url_permissions(parent, child),
     }
 }
@@ -18,23 +16,17 @@ pub fn validate_outbound_permissions(
 fn validate_url_permissions(
     parent: &OutboundPermissions,
     child: &OutboundPermissions,
-) -> Result<(), Error> {
+) -> Result<(), OutboundPermissionsExtendedError> {
     match (parent, child) {
         (OutboundPermissions::Unrestricted, _) => Ok(()),
         (OutboundPermissions::Urls(_), OutboundPermissions::Unrestricted) => {
-            Err(Error::OutboundPermissionsExtended {
-                parent: Some(parent.to_owned()),
-                child: Some(child.to_owned()),
-            })
+            Err(OutboundPermissionsExtendedError(()))
         }
         (OutboundPermissions::Urls(parent_urls), OutboundPermissions::Urls(child_urls)) => {
             if child_urls.is_subset(parent_urls) {
                 Ok(())
             } else {
-                Err(Error::OutboundPermissionsExtended {
-                    parent: Some(parent.to_owned()),
-                    child: Some(child.to_owned()),
-                })
+                Err(OutboundPermissionsExtendedError(()))
             }
         }
     }

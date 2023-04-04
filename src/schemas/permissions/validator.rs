@@ -11,8 +11,12 @@ pub fn validate_permissions(parent: &Permissions, child: &Permissions) -> Result
             parent: parent.to_owned(),
             child: child.to_owned(),
         }),
-        (Permissions::Object(parent), Permissions::Object(child)) => {
-            validate_outbound_permissions(&parent.outbound, &child.outbound)
+        (Permissions::Object(parent_details), Permissions::Object(child_details)) => {
+            validate_outbound_permissions(&parent_details.outbound, &child_details.outbound)
+                .map_err(|_| Error::PermissionsExtended {
+                    parent: parent.to_owned(),
+                    child: child.to_owned(),
+                })
         }
     }
 }

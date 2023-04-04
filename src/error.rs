@@ -1,9 +1,7 @@
 use chrono::{DateTime, Utc};
 
 use crate::schemas::{
-    certificate::key_usage::KeyUsage,
-    permissions::{OutboundPermissions, Permissions},
-    validity_period::ValidityPeriod,
+    certificate::key_usage::KeyUsage, permissions::Permissions, validity_period::ValidityPeriod,
 };
 
 #[derive(thiserror::Error, Debug, PartialEq)]
@@ -22,11 +20,6 @@ pub enum Error {
         parent: Permissions,
         child: Permissions,
     },
-    #[error("Outbound permissions extended: {parent:?}, {child:?}")]
-    OutboundPermissionsExtended {
-        parent: Option<OutboundPermissions>,
-        child: Option<OutboundPermissions>,
-    },
     #[error("Key usage extended: {parent:?}, {child:?}")]
     KeyUsageExtended { parent: KeyUsage, child: KeyUsage },
     #[error("Certificate signing not permitted")]
@@ -35,8 +28,10 @@ pub enum Error {
     NodeSignNotPermitted,
     #[error("Invalid signature")]
     InvalidSignature,
-    #[error("Invalid format: {0}")]
-    InvalidFormat(String),
+    #[error("Invalid json: {0}")]
+    InvalidJson(String),
+    #[error("Json does not conform to schema: {0}")]
+    JsonDoesNotConformToSchema(String),
     #[error("Unsupported schema for structure {structure_name}: {schema}")]
     UnsupportedSchema {
         schema: String,
