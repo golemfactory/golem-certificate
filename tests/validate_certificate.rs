@@ -9,6 +9,7 @@ use golem_certificate::{
         validity_period::ValidityPeriod,
     },
     validator::{validate_certificate_str, validated_data::ValidatedCertificate},
+    Error,
 };
 use pretty_assertions::assert_eq;
 use test_case::test_case;
@@ -43,27 +44,24 @@ fn happy_path() {
     );
 }
 
-#[test_case("not_signed.json", "Invalid schema: missing field `signature`")]
-#[test_case("expired.signed.json", "Expired: was valid to 2023-01-02 00:00:00 UTC")]
-#[test_case("invalid_signature.signed.json", "Invalid signature: signature error")]
+#[test_case("not_signed.json", Error::JsonDoesNotConformToSchema("missing field `signature`".to_string()))]
+#[test_case("expired.signed.json", Error::Expired("2023-01-02T00:00:00Z".parse().unwrap()))]
+#[test_case("invalid_signature.signed.json", Error::InvalidSignature)]
 #[test_case(
     "invalid_key_usage.signed.json",
-    "Key usage extended: Child cannot extend key usages"
+   Error::KeyUsageExtended{parent: KeyUsage::Limited([Usage::SignNode, Usage::SignCertificate].into_iter().collect()), child: KeyUsage::Limited([Usage::SignNode, Usage::SignManifest].into_iter().collect())}
 )]
 #[test_case(
     "invalid_permissions.signed.json",
-    "Permissions extended: Child cannot have 'All' permissions when parent doesn't have one"
+   Error::PermissionsExtended{parent: Permissions::Object(PermissionDetails{outbound: Some(OutboundPermissions::Unrestricted)}), child: Permissions::All}
 )]
-#[test_case("extended_validity_period.signed.json", "Validity period extended: Parent: ValidityPeriod { not_before: 2023-01-01T00:00:00Z, not_after: 2025-01-01T00:00:00Z } Child: ValidityPeriod { not_before: 2023-01-01T00:00:00Z, not_after: 2099-01-01T00:00:00Z }")]
-#[test_case(
-    "cert_cannot_sign_other_cert.signed.json",
-    "Not permitted: Parent cert cannot sign child certificate"
-)]
-fn should_return_err(filename: &str, expected_err: &str) {
+#[test_case("extended_validity_period.signed.json", Error::ValidityPeriodExtended{parent: ValidityPeriod{not_before: "2023-01-01T00:00:00Z".parse().unwrap(), not_after: "2025-01-01T00:00:00Z".parse().unwrap()}, child: ValidityPeriod{not_before: "2023-01-01T00:00:00Z".parse().unwrap(), not_after: "2099-01-01T00:00:00Z".parse().unwrap()}})]
+#[test_case("cert_cannot_sign_other_cert.signed.json", Error::CertSignNotPermitted)]
+fn should_return_err(filename: &str, expected_err: Error) {
     let certificate =
         std::fs::read_to_string(format!("tests/resources/certificate/{filename}")).unwrap();
 
     let result = validate_certificate_str(&certificate);
 
-    assert_eq!(result.unwrap_err().to_string(), expected_err);
+    assert_eq!(result.unwrap_err(), expected_err);
 }

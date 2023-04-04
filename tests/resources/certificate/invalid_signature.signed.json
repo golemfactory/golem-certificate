@@ -30,7 +30,7 @@
       "hash": "sha512",
       "encryption": "EdDSA"
     },
-    "value": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    "value": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
     "signer": {
       "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
       "certificate": {
