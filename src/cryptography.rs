@@ -16,23 +16,18 @@ use crate::serde_jcs;
 use crate::serde_utils::{bytes_to_hex, hex_to_bytes};
 use crate::Error;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum HashAlgorithm {
     Sha224,
     Sha256,
     Sha384,
+    #[default]
     Sha512,
     Sha3_224,
     Sha3_256,
     Sha3_384,
     Sha3_512,
-}
-
-impl Default for HashAlgorithm {
-    fn default() -> Self {
-        HashAlgorithm::Sha512
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
