@@ -19,7 +19,7 @@
     },
     "publicKey": {
       "algorithm": "EdDSA",
-      "key": "c6cd286a2474d13ffc8dcd417a446df461751a78dec46d039603ca53a373ac52",
+      "key": "c6cd286a2474d13ffc8dcd417a446df461751a78dec46d039603ca53a373ac53",
       "parameters": {
         "scheme": "Ed25519"
       }
@@ -30,7 +30,7 @@
       "hash": "sha512",
       "encryption": "EdDSA"
     },
-    "value": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    "value": "839a2d43d22690338f4fb282e7bcc790e7352dc99e42dc603d43e51e4e09f2c709f1b9f1f4c90b446107440f8ab13345fbbd1d64337acf70b2777be9a522be0b",
     "signer": {
       "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
       "certificate": {
