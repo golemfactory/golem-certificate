@@ -1,10 +1,14 @@
 use std::{
     collections::BTreeSet,
+    fmt::Display,
     io::{self, Write},
 };
 
-use serde::Serialize;
-use serde_json::ser::{CharEscape, Formatter, Serializer};
+use serde::{Serialize, ser::Serializer as SerSerializer};
+use serde_json::{
+    error::Result,
+    ser::{CharEscape, Formatter, Serializer}
+};
 
 #[inline]
 pub fn to_string<S: Serialize>(value: &S) -> serde_json::Result<String> {
@@ -22,7 +26,7 @@ pub fn to_vec<S: Serialize>(value: &S) -> serde_json::Result<Vec<u8>> {
 
 #[inline]
 pub fn to_writer<S: Serialize, W: io::Write>(value: &S, writer: &mut W) -> serde_json::Result<()> {
-    value.serialize(&mut Serializer::with_formatter(writer, JcsFormatter::new()))
+    value.serialize(&mut JcsSerializer::new(writer))
 }
 
 struct JsonProperty {
@@ -71,20 +75,11 @@ impl Ord for JsonProperty {
 
 type JsonObject = BTreeSet<JsonProperty>;
 
+#[derive(Default)]
 pub struct JcsFormatter {
     objects: Vec<JsonObject>,
     keys: Vec<Vec<u8>>,
     buffers: Vec<Vec<u8>>,
-}
-
-impl JcsFormatter {
-    pub fn new() -> Self {
-        Self {
-            objects: Default::default(),
-            keys: Default::default(),
-            buffers: Default::default(),
-        }
-    }
 }
 
 impl JcsFormatter {
@@ -416,7 +411,7 @@ impl Formatter for JcsFormatter {
                 writer.write_all(b":")?;
                 writer.write_all(&property.value)
             })
-            .collect::<Result<_, _>>()?;
+            .collect::<std::result::Result<_, _>>()?;
         writer.write_all(b"}")
     }
 
@@ -494,5 +489,246 @@ impl Formatter for JcsFormatter {
             io::ErrorKind::InvalidInput,
             "Raw values are not supported for JCS serialization",
         ))
+    }
+}
+
+pub struct JcsSerializer<W: io::Write> {
+    serializer: Serializer<W, JcsFormatter>,
+}
+
+impl<W: io::Write> JcsSerializer<W>
+{
+    /// Creates a new JSON serializer.
+    #[inline]
+    pub fn new(writer: W) -> Self {
+        Self {
+            serializer: Serializer::with_formatter(writer, JcsFormatter::default())
+        }
+    }
+
+    /// Unwrap the `Writer` from the `Serializer`.
+    #[inline]
+    pub fn into_inner(self) -> W {
+        self.serializer.into_inner()
+    }
+}
+
+impl<'a, W: io::Write> SerSerializer for &'a mut JcsSerializer<W>
+{
+    type Ok = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::Ok;
+    type Error = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::Error;
+
+    type SerializeSeq = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeSeq;
+    type SerializeTuple = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeTuple;
+    type SerializeTupleStruct = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeTupleStruct;
+    type SerializeTupleVariant = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeTupleVariant;
+    type SerializeMap = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeMap;
+    type SerializeStruct = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeStruct;
+    type SerializeStructVariant = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeStructVariant;
+
+    #[inline]
+    fn serialize_bool(self, value: bool) -> Result<()> {
+        self.serializer.serialize_bool(value)
+    }
+
+    #[inline]
+    fn serialize_i8(self, value: i8) -> Result<()> {
+        self.serializer.serialize_i8(value)
+    }
+
+    #[inline]
+    fn serialize_i16(self, value: i16) -> Result<()> {
+        self.serializer.serialize_i16(value)
+    }
+
+    #[inline]
+    fn serialize_i32(self, value: i32) -> Result<()> {
+        self.serializer.serialize_i32(value)
+    }
+
+    #[inline]
+    fn serialize_i64(self, value: i64) -> Result<()> {
+        self.serializer.serialize_i64(value)
+    }
+
+    fn serialize_i128(self, value: i128) -> Result<()> {
+        self.serializer.serialize_i128(value)
+    }
+
+    #[inline]
+    fn serialize_u8(self, value: u8) -> Result<()> {
+        self.serializer.serialize_u8(value)
+    }
+
+    #[inline]
+    fn serialize_u16(self, value: u16) -> Result<()> {
+        self.serializer.serialize_u16(value)
+    }
+
+    #[inline]
+    fn serialize_u32(self, value: u32) -> Result<()> {
+        self.serializer.serialize_u32(value)
+    }
+
+    #[inline]
+    fn serialize_u64(self, value: u64) -> Result<()> {
+        self.serializer.serialize_u64(value)
+    }
+
+    fn serialize_u128(self, value: u128) -> Result<()> {
+        self.serializer.serialize_u128(value)
+    }
+
+    #[inline]
+    fn serialize_f32(self, value: f32) -> Result<()> {
+        if value.is_finite() {
+            self.serializer.serialize_f32(value)
+        } else {
+            Err(Self::Error::io(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "NaN and +/-Infinity are not permitted in JSON",
+            )))
+        }
+    }
+
+    #[inline]
+    fn serialize_f64(self, value: f64) -> Result<()> {
+        if value.is_finite() {
+            self.serializer.serialize_f64(value)
+        } else {
+            Err(Self::Error::io(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "NaN and +/-Infinity are not permitted in JSON",
+            )))
+        }
+    }
+
+    #[inline]
+    fn serialize_char(self, value: char) -> Result<()> {
+        self.serializer.serialize_char(value)
+    }
+
+    #[inline]
+    fn serialize_str(self, value: &str) -> Result<()> {
+        self.serializer.serialize_str(value)
+    }
+
+    #[inline]
+    fn serialize_bytes(self, value: &[u8]) -> Result<()> {
+        self.serializer.serialize_bytes(value)
+    }
+
+    #[inline]
+    fn serialize_unit(self) -> Result<()> {
+        self.serializer.serialize_unit()
+    }
+
+    #[inline]
+    fn serialize_unit_struct(self, name: &'static str) -> Result<()> {
+        self.serializer.serialize_unit_struct(name)
+    }
+
+    #[inline]
+    fn serialize_unit_variant(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+    ) -> Result<()> {
+        self.serializer.serialize_unit_variant(name, variant_index, variant)
+    }
+
+    /// Serialize newtypes without an object wrapper.
+    #[inline]
+    fn serialize_newtype_struct<T>(self, name: &'static str, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.serializer.serialize_newtype_struct(name, value)
+    }
+
+    #[inline]
+    fn serialize_newtype_variant<T>(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+        value: &T,
+    ) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.serializer.serialize_newtype_variant(name, variant_index, variant, value)
+    }
+
+    #[inline]
+    fn serialize_none(self) -> Result<()> {
+        self.serializer.serialize_none()
+    }
+
+    #[inline]
+    fn serialize_some<T>(self, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.serializer.serialize_some(value)
+    }
+
+    #[inline]
+    fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
+        self.serializer.serialize_seq(len)
+    }
+
+    #[inline]
+    fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple> {
+        self.serializer.serialize_tuple(len)
+    }
+
+    #[inline]
+    fn serialize_tuple_struct(
+        self,
+        name: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleStruct> {
+        self.serializer.serialize_tuple_struct(name, len)
+    }
+
+    #[inline]
+    fn serialize_tuple_variant(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleVariant> {
+        self.serializer.serialize_tuple_variant(name, variant_index, variant, len)
+    }
+
+    #[inline]
+    fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
+        self.serializer.serialize_map(len)
+    }
+
+    #[inline]
+    fn serialize_struct(self, name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
+        self.serializer.serialize_struct(name, len)
+    }
+
+    #[inline]
+    fn serialize_struct_variant(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeStructVariant> {
+        self.serializer.serialize_struct_variant(name, variant_index, variant, len)
+    }
+
+    fn collect_str<T>(self, value: &T) -> Result<()>
+    where
+        T: ?Sized + Display,
+    {
+        self.serializer.collect_str(value)
     }
 }
