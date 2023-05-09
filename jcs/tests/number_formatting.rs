@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde_json::ser::Formatter;
 use test_case::test_case;
 
-use jcs::*;
+use serde_json_canonicalizer::*;
 
 #[test_case(0x0000000000000000, "0" ; "Zero")]
 #[test_case(0x8000000000000000, "0" ; "Minus zero")]

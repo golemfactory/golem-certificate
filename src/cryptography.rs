@@ -10,9 +10,9 @@ use ed25519_dalek::{
     ExpandedSecretKey, Keypair, PublicKey, SecretKey, Signature as EdDSASignature, Verifier,
 };
 use rand::rngs::OsRng;
+use serde_json_canonicalizer::to_vec as to_jsc_vec;
 
 use crate::schemas::signature::SignatureAlgorithm;
-use crate::serde_jcs;
 use crate::serde_utils::{bytes_to_hex, hex_to_bytes};
 use crate::Error;
 
@@ -73,7 +73,7 @@ pub fn create_default_hash(value: &Value) -> Result<Vec<u8>, Error> {
 }
 
 pub fn create_hash(value: &Value, hash_algorithm: &HashAlgorithm) -> Result<Vec<u8>, Error> {
-    serde_jcs::to_vec(value)
+    to_jsc_vec(value)
         .map(|canonical_json| create_digest(canonical_json, hash_algorithm))
         .map_err(|e| Error::JcsSerializationError(e.to_string()))
 }
@@ -93,7 +93,7 @@ fn create_digest(input: impl AsRef<[u8]>, hash_algorithm: &HashAlgorithm) -> Vec
 }
 
 pub fn sign_json(value: &Value, private_key: &Key) -> Result<(SignatureAlgorithm, Vec<u8>)> {
-    let canonical_json = serde_jcs::to_vec(value)?;
+    let canonical_json = to_jsc_vec(value)?;
     let secret_key = SecretKey::from_bytes(&private_key.key)?;
     let signature_value = sign_bytes(canonical_json, &secret_key);
     let algorithm = SignatureAlgorithm {
@@ -116,7 +116,7 @@ pub fn verify_signature_json(
     public_key: &Key,
 ) -> Result<(), Error> {
     let canonical_json =
-        serde_jcs::to_vec(value).map_err(|e| Error::JcsSerializationError(e.to_string()))?;
+        to_jsc_vec(value).map_err(|e| Error::JcsSerializationError(e.to_string()))?;
     let eddsa_signature = EdDSASignature::from_bytes(signature_value.as_ref())
         .map_err(|_| Error::InvalidSignature)?;
     let public_key = PublicKey::from_bytes(&public_key.key).map_err(|_| Error::InvalidSignature)?;

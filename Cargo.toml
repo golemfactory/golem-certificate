@@ -17,6 +17,7 @@ sha2 = "0.10.6"
 sha3 = "0.10.6"
 serde = "1.0"
 serde_json = "1.0"
+serde_json_canonicalizer = { path = "./jcs" }
 thiserror = "1.0"
 url = { version = "2.2", features = ["serde"] }
 ya-client-model = "0.5"

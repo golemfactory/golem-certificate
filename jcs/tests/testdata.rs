@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serde_json::Value;
 
-use jcs::*;
+use serde_json_canonicalizer::*;
 
 fn read_files(filename: &str) -> Result<(Value, String, Vec<u8>)> {
     let resources_folder = std::path::PathBuf::from("tests/resources/testdata");

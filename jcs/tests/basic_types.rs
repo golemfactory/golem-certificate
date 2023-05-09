@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde_json::{ json, Value };
 use test_case::test_case;
 
-use jcs::*;
+use serde_json_canonicalizer::*;
 
 // These do not play well with test_case macro
 #[test]

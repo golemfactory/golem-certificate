@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde_json::Value;
 use test_case::test_case;
 
-use jcs::*;
+use serde_json_canonicalizer::*;
 
 fn read_files(filename: &str) -> Result<(Value, String)> {
     let (input_file, expected_file) = {

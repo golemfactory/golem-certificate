@@ -1,5 +1,5 @@
 [package]
-name = "jcs"
+name = "serde_json_canonicalizer"
 version = "0.1.0"
 edition = "2021"
 
