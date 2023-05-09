@@ -1,17 +1,17 @@
-use std::{io::{self, Write}, collections::BTreeSet };
+use std::{
+    collections::BTreeSet,
+    io::{self, Write},
+};
 
 use serde::Serialize;
-use serde_json::ser::{ CharEscape, Formatter, Serializer };
+use serde_json::ser::{CharEscape, Formatter, Serializer};
 
 #[inline]
 pub fn to_string<S: Serialize>(value: &S) -> serde_json::Result<String> {
-    to_vec(value)
-        .map(|bytes|
-            unsafe {
-                // We do not emit invalid UTF-8.
-                String::from_utf8_unchecked(bytes)
-            }
-        )
+    to_vec(value).map(|bytes| unsafe {
+        // We do not emit invalid UTF-8.
+        String::from_utf8_unchecked(bytes)
+    })
 }
 
 #[inline]
@@ -34,13 +34,18 @@ struct JsonProperty {
 impl JsonProperty {
     fn new(key: Vec<u8>, value: Vec<u8>) -> io::Result<Self> {
         // Go through deserialization again to process escape sequences in the key
-        // "\a" should be processed as '\a' for sorting
+        // "\\a" should be processed as '\a' for sorting
         let sorting_key_as_value = serde_json::from_slice::<serde_json::Value>(&key)?;
-        let sorting_key: Vec<u16> = sorting_key_as_value.as_str()
-                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Invalid UTF8 sequence"))?
-                .encode_utf16()
-                .collect();
-        Ok(Self { sorting_key, key, value })
+        let sorting_key: Vec<u16> = sorting_key_as_value
+            .as_str()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Invalid UTF8 sequence"))?
+            .encode_utf16()
+            .collect();
+        Ok(Self {
+            sorting_key,
+            key,
+            value,
+        })
     }
 }
 
@@ -240,7 +245,10 @@ impl Formatter for JcsFormatter {
             let s = buffer.format_finite(value);
             self.get_writer(writer).write_all(s.as_bytes())
         } else {
-            Err(io::Error::new(io::ErrorKind::InvalidInput, "NaN and +/-Infinity are not permitted in JSON"))
+            Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "NaN and +/-Infinity are not permitted in JSON",
+            ))
         }
     }
 
@@ -252,9 +260,9 @@ impl Formatter for JcsFormatter {
     where
         W: ?Sized + io::Write,
     {
-        let number: f64 = value.parse().map_err(|_|
-            io::Error::new(io::ErrorKind::InvalidInput, "Cannot parse str to f64")
-        )?;
+        let number: f64 = value
+            .parse()
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Cannot parse str to f64"))?;
         self.get_writer(writer).write_all(b"ff")?;
         self.write_f64(writer, number)
     }
@@ -389,12 +397,17 @@ impl Formatter for JcsFormatter {
     where
         W: ?Sized + io::Write,
     {
-        let json_object = self.objects.pop().ok_or_else(
-            || io::Error::new(io::ErrorKind::InvalidData, "end_object called before start_object")
-        )?;
+        let json_object = self.objects.pop().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "end_object called before start_object",
+            )
+        })?;
         let mut writer = self.get_writer(writer);
         writer.write_all(b"{")?;
-        json_object.into_iter().enumerate()
+        json_object
+            .into_iter()
+            .enumerate()
             .map(|(idx, property)| {
                 if idx > 0 {
                     writer.write_all(b",")?;
@@ -423,9 +436,12 @@ impl Formatter for JcsFormatter {
     where
         W: ?Sized + io::Write,
     {
-        let key = self.buffers.pop().ok_or_else(
-            || io::Error::new(io::ErrorKind::InvalidData, "end_object_key called before begin_object_key")
-        )?;
+        let key = self.buffers.pop().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "end_object_key called before begin_object_key",
+            )
+        })?;
         self.keys.push(key);
         Ok(())
     }
@@ -446,15 +462,24 @@ impl Formatter for JcsFormatter {
     where
         W: ?Sized + io::Write,
     {
-        let value = self.buffers.pop().ok_or_else(
-            || io::Error::new(io::ErrorKind::InvalidData, "end_object_value called before begin_object_value")
-        )?;
-        let key = self.keys.pop().ok_or_else(
-            || io::Error::new(io::ErrorKind::InvalidData, "end_object_value called before end_object_key")
-        )?;
-        let json_object = self.objects.last_mut().ok_or_else(
-            || io::Error::new(io::ErrorKind::InvalidData, "end_object_value called before start_object")
-        )?;
+        let value = self.buffers.pop().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "end_object_value called before begin_object_value",
+            )
+        })?;
+        let key = self.keys.pop().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "end_object_value called before end_object_key",
+            )
+        })?;
+        let json_object = self.objects.last_mut().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "end_object_value called before start_object",
+            )
+        })?;
         json_object.insert(JsonProperty::new(key, value)?);
         Ok(())
     }
@@ -465,6 +490,9 @@ impl Formatter for JcsFormatter {
     where
         W: ?Sized + io::Write,
     {
-        Err(io::Error::new(io::ErrorKind::InvalidInput, "Raw values are not supported for JCS serialization"))
+        Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Raw values are not supported for JCS serialization",
+        ))
     }
 }

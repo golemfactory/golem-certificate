@@ -1,7 +1,7 @@
 use std::env;
 use std::fs::read_dir;
 use std::fs::File;
-use std::io::{ Error, ErrorKind, Result, Write };
+use std::io::{Error, ErrorKind, Result, Write};
 use std::path::Path;
 
 // Generate test cases for all files in tests/resources/testdata/input
@@ -14,12 +14,17 @@ fn main() -> Result<()> {
 
     for file in test_data {
         let file = file?;
-        if file.file_type()?.is_file() && file.path().extension().and_then(|ext| ext.to_str()) == Some("json") {
+        if file.file_type()?.is_file()
+            && file.path().extension().and_then(|ext| ext.to_str()) == Some("json")
+        {
             let path = file.path();
-            let filename = path.file_stem()
+            let filename = path
+                .file_stem()
                 .ok_or_else(|| Error::new(ErrorKind::NotFound, "Empty filename"))?
                 .to_str()
-                .ok_or_else(|| Error::new(ErrorKind::NotFound, "Unsupported characters in filename"))?;
+                .ok_or_else(|| {
+                    Error::new(ErrorKind::NotFound, "Unsupported characters in filename")
+                })?;
             write_test(&mut test_file, filename)?;
         }
     }

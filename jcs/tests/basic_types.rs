@@ -1,5 +1,5 @@
 use anyhow::Result;
-use serde_json::{ json, Value };
+use serde_json::{json, Value};
 use test_case::test_case;
 
 use serde_json_canonicalizer::*;
@@ -21,4 +21,3 @@ fn basic_types(value: Value, expected: &str) -> Result<()> {
     assert_eq!(expected, to_string(&value)?);
     Ok(())
 }
-

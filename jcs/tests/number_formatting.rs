@@ -201,7 +201,6 @@ fn zeroes(number: f64, expected: &str) -> Result<()> {
     Ok(())
 }
 
-
 // This test is running on a generated file, the generator is copied from the reference implementation
 // https://github.com/cyberphone/json-canonicalization/blob/dc406ceaf94b5fa554fcabb92c091089c2357e83/testdata/numgen.js
 // To run the test, generate the input file by executing the generation script
@@ -211,7 +210,7 @@ fn zeroes(number: f64, expected: &str) -> Result<()> {
 #[ignore]
 #[test]
 fn generated_numbers() -> Result<()> {
-    use std::io::{ BufRead, BufReader, Write, stdout };
+    use std::io::{stdout, BufRead, BufReader, Write};
     let file = std::fs::File::open("tests/resources/generated-numbers/es6testfile100m.txt")?;
     let reader = BufReader::new(file);
 
@@ -227,7 +226,13 @@ fn generated_numbers() -> Result<()> {
         assert_eq!(2, parts.len());
         let input = f64::from_bits(u64::from_str_radix(parts[0], 16)?);
         formatter.write_f64(&mut buffer, input)?;
-        assert_eq!(parts[1].as_bytes(), &buffer, "Testing input {} parsed into {}", parts[0], input);
+        assert_eq!(
+            parts[1].as_bytes(),
+            &buffer,
+            "Testing input {} parsed into {}",
+            parts[0],
+            input
+        );
         buffer.clear();
         if idx == threshold {
             threshold += one_percent;
