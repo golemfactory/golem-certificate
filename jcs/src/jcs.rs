@@ -4,10 +4,10 @@ use std::{
     io::{self, Write},
 };
 
-use serde::{Serialize, ser::Serializer as SerSerializer};
+use serde::{ser::Serializer as SerSerializer, Serialize};
 use serde_json::{
     error::Result,
-    ser::{CharEscape, Formatter, Serializer}
+    ser::{CharEscape, Formatter, Serializer},
 };
 
 #[inline]
@@ -496,13 +496,12 @@ pub struct JcsSerializer<W: io::Write> {
     serializer: Serializer<W, JcsFormatter>,
 }
 
-impl<W: io::Write> JcsSerializer<W>
-{
+impl<W: io::Write> JcsSerializer<W> {
     /// Creates a new JSON serializer.
     #[inline]
     pub fn new(writer: W) -> Self {
         Self {
-            serializer: Serializer::with_formatter(writer, JcsFormatter::default())
+            serializer: Serializer::with_formatter(writer, JcsFormatter::default()),
         }
     }
 
@@ -513,18 +512,20 @@ impl<W: io::Write> JcsSerializer<W>
     }
 }
 
-impl<'a, W: io::Write> SerSerializer for &'a mut JcsSerializer<W>
-{
+impl<'a, W: io::Write> SerSerializer for &'a mut JcsSerializer<W> {
     type Ok = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::Ok;
     type Error = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::Error;
 
     type SerializeSeq = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeSeq;
     type SerializeTuple = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeTuple;
-    type SerializeTupleStruct = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeTupleStruct;
-    type SerializeTupleVariant = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeTupleVariant;
+    type SerializeTupleStruct =
+        <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeTupleStruct;
+    type SerializeTupleVariant =
+        <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeTupleVariant;
     type SerializeMap = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeMap;
     type SerializeStruct = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeStruct;
-    type SerializeStructVariant = <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeStructVariant;
+    type SerializeStructVariant =
+        <&'a mut Serializer<W, JcsFormatter> as SerSerializer>::SerializeStructVariant;
 
     #[inline]
     fn serialize_bool(self, value: bool) -> Result<()> {
@@ -635,7 +636,8 @@ impl<'a, W: io::Write> SerSerializer for &'a mut JcsSerializer<W>
         variant_index: u32,
         variant: &'static str,
     ) -> Result<()> {
-        self.serializer.serialize_unit_variant(name, variant_index, variant)
+        self.serializer
+            .serialize_unit_variant(name, variant_index, variant)
     }
 
     /// Serialize newtypes without an object wrapper.
@@ -658,7 +660,8 @@ impl<'a, W: io::Write> SerSerializer for &'a mut JcsSerializer<W>
     where
         T: ?Sized + Serialize,
     {
-        self.serializer.serialize_newtype_variant(name, variant_index, variant, value)
+        self.serializer
+            .serialize_newtype_variant(name, variant_index, variant, value)
     }
 
     #[inline]
@@ -701,7 +704,8 @@ impl<'a, W: io::Write> SerSerializer for &'a mut JcsSerializer<W>
         variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
-        self.serializer.serialize_tuple_variant(name, variant_index, variant, len)
+        self.serializer
+            .serialize_tuple_variant(name, variant_index, variant, len)
     }
 
     #[inline]
@@ -722,7 +726,8 @@ impl<'a, W: io::Write> SerSerializer for &'a mut JcsSerializer<W>
         variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStructVariant> {
-        self.serializer.serialize_struct_variant(name, variant_index, variant, len)
+        self.serializer
+            .serialize_struct_variant(name, variant_index, variant, len)
     }
 
     fn collect_str<T>(self, value: &T) -> Result<()>

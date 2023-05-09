@@ -1,14 +1,17 @@
 use std::io;
 
 use anyhow::Result;
+use pretty_assertions::{assert_eq, assert_matches};
 use serde::Serialize;
 use serde_json::ser::Formatter;
-use pretty_assertions::{assert_eq, assert_matches};
 use test_case::test_case;
 
 use serde_json_canonicalizer::*;
 
-fn formatter_to_string<'a, V>(value: V, f: &dyn Fn(&mut JcsFormatter, &mut (dyn io::Write + 'a), V) -> io::Result<()>) -> Result<String>
+fn formatter_to_string<'a, V>(
+    value: V,
+    f: &dyn Fn(&mut JcsFormatter, &mut (dyn io::Write + 'a), V) -> io::Result<()>,
+) -> Result<String>
 where
     V: Serialize,
 {
@@ -51,7 +54,10 @@ fn jcs_rfc_appendix_b(bits: u64, expected: &str) {
 #[test_case(f64::NEG_INFINITY ; "-Infinity")]
 fn infinite_numbers(number: f64) {
     assert_matches!(to_string(&number), Err(_));
-    assert_matches!(formatter_to_string(number, &JcsFormatter::write_f64), Err(_))
+    assert_matches!(
+        formatter_to_string(number, &JcsFormatter::write_f64),
+        Err(_)
+    )
 }
 
 #[test_case(u8::MAX as f64, "255" ; "u8::MAX exact")]
@@ -81,35 +87,53 @@ fn integers(number: f64, expected: &str) {
 
 #[test_case(u8::MAX, "255" ; "u8::MAX exact")]
 fn integers_u8(number: u8, expected: &str) {
-    assert_eq!(expected, formatter_to_string(number, &JcsFormatter::write_u8).unwrap());
+    assert_eq!(
+        expected,
+        formatter_to_string(number, &JcsFormatter::write_u8).unwrap()
+    );
 }
 
 #[test_case(i8::MAX, "127" ; "i8::MAX exact")]
 #[test_case(i8::MIN, "-128" ; "i8::MIN exact")]
 fn integers_i8(number: i8, expected: &str) {
-    assert_eq!(expected, formatter_to_string(number, &JcsFormatter::write_i8).unwrap());
+    assert_eq!(
+        expected,
+        formatter_to_string(number, &JcsFormatter::write_i8).unwrap()
+    );
 }
 
 #[test_case(u16::MAX, "65535" ; "u16::MAX exact")]
 fn integers_u16(number: u16, expected: &str) {
-    assert_eq!(expected, formatter_to_string(number, &JcsFormatter::write_u16).unwrap());
+    assert_eq!(
+        expected,
+        formatter_to_string(number, &JcsFormatter::write_u16).unwrap()
+    );
 }
 
 #[test_case(i16::MAX, "32767" ; "i16::MAX exact")]
 #[test_case(i16::MIN, "-32768" ; "i16::MIN exact")]
 fn integers_i16(number: i16, expected: &str) {
-    assert_eq!(expected, formatter_to_string(number, &JcsFormatter::write_i16).unwrap());
+    assert_eq!(
+        expected,
+        formatter_to_string(number, &JcsFormatter::write_i16).unwrap()
+    );
 }
 
 #[test_case(u32::MAX, "4294967295" ; "u32::MAX exact")]
 fn integers_u32(number: u32, expected: &str) {
-    assert_eq!(expected, formatter_to_string(number, &JcsFormatter::write_u32).unwrap());
+    assert_eq!(
+        expected,
+        formatter_to_string(number, &JcsFormatter::write_u32).unwrap()
+    );
 }
 
 #[test_case(i32::MAX, "2147483647" ; "i32::MAX exact")]
 #[test_case(i32::MIN, "-2147483648" ; "i32::MIN exact")]
 fn integers_i32(number: i32, expected: &str) {
-    assert_eq!(expected, formatter_to_string(number, &JcsFormatter::write_i32).unwrap());
+    assert_eq!(
+        expected,
+        formatter_to_string(number, &JcsFormatter::write_i32).unwrap()
+    );
 }
 
 // The RFC states that "For maximum compliance with the ECMAScript "JSON"
@@ -120,33 +144,48 @@ fn integers_i32(number: i32, expected: &str) {
 // as the most widely used javascript engine.
 #[test_case(u64::MAX, "18446744073709552000" ; "u64::MAX exact (v8 compat)")]
 fn integers_u64(number: u64, expected: &str) {
-    assert_eq!(expected, formatter_to_string(number, &JcsFormatter::write_u64).unwrap());
+    assert_eq!(
+        expected,
+        formatter_to_string(number, &JcsFormatter::write_u64).unwrap()
+    );
 }
 
 #[test_case(i64::MAX, "9223372036854776000" ; "i64::MAX exact (v8 compat)")]
 #[test_case(i64::MIN, "-9223372036854776000" ; "i64::MIN exact (v8 compat)")]
 fn integers_i64(number: i64, expected: &str) {
-    assert_eq!(expected, formatter_to_string(number, &JcsFormatter::write_i64).unwrap());
+    assert_eq!(
+        expected,
+        formatter_to_string(number, &JcsFormatter::write_i64).unwrap()
+    );
 }
 
 #[test_case(184467440737095520000u128, "184467440737095500000" ; "v8 compat 1")]
 #[test_case(1844674407370955200000u128, "1.8446744073709552e+21" ; "v8 compat 2")]
 #[test_case(184467440737095520000000u128, "1.844674407370955e+23" ; "v8 compat 3")]
 fn integers_u128(number: u128, expected: &str) {
-    assert_eq!(expected, formatter_to_string(number, &JcsFormatter::write_u128).unwrap());
+    assert_eq!(
+        expected,
+        formatter_to_string(number, &JcsFormatter::write_u128).unwrap()
+    );
 }
 
 #[test_case(-184467440737095520000i128, "-184467440737095500000" ; "v8 compat 1")]
 #[test_case(-1844674407370955200000i128, "-1.8446744073709552e+21" ; "v8 compat 2")]
 #[test_case(-184467440737095520000000i128, "-1.844674407370955e+23" ; "v8 compat 3")]
 fn integers_i128(number: i128, expected: &str) {
-    assert_eq!(expected, formatter_to_string(number, &JcsFormatter::write_i128).unwrap());
+    assert_eq!(
+        expected,
+        formatter_to_string(number, &JcsFormatter::write_i128).unwrap()
+    );
 }
 
 #[test_case(0.0f64, "0" ; "zero")]
 #[test_case(-0.0f64, "0" ; "minus zero")]
 fn zeroes(number: f64, expected: &str) {
-    assert_eq!(expected, formatter_to_string(number, &JcsFormatter::write_f64).unwrap());
+    assert_eq!(
+        expected,
+        formatter_to_string(number, &JcsFormatter::write_f64).unwrap()
+    );
 }
 
 // This test is running on a generated file, the generator is copied from the reference implementation
