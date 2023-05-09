@@ -190,9 +190,9 @@ fn zeroes(number: f64, expected: &str) {
 
 // This test is running on a generated file, the generator is copied from the reference implementation
 // https://github.com/cyberphone/json-canonicalization/blob/dc406ceaf94b5fa554fcabb92c091089c2357e83/testdata/numgen.js
-// To run the test, generate the input file by executing the generation script
+// To run the test, generate the input file (~3.7Gb) by executing the generation script
 // in `resources/generated-numbers` by the command line `node numgen.js` (requires nodejs to be installed)
-// This is a very long test and should be executed via
+// This is a long test and should be executed via
 // `cargo test --tests generated_numbers -- --nocapture --include-ignored`
 #[ignore]
 #[test]

@@ -403,15 +403,14 @@ impl Formatter for JcsFormatter {
         json_object
             .into_iter()
             .enumerate()
-            .map(|(idx, property)| {
+            .try_for_each(|(idx, property)| {
                 if idx > 0 {
                     writer.write_all(b",")?;
                 }
                 writer.write_all(&property.key)?;
                 writer.write_all(b":")?;
                 writer.write_all(&property.value)
-            })
-            .collect::<std::result::Result<_, _>>()?;
+            })?;
         writer.write_all(b"}")
     }
 
