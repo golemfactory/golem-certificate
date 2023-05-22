@@ -1,5 +1,4 @@
 mod cryptography;
-mod serde_jcs;
 mod serde_utils;
 
 pub mod error;
