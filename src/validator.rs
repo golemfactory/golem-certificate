@@ -17,34 +17,16 @@ use crate::{
     Error,
 };
 
-use self::{
-    validated_data::{ValidatedCertificate, ValidatedNodeDescriptor},
-    validation_checks::ValidationChecks,
-};
+use self::validated_data::{ValidatedCertificate, ValidatedNodeDescriptor};
 
 pub mod validated_data;
-pub mod validation_checks;
 
 pub fn validate_certificate_str(data: &str) -> Result<ValidatedCertificate, Error> {
-    validate_certificate_str_selective(data, ValidationChecks::All)
-}
-
-pub fn validate_certificate_str_selective(
-    data: &str,
-    validations: ValidationChecks,
-) -> Result<ValidatedCertificate, Error> {
     let value: Value = serde_json::from_str(data).map_err(|e| Error::InvalidJson(e.to_string()))?;
-    validate_certificate_selective(value, validations)
+    validate_certificate(value)
 }
 
 pub fn validate_certificate(value: Value) -> Result<ValidatedCertificate, Error> {
-    validate_certificate_selective(value, ValidationChecks::All)
-}
-
-pub fn validate_certificate_selective(
-    value: Value,
-    validations: ValidationChecks,
-) -> Result<ValidatedCertificate, Error> {
     validate_schema(
         &value,
         "https://golem.network/schemas/v1/certificate.schema.json",
@@ -52,8 +34,7 @@ pub fn validate_certificate_selective(
     )?;
     let signed_certificate: SignedCertificate = serde_json::from_value(value)
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
-    let mut validated_certificate =
-        validate_signed_certificate_selective(&signed_certificate, validations)?;
+    let mut validated_certificate = validate_signed_certificate(&signed_certificate)?;
     validated_certificate
         .certificate_chain_fingerprints
         .reverse();
@@ -103,48 +84,32 @@ fn validate_schema(value: &Value, schema_id: &str, structure_name: &str) -> Resu
 fn validate_signed_node_descriptor(
     signed_node_descriptor: SignedNodeDescriptor,
 ) -> Result<ValidatedNodeDescriptor, Error> {
-    validate_signed_node_descriptor_selective(signed_node_descriptor, ValidationChecks::All)
-}
-
-fn validate_signed_node_descriptor_selective(
-    signed_node_descriptor: SignedNodeDescriptor,
-    validations: ValidationChecks,
-) -> Result<ValidatedNodeDescriptor, Error> {
     let node_descriptor: NodeDescriptor =
         serde_json::from_value(signed_node_descriptor.node_descriptor.clone())
             .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
 
     let signing_certificate = signed_node_descriptor.signature.signer;
-    let validated_certificate =
-        validate_signed_certificate_selective(&signing_certificate, validations)?;
+    let validated_certificate = validate_signed_certificate(&signing_certificate)?;
 
     let leaf_certificate: Certificate = serde_json::from_value(signing_certificate.certificate)
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
-    if validations.contains(ValidationChecks::KeyUsage) {
-        verify_signature_json(
-            &signed_node_descriptor.node_descriptor,
-            &signed_node_descriptor.signature.value,
-            &leaf_certificate.public_key,
-        )?;
-    }
-    if validations.contains(ValidationChecks::Permissions) {
-        validate_permissions(
-            &validated_certificate.permissions,
-            &node_descriptor.permissions,
-        )?;
-    }
-    if validations.contains(ValidationChecks::KeyUsage) {
-        validate_sign_node(&validated_certificate.key_usage)?;
-    }
-    if validations.contains(ValidationChecks::ValidityPeriod) {
-        validate_validity_period(
-            &validated_certificate.validity_period,
-            &node_descriptor.validity_period,
-        )?;
-    }
-    if validations.contains(ValidationChecks::Timestamp) {
-        validate_timestamp(&node_descriptor.validity_period, Utc::now())?;
-    }
+    verify_signature_json(
+        &signed_node_descriptor.node_descriptor,
+        &signed_node_descriptor.signature.value,
+        &leaf_certificate.public_key,
+    )?;
+
+    validate_permissions(
+        &validated_certificate.permissions,
+        &node_descriptor.permissions,
+    )?;
+    validate_sign_node(&validated_certificate.key_usage)?;
+    validate_validity_period(
+        &validated_certificate.validity_period,
+        &node_descriptor.validity_period,
+    )?;
+
+    validate_timestamp(&node_descriptor.validity_period, Utc::now())?;
 
     Ok(ValidatedNodeDescriptor {
         certificate_chain_fingerprints: validated_certificate.certificate_chain_fingerprints,
@@ -163,29 +128,19 @@ fn create_fingerprint_for_value(value: &Value) -> Result<Fingerprint, Error> {
     create_default_hash(value).map(|binary| binary.encode_hex())
 }
 
-#[allow(dead_code)]
 fn validate_signed_certificate(
     signed_certificate: &SignedCertificate,
-) -> Result<ValidatedCertificate, Error> {
-    validate_signed_certificate_selective(signed_certificate, ValidationChecks::All)
-}
-
-fn validate_signed_certificate_selective(
-    signed_certificate: &SignedCertificate,
-    validations: ValidationChecks,
 ) -> Result<ValidatedCertificate, Error> {
     let parent = match &signed_certificate.signature.signer {
         Signer::SelfSigned => {
             let certificate: Certificate =
                 serde_json::from_value(signed_certificate.certificate.clone())
                     .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
-            if validations.contains(ValidationChecks::Signature) {
-                verify_signature_json(
-                    &signed_certificate.certificate,
-                    &signed_certificate.signature.value,
-                    &certificate.public_key,
-                )?;
-            }
+            verify_signature_json(
+                &signed_certificate.certificate,
+                &signed_certificate.signature.value,
+                &certificate.public_key,
+            )?;
             ValidatedCertificate {
                 certificate_chain_fingerprints: vec![],
                 permissions: certificate.permissions,
@@ -197,31 +152,22 @@ fn validate_signed_certificate_selective(
         Signer::Certificate(signed_parent) => {
             let parent: Certificate = serde_json::from_value(signed_parent.certificate.clone())
                 .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
-            if validations.contains(ValidationChecks::Signature) {
-                verify_signature_json(
-                    &signed_certificate.certificate,
-                    &signed_certificate.signature.value,
-                    &parent.public_key,
-                )?;
-            }
-            validate_signed_certificate_selective(signed_parent, validations)?
+            verify_signature_json(
+                &signed_certificate.certificate,
+                &signed_certificate.signature.value,
+                &parent.public_key,
+            )?;
+            validate_signed_certificate(signed_parent)?
         }
     };
 
     let certificate: Certificate = serde_json::from_value(signed_certificate.certificate.clone())
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
-    if validations.contains(ValidationChecks::Permissions) {
-        validate_permissions(&parent.permissions, &certificate.permissions)?;
-    }
-    if validations.contains(ValidationChecks::KeyUsage) {
-        validate_certificates_key_usage(&parent.key_usage, &certificate.key_usage)?;
-    }
-    if validations.contains(ValidationChecks::ValidityPeriod) {
-        validate_validity_period(&parent.validity_period, &certificate.validity_period)?;
-    }
-    if validations.contains(ValidationChecks::Timestamp) {
-        validate_timestamp(&certificate.validity_period, Utc::now())?;
-    }
+
+    validate_permissions(&parent.permissions, &certificate.permissions)?;
+    validate_certificates_key_usage(&parent.key_usage, &certificate.key_usage)?;
+    validate_validity_period(&parent.validity_period, &certificate.validity_period)?;
+    validate_timestamp(&certificate.validity_period, Utc::now())?;
 
     let mut fingerprints = parent.certificate_chain_fingerprints;
     fingerprints.push(create_certificate_fingerprint(signed_certificate)?);
