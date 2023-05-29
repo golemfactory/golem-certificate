@@ -19,7 +19,7 @@ fn happy_path() {
     let certificate =
         std::fs::read_to_string("tests/resources/certificate/happy_path.signed.json").unwrap();
 
-    let result = validate_certificate_str(&certificate).unwrap();
+    let result = validate_certificate_str(&certificate, Some(Utc::now())).unwrap();
 
     assert_eq!(
         result,
@@ -61,7 +61,7 @@ fn should_return_err(filename: &str, expected_err: Error) {
     let certificate =
         std::fs::read_to_string(format!("tests/resources/certificate/{filename}")).unwrap();
 
-    let result = validate_certificate_str(&certificate);
+    let result = validate_certificate_str(&certificate, Some(Utc::now()));
 
     assert_eq!(result.unwrap_err(), expected_err);
 }

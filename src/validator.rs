@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use hex::ToHex;
 use serde_json::Value;
 
@@ -21,12 +21,26 @@ use self::validated_data::{ValidatedCertificate, ValidatedNodeDescriptor};
 
 pub mod validated_data;
 
-pub fn validate_certificate_str(data: &str) -> Result<ValidatedCertificate, Error> {
+/// Deserializes and validates certificate.
+/// # Arguments
+/// * `data` serialized certificate
+/// * `timestamp` optional timestamp to verify validity
+pub fn validate_certificate_str(
+    data: &str,
+    timestamp: Option<DateTime<Utc>>,
+) -> Result<ValidatedCertificate, Error> {
     let value: Value = serde_json::from_str(data).map_err(|e| Error::InvalidJson(e.to_string()))?;
-    validate_certificate(value)
+    validate_certificate(value, timestamp)
 }
 
-pub fn validate_certificate(value: Value) -> Result<ValidatedCertificate, Error> {
+/// Validates certificate.
+/// # Arguments
+/// * `value` certificate
+/// * `timestamp` optional timestamp to verify validity
+pub fn validate_certificate(
+    value: Value,
+    timestamp: Option<DateTime<Utc>>,
+) -> Result<ValidatedCertificate, Error> {
     validate_schema(
         &value,
         "https://golem.network/schemas/v1/certificate.schema.json",
@@ -34,7 +48,7 @@ pub fn validate_certificate(value: Value) -> Result<ValidatedCertificate, Error>
     )?;
     let signed_certificate: SignedCertificate = serde_json::from_value(value)
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
-    let mut validated_certificate = validate_signed_certificate(&signed_certificate)?;
+    let mut validated_certificate = validate_signed_certificate(&signed_certificate, timestamp)?;
     validated_certificate
         .certificate_chain_fingerprints
         .reverse();
@@ -89,7 +103,8 @@ fn validate_signed_node_descriptor(
             .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
 
     let signing_certificate = signed_node_descriptor.signature.signer;
-    let validated_certificate = validate_signed_certificate(&signing_certificate)?;
+    let validated_certificate =
+        validate_signed_certificate(&signing_certificate, Some(Utc::now()))?;
 
     let leaf_certificate: Certificate = serde_json::from_value(signing_certificate.certificate)
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
@@ -128,8 +143,13 @@ fn create_fingerprint_for_value(value: &Value) -> Result<Fingerprint, Error> {
     create_default_hash(value).map(|binary| binary.encode_hex())
 }
 
+/// Validates signed certificate.
+/// # Arguments
+/// * `signed_certificate`
+/// * `timestamp` optional timestamp to verify validity
 fn validate_signed_certificate(
     signed_certificate: &SignedCertificate,
+    timestamp: Option<DateTime<Utc>>,
 ) -> Result<ValidatedCertificate, Error> {
     let parent = match &signed_certificate.signature.signer {
         Signer::SelfSigned => {
@@ -157,7 +177,7 @@ fn validate_signed_certificate(
                 &signed_certificate.signature.value,
                 &parent.public_key,
             )?;
-            validate_signed_certificate(signed_parent)?
+            validate_signed_certificate(signed_parent, timestamp)?
         }
     };
 
@@ -167,7 +187,9 @@ fn validate_signed_certificate(
     validate_permissions(&parent.permissions, &certificate.permissions)?;
     validate_certificates_key_usage(&parent.key_usage, &certificate.key_usage)?;
     validate_validity_period(&parent.validity_period, &certificate.validity_period)?;
-    validate_timestamp(&certificate.validity_period, Utc::now())?;
+    timestamp
+        .map(|ts| validate_timestamp(&certificate.validity_period, ts))
+        .unwrap_or(Ok(()))?;
 
     let mut fingerprints = parent.certificate_chain_fingerprints;
     fingerprints.push(create_certificate_fingerprint(signed_certificate)?);
