@@ -170,6 +170,8 @@ fn main() -> Result<()> {
             self_sign_certificate(&self_sign_arguments)
         }
         GolemCertificateCli::Sign(sign_arguments) => sign_json(&sign_arguments),
-        GolemCertificateCli::Verify { signed_file_path } => verify_signature(&signed_file_path, Some(Utc::now())),
+        GolemCertificateCli::Verify { signed_file_path } => {
+            verify_signature(&signed_file_path, Some(Utc::now()))
+        }
     }
 }
