@@ -3,6 +3,7 @@ use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Result};
+use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
 use hex::ToHex;
 use serde::{Deserialize, Serialize};
@@ -145,10 +146,14 @@ fn sign_json(sign_arguments: &SignArguments) -> Result<()> {
     save_signed_json(&sign_arguments.input_file_path, &input_json)
 }
 
-fn verify_signature(signed_file: &PathBuf) -> Result<()> {
+/// Determines type of signed file (Certificate or Node Descriptor) and then verifies its signature.
+/// # Arguments
+/// * `signed_file` path to signed file
+/// * `timestamp` optional timestamp to verify validity
+fn verify_signature(signed_file: &PathBuf, timestamp: Option<DateTime<Utc>>) -> Result<()> {
     let signed_json = deserialize_from_file::<Value>(signed_file)?;
     match determine_file_type(&signed_json)? {
-        FileType::Certificate => gcert::validate_certificate(signed_json)
+        FileType::Certificate => gcert::validate_certificate(signed_json, timestamp)
             .map(|result| println!("{:?}", result))
             .map_err(Into::into),
         FileType::NodeDescriptor => gcert::validate_node_descriptor(signed_json)
@@ -165,6 +170,8 @@ fn main() -> Result<()> {
             self_sign_certificate(&self_sign_arguments)
         }
         GolemCertificateCli::Sign(sign_arguments) => sign_json(&sign_arguments),
-        GolemCertificateCli::Verify { signed_file_path } => verify_signature(&signed_file_path),
+        GolemCertificateCli::Verify { signed_file_path } => {
+            verify_signature(&signed_file_path, Some(Utc::now()))
+        }
     }
 }
