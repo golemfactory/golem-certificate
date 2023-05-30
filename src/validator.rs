@@ -146,7 +146,8 @@ fn create_fingerprint_for_value(value: &Value) -> Result<Fingerprint, Error> {
 /// Validates signed certificate.
 /// # Arguments
 /// * `signed_certificate`
-/// * `timestamp` optional timestamp to verify validity
+/// * `timestamp` optional timestamp to verify validity of the leaf certificate (last certificate in the chain).
+///    Validity periods of parent (issuer) certificates from the chain must fully include validity period of a child.
 fn validate_signed_certificate(
     signed_certificate: &SignedCertificate,
     timestamp: Option<DateTime<Utc>>,
@@ -177,7 +178,7 @@ fn validate_signed_certificate(
                 &signed_certificate.signature.value,
                 &parent.public_key,
             )?;
-            validate_signed_certificate(signed_parent, timestamp)?
+            validate_signed_certificate(signed_parent, None)?
         }
     };
 
