@@ -11,6 +11,8 @@ use serde_json::Value;
 
 use golem_certificate as gcert;
 
+mod ui;
+
 #[derive(Parser)]
 enum GolemCertificateCli {
     CreateKeyPair { key_pair_path: PathBuf },
@@ -18,6 +20,7 @@ enum GolemCertificateCli {
     SelfSignCertificate(SelfSignArguments),
     Sign(SignArguments),
     Verify { signed_file_path: PathBuf },
+    Ui,
 }
 
 #[derive(Args)]
@@ -173,5 +176,6 @@ fn main() -> Result<()> {
         GolemCertificateCli::Verify { signed_file_path } => {
             verify_signature(&signed_file_path, Some(Utc::now()))
         }
+        GolemCertificateCli::Ui => ui::start(),
     }
 }
