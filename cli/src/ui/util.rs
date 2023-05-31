@@ -6,9 +6,14 @@ use tui::{
     style::{Color, Style},
 };
 
+#[derive(PartialEq)]
+pub enum ComponentStatus {
+    Active, Closed, Escaped
+}
+
 pub trait Component {
     fn render(&mut self, area: Rect, buf: &mut Buffer);
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<()>;
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus>;
 }
 
 pub fn default_style() -> Style {

@@ -19,11 +19,15 @@ pub fn start() -> Result<()> {
     terminal.clear()?;
 
     let mut error_message = None;
-    while app.running {
-        app_loop(&mut terminal, &mut app).map_err(|err| {
-            app.running = false;
-            error_message = Some(format!("Some unrecoverable error occurred: {}", err.to_string()));
-        });
+    let mut app_exited = false;
+    while !app_exited {
+        match app_loop(&mut terminal, &mut app) {
+            Ok(exited) => app_exited = exited,
+            Err(err) => {
+                app_exited = true;
+                error_message = Some(format!("Some unrecoverable error occurred: {}", err.to_string()));
+            }
+        }
     }
 
 
@@ -35,18 +39,17 @@ pub fn start() -> Result<()> {
     Ok(())
 }
 
-fn app_loop<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()> {
+fn app_loop<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool> {
     terminal.draw(|frame| frame.render_stateful_widget(AppScreen {}, frame.size(), app))?;
     match event::read()? {
         Event::Key(e) => {
             if (e.code == KeyCode::Char('c') || e.code == KeyCode::Char('C')) && e.modifiers == KeyModifiers::CONTROL {
-                app.running = false;
+                Ok(true)
             } else {
-                app.handle_key_event(e)?;
+                app.handle_key_event(e)
             }
         },
-        Event::Resize(_w, _h) => {},
-        _ => unimplemented!()
+        // Event::Resize(_w, _h) => Ok(false),
+        _ => Ok(false)
     }
-    Ok(())
 }

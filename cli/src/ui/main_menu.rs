@@ -10,7 +10,7 @@ use tui::{
 
 
 use super::open_file_dialog::OpenFileDialog;
-use super::util::{Component, default_style, get_middle_rectangle};
+use super::util::{Component, default_style, get_middle_rectangle, ComponentStatus};
 
 const MENU_ITEMS: [&str; 8] = [
     "Verify document",
@@ -38,7 +38,7 @@ impl MainMenu {
         }
     }
 
-    fn handle_key_event_self(&mut self, key_event: KeyEvent) -> Result<()> {
+    fn handle_key_event_self(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         match key_event.code {
             KeyCode::Up => {
                 if self.selected_item > 0 {
@@ -47,7 +47,7 @@ impl MainMenu {
                 while self.selected_item > 0 && self.items[self.selected_item].len() < 1 {
                     self.selected_item -= 1;
                 }
-            },
+            }
             KeyCode::Down => {
                 let max = self.items.len() - 1;
                 if self.selected_item < max {
@@ -56,16 +56,18 @@ impl MainMenu {
                 while self.selected_item < max && self.items[self.selected_item].len() < 1 {
                     self.selected_item += 1;
                 }
-            },
+            }
             KeyCode::Enter => {
                 match self.selected_item {
                     0 => self.child = Some(Box::new(OpenFileDialog::new()?)),
+                    7 => return Ok(ComponentStatus::Closed),
                     _ => {}
                 }
-            },
+            }
+            KeyCode::Esc => return Ok(ComponentStatus::Closed),
             _ => {}
         }
-        Ok(())
+        Ok(ComponentStatus::Active)
     }
 
     fn render_self(&self, area: Rect, buf: &mut Buffer) {
@@ -99,9 +101,13 @@ impl MainMenu {
 }
 
 impl Component for MainMenu {
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<()> {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         if let Some(component) = self.child.as_mut() {
-            component.handle_key_event(key_event)
+            match component.handle_key_event(key_event)? {
+                ComponentStatus::Active => {}
+                _ => self.child = None,
+            }
+            Ok(ComponentStatus::Active)
         } else {
             self.handle_key_event_self(key_event)
         }

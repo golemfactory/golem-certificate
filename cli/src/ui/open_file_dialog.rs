@@ -13,7 +13,7 @@ use tui::{
     widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget},
 };
 
-use super::util::{Component, default_style};
+use super::util::{Component, default_style, ComponentStatus};
 
 #[derive(Default)]
 pub struct OpenFileDialog {
@@ -94,7 +94,7 @@ impl Component for OpenFileDialog {
         }
     }
 
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<()> {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         match key_event.code {
             KeyCode::Up => {
                 if let Some(idx) = self.list_state.selected().and_then(|i| i.checked_sub(1)) {
@@ -118,15 +118,18 @@ impl Component for OpenFileDialog {
                     if path.is_dir() {
                         self.set_directory(path)?;
                     } else {
-                        println!("Selected file {}", path.to_string_lossy());
+                        return Ok(ComponentStatus::Closed);
                     }
                 }
             }
             KeyCode::Backspace => {
                 self.go_to_parent()?;
             }
+            KeyCode::Esc => {
+                return Ok(ComponentStatus::Escaped);
+            }
             _ => {}
         }
-        Ok(())
+        Ok(ComponentStatus::Active)
     }
 }

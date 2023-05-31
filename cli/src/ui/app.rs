@@ -6,30 +6,29 @@ use tui::{
     widgets::{Block, BorderType, Borders, Padding, StatefulWidget, Widget},
 };
 
-use super::util::{Component, default_style};
+use super::util::{Component, default_style, ComponentStatus};
 use super::main_menu::MainMenu;
 
 pub struct App {
-    pub running: bool,
     main_menu: MainMenu,
 }
 
 impl App {
-    pub fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<()> {
+    pub fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<bool> {
         match key_event.code {
             KeyCode::Char('c') | KeyCode::Char('C') if key_event.modifiers == KeyModifiers::CONTROL => {
-                self.running = false;
+                Ok(true)
             }
-            _ => self.main_menu.handle_key_event(key_event)?
+            _ => {
+                self.main_menu.handle_key_event(key_event).map(|status| status != ComponentStatus::Active)
+            }
         }
-        Ok(())
     }
 }
 
 impl App {
     pub fn new() -> Self {
         Self {
-            running: true,
             main_menu: MainMenu::new(),
         }
     }
