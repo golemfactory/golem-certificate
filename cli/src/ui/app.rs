@@ -46,7 +46,7 @@ impl StatefulWidget for AppScreen {
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .padding(Padding::new(2, 2, 2, 2))
+            .padding(Padding::new(15, 15, 2, 2))
             .style(default_style());
 
         let main_area = main_border.inner(area);

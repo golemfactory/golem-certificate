@@ -13,6 +13,7 @@ use tui::{
     widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget},
 };
 
+use super::modal::ModalMessage;
 use super::util::{Component, default_style, ComponentStatus};
 
 #[derive(Default)]
@@ -20,6 +21,7 @@ pub struct OpenFileDialog {
     current_directory: PathBuf,
     file_names: Vec<std::ffi::OsString>,
     list_state: ListState,
+    error_message: Option<ModalMessage>,
 }
 
 impl OpenFileDialog {
@@ -52,6 +54,51 @@ impl OpenFileDialog {
         self.file_names.insert(0, std::ffi::OsStr::new("..").into());
         self.list_state = ListState::default().with_selected(Some(0));
         Ok(())
+    }
+
+    fn handle_key_event_self(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
+        match key_event.code {
+            KeyCode::Up => {
+                if let Some(idx) = self.list_state.selected().and_then(|i| i.checked_sub(1)) {
+                    self.list_state.select(Some(idx));
+                }
+            }
+            KeyCode::Down => {
+                if let Some(idx) = self.list_state.selected() {
+                    if idx < self.file_names.len() - 1 {
+                        self.list_state.select(Some(idx + 1));
+                    }
+                }
+            }
+            KeyCode::Enter => {
+                if let Some(idx) = self.list_state.selected() {
+                    let path = {
+                        let mut path = self.current_directory.clone();
+                        path.push(&self.file_names[idx]);
+                        path.canonicalize()?
+                    };
+                    if path.is_dir() {
+                        self.set_directory(path)?;
+                    } else if path.is_file() {
+                        let message = format!("You have selected {}", path.to_string_lossy());
+                        let modal = ModalMessage::new("Selected file", message);
+                        self.error_message = Some(modal);
+                    } else {
+                        let message = format!("Not a directory neither a file...\n{}", self.file_names[idx].to_string_lossy());
+                        let modal = ModalMessage::new("Error", message);
+                        self.error_message = Some(modal);
+                    }
+                }
+            }
+            KeyCode::Backspace => {
+                self.go_to_parent()?;
+            }
+            KeyCode::Esc => {
+                return Ok(ComponentStatus::Escaped);
+            }
+            _ => {}
+        }
+        Ok(ComponentStatus::Active)
     }
 }
 
@@ -92,44 +139,20 @@ impl Component for OpenFileDialog {
                 .style(default_style())
                 .render(list_parts[2], buf)
         }
+        if let Some(component) = self.error_message.as_mut() {
+            component.render(area, buf)
+        }
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        match key_event.code {
-            KeyCode::Up => {
-                if let Some(idx) = self.list_state.selected().and_then(|i| i.checked_sub(1)) {
-                    self.list_state.select(Some(idx));
-                }
+        if let Some(component) = self.error_message.as_mut() {
+            let res = component.handle_key_event(key_event)?;
+            if res != ComponentStatus::Active {
+                self.error_message = None;
             }
-            KeyCode::Down => {
-                if let Some(idx) = self.list_state.selected() {
-                    if idx < self.file_names.len() - 1 {
-                        self.list_state.select(Some(idx + 1));
-                    }
-                }
-            }
-            KeyCode::Enter => {
-                if let Some(idx) = self.list_state.selected() {
-                    let path = {
-                        let mut path = self.current_directory.clone();
-                        path.push(&self.file_names[idx]);
-                        path.canonicalize()?
-                    };
-                    if path.is_dir() {
-                        self.set_directory(path)?;
-                    } else {
-                        return Ok(ComponentStatus::Closed);
-                    }
-                }
-            }
-            KeyCode::Backspace => {
-                self.go_to_parent()?;
-            }
-            KeyCode::Esc => {
-                return Ok(ComponentStatus::Escaped);
-            }
-            _ => {}
+            Ok(ComponentStatus::Active)
+        } else {
+            self.handle_key_event_self(key_event)
         }
-        Ok(ComponentStatus::Active)
     }
 }
