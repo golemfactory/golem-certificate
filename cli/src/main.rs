@@ -12,6 +12,7 @@ use serde_json::Value;
 use golem_certificate as gcert;
 
 mod ui;
+mod app;
 
 #[derive(Parser)]
 enum GolemCertificateCli {
@@ -176,6 +177,6 @@ fn main() -> Result<()> {
         GolemCertificateCli::Verify { signed_file_path } => {
             verify_signature(&signed_file_path, Some(Utc::now()))
         }
-        GolemCertificateCli::Ui => ui::start(),
+        GolemCertificateCli::Ui => app::start(),
     }
 }
