@@ -4,14 +4,12 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
-use tui::layout::Direction;
-use tui::style::Modifier;
-use tui::text::Span;
-use tui::widgets::{ListItem, List, ListState};
 use tui::{
     buffer::Buffer,
-    layout::{Constraint, Layout, Rect},
-    widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget},
+    layout::{Constraint, Direction, Layout, Rect},
+    style::Modifier,
+    text::Span,
+    widgets::{Block, BorderType, Borders, ListItem, List, ListState, Paragraph, StatefulWidget, Widget},
 };
 
 use super::modal::ModalMessage;
@@ -28,6 +26,7 @@ pub struct OpenFileDialog {
     files: Vec<FolderEntry>,
     list_state: ListState,
     error_message: Option<ModalMessage>,
+    pub selected: Option<PathBuf>,
 }
 
 impl OpenFileDialog {
@@ -95,9 +94,8 @@ impl OpenFileDialog {
                     if path.is_dir() {
                         self.set_directory(path)?;
                     } else if path.is_file() {
-                        let message = format!("You have selected {}", path.to_string_lossy());
-                        let modal = ModalMessage::new("Selected file", message);
-                        self.error_message = Some(modal);
+                        self.selected = Some(path);
+                        return Ok(ComponentStatus::Closed);
                     } else {
                         let message = format!("Not a directory neither a file...\n{}", self.files[idx].filename.to_string_lossy());
                         let modal = ModalMessage::new("Error", message);
@@ -154,13 +152,13 @@ impl Component for OpenFileDialog {
                 .style(default_style())
                 .render(list_parts[2], buf)
         }
-        if let Some(component) = self.error_message.as_mut() {
+        if let Some(component) = &mut self.error_message {
             component.render(area, buf)
         }
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        if let Some(component) = self.error_message.as_mut() {
+        if let Some(component) = &mut self.error_message {
             let res = component.handle_key_event(key_event)?;
             if res != ComponentStatus::Active {
                 self.error_message = None;

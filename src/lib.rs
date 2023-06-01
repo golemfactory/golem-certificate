@@ -15,6 +15,7 @@ pub use cryptography::Key;
 pub use schemas::signature::Signature;
 pub use schemas::signature::SignatureAlgorithm;
 pub use schemas::signature::SignedCertificate;
+pub use schemas::signature::SignedNodeDescriptor;
 pub use schemas::signature::Signer;
 
 pub use validator::validate_certificate;

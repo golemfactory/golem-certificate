@@ -37,12 +37,6 @@ impl ModalWindow {
         border.render(window, buf);
         inner_area
     }
-
-    fn message_dimensions(message: &str) -> (Height, Width) {
-        let height = message.lines().count();
-        let width = message.lines().map(|l| l.len()).max().unwrap_or(0);
-        (height, width)
-    }
 }
 
 pub struct ModalMessage {
@@ -53,11 +47,12 @@ pub struct ModalMessage {
 impl ModalMessage {
     pub fn new<S1: Into<String>, S2: Into<String>>(title: S1, message: S2) -> Self {
         let message: String = message.into();
-        let (message_height, message_width) = ModalWindow::message_dimensions(&message);
+        let (message_height, message_width) = message_dimensions(&message);
+        let title: String = title.into();
         let modal_window = ModalWindow {
             inner_height: message_height as u16 + 2,
-            inner_width: message_width as u16 + 2,
-            title: title.into(),
+            inner_width: message_width.max(title.len()) as u16 + 2,
+            title: title,
         };
         Self { modal_window, message }
     }
@@ -66,10 +61,23 @@ impl ModalMessage {
 impl Component for ModalMessage {
     fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let message_area = self.modal_window.render(area, buf);
-        Paragraph::new(self.message.clone())
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Max(1),
+                Constraint::Min(0),
+            ])
+            .split(message_area);
+        let message_top: String = self.message.lines().take(1).collect();
+        Paragraph::new(message_top)
             .alignment(Alignment::Center)
             .style(default_style())
-            .render(message_area, buf);
+            .render(chunks[0], buf);
+        let message_rest: String = self.message.lines().skip(1).collect();
+        Paragraph::new(message_rest)
+            .alignment(Alignment::Left)
+            .style(default_style())
+            .render(chunks[1], buf);
     }
 
     fn handle_key_event(&mut self, _key_event: KeyEvent) -> Result<ComponentStatus> {
@@ -92,7 +100,7 @@ impl ModalMultipleChoice {
     {
         let message: String = message.into();
         let choices: Vec<String> = choices.into_iter().map(|c| format!(" {} ", c)).collect();
-        let (message_height, message_width) = ModalWindow::message_dimensions(&message);
+        let (message_height, message_width) = message_dimensions(&message);
         let choices_width: usize = choices.iter().map(|c| c.len() + 2).sum();
         let modal_window = ModalWindow {
             inner_height: message_height as u16 + 4,
@@ -161,4 +169,10 @@ impl Component for ModalMultipleChoice {
         };
         Ok(res)
     }
+}
+
+fn message_dimensions(message: &str) -> (Height, Width) {
+    let height = message.lines().count();
+    let width = message.lines().map(|l| l.len()).max().unwrap_or(0);
+    (height, width)
 }

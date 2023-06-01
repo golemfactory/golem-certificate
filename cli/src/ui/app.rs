@@ -3,7 +3,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use tui::{
     buffer::Buffer,
     layout::{Alignment, Rect},
-    widgets::{Block, BorderType, Borders, Padding, StatefulWidget, Widget},
+    widgets::{Block, BorderType, Borders, StatefulWidget, Widget, Padding},
 };
 
 use super::util::{Component, default_style, ComponentStatus};
@@ -41,13 +41,14 @@ impl StatefulWidget for AppScreen {
     type State = App;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+        let padding = if area.width > 30 && area.height > 10 { 1 } else { 0 };
         let main_border = Block::default()
             .title("Golem Certificate Manager")
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .padding(Padding::new(15, 15, 2, 2))
-            .style(default_style());
+            .style(default_style())
+            .padding(Padding::uniform(padding));
 
         let main_area = main_border.inner(area);
         main_border.render(area, buf);

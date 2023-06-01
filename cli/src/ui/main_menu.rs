@@ -11,6 +11,7 @@ use tui::{
 
 use super::open_file_dialog::OpenFileDialog;
 use super::util::{Component, default_style, get_middle_rectangle, ComponentStatus};
+use super::verify_document::VerifyDocument;
 
 const MENU_ITEMS: [&str; 8] = [
     "Verify document",
@@ -59,7 +60,7 @@ impl MainMenu {
             }
             KeyCode::Enter => {
                 match self.selected_item {
-                    0 => self.child = Some(Box::new(OpenFileDialog::new()?)),
+                    0 => self.child = Some(Box::new(VerifyDocument::new()?)),
                     7 => return Ok(ComponentStatus::Closed),
                     _ => {}
                 }
@@ -102,7 +103,7 @@ impl MainMenu {
 
 impl Component for MainMenu {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        if let Some(component) = self.child.as_mut() {
+        if let Some(component) = &mut self.child {
             match component.handle_key_event(key_event)? {
                 ComponentStatus::Active => {}
                 _ => self.child = None,
@@ -114,7 +115,7 @@ impl Component for MainMenu {
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        if let Some(component) = self.child.as_mut() {
+        if let Some(component) = &mut self.child {
             component.render(area, buf)
         } else {
             self.render_self(area, buf)
