@@ -5,6 +5,8 @@ use serde_json::Value;
 use crate::{
     cryptography::{create_default_hash, verify_signature_json},
     schemas::{
+        SIGNED_CERTIFICATE_SCHEMA_ID,
+        SIGNED_NODE_DESCRIPTOR_SCHEMA_ID,
         certificate::{
             key_usage::validator::{validate_certificates_key_usage, validate_sign_node},
             Certificate, Fingerprint,
@@ -43,7 +45,7 @@ pub fn validate_certificate(
 ) -> Result<ValidatedCertificate, Error> {
     validate_schema(
         &value,
-        "https://golem.network/schemas/v1/certificate.schema.json",
+        SIGNED_CERTIFICATE_SCHEMA_ID,
         "certificate",
     )?;
     let signed_certificate: SignedCertificate = serde_json::from_value(value)
@@ -63,7 +65,7 @@ pub fn validate_node_descriptor_str(data: &str) -> Result<ValidatedNodeDescripto
 pub fn validate_node_descriptor(value: Value) -> Result<ValidatedNodeDescriptor, Error> {
     validate_schema(
         &value,
-        "https://golem.network/schemas/v1/node-descriptor.schema.json",
+        SIGNED_NODE_DESCRIPTOR_SCHEMA_ID,
         "node descriptor",
     )?;
     let signed_node_descriptor: SignedNodeDescriptor = serde_json::from_value(value)

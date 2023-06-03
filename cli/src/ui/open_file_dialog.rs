@@ -73,9 +73,8 @@ impl OpenFileDialog {
     fn handle_key_event_self(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         match key_event.code {
             KeyCode::Up => {
-                if let Some(idx) = self.list_state.selected().and_then(|i| i.checked_sub(1)) {
-                    self.list_state.select(Some(idx));
-                }
+                let select = self.list_state.selected().map(|i| i.saturating_sub(1));
+                self.list_state.select(select);
             }
             KeyCode::Down => {
                 if let Some(idx) = self.list_state.selected() {

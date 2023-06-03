@@ -16,13 +16,20 @@ pub trait Component {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus>;
 }
 
+pub type Height = u16;
+pub type Width = u16;
+
+pub trait SizedComponent : Component {
+    fn get_render_size(&self, area: Rect) -> (Height, Width);
+}
+
 pub fn default_style() -> Style {
     Style::default().fg(Color::Cyan).bg(Color::Black)
 }
 
 pub fn get_middle_rectangle(area: Rect, height: u16, width: u16) -> Rect {
-    let horizontal_border = (area.height - height) / 2;
-    let vertical_border = (area.width - width) / 2;
+    let horizontal_border = area.height.saturating_sub(height) / 2;
+    let vertical_border = area.width.saturating_sub(width) / 2;
     let row = Layout::default()
         .direction(Direction::Vertical)
         .constraints(vec![

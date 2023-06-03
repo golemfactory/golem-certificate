@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 use crate::cryptography::{EncryptionAlgorithm, HashAlgorithm};
 use crate::serde_utils::{bytes_to_hex, hex_to_bytes};
 
+pub const SIGNED_NODE_DESCRIPTOR_SCHEMA_ID: &'static str =
+    "https://golem.network/schemas/v1/node-descriptor.schema.json";
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SignedNodeDescriptor {
@@ -44,6 +47,9 @@ impl Signature<SignedCertificate> {
         }
     }
 }
+
+pub const SIGNED_CERTIFICATE_SCHEMA_ID: &'static str =
+    "https://golem.network/schemas/v1/certificate.schema.json";
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

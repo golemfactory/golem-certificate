@@ -11,20 +11,15 @@ use tui::{
     widgets::{Block, BorderType, Borders, Paragraph, Widget},
 };
 
-use super::util::{Component, default_style, get_middle_rectangle, ComponentStatus};
+use super::util::{Component, default_style, get_middle_rectangle, ComponentStatus, SizedComponent, Height, Width};
 
 struct ModalWindow {
-    inner_height: u16,
-    inner_width: u16,
     title: String,
 }
 
-type Width = usize;
-type Height = usize;
-
 impl ModalWindow {
-    fn render(&self, area: Rect, buf: &mut Buffer) -> Rect {
-        let window = get_middle_rectangle(area, self.inner_height + 2, self.inner_width + 2);
+    fn render(&self, area: Rect, buf: &mut Buffer, inner_height: u16, inner_width: u16) -> Rect {
+        let window = get_middle_rectangle(area, inner_height + 2, inner_width + 2);
         Clear.render(window, buf);
         let border = Block::default()
             .title(self.title.clone())
@@ -40,6 +35,8 @@ impl ModalWindow {
 }
 
 pub struct ModalMessage {
+    height: u16,
+    width: u16,
     modal_window: ModalWindow,
     message: String,
 }
@@ -49,18 +46,22 @@ impl ModalMessage {
         let message: String = message.into();
         let (message_height, message_width) = message_dimensions(&message);
         let title: String = title.into();
+        let width = message_width.max(title.len() as u16) + 2;
         let modal_window = ModalWindow {
-            inner_height: message_height as u16 + 2,
-            inner_width: message_width.max(title.len()) as u16 + 2,
             title: title,
         };
-        Self { modal_window, message }
+        Self {
+            height: message_height + 2,
+            width,
+            modal_window,
+            message
+        }
     }
 }
 
 impl Component for ModalMessage {
     fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let message_area = self.modal_window.render(area, buf);
+        let message_area = self.modal_window.render(area, buf, self.height, self.width);
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
@@ -90,6 +91,8 @@ pub struct ModalMultipleChoice {
     message: String,
     choices: Vec<String>,
     selected: usize,
+    height: u16,
+    width: u16,
 }
 
 impl ModalMultipleChoice {
@@ -101,19 +104,24 @@ impl ModalMultipleChoice {
         let message: String = message.into();
         let choices: Vec<String> = choices.into_iter().map(|c| format!(" {} ", c)).collect();
         let (message_height, message_width) = message_dimensions(&message);
-        let choices_width: usize = choices.iter().map(|c| c.len() + 2).sum();
+        let choices_width = choices.iter().map(|c| c.len() + 2).sum::<usize>() as u16;
         let modal_window = ModalWindow {
-            inner_height: message_height as u16 + 4,
-            inner_width: std::cmp::max(message_width + 2, choices_width) as u16,
             title: title.into(),
         };
-        Self { modal_window, message, choices, selected }
+        Self {
+            modal_window,
+            message,
+            choices,
+            selected,
+            height: message_height + 4,
+            width: choices_width.max(message_width + 2, ),
+        }
     }
 }
 
 impl Component for ModalMultipleChoice {
     fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let message_area = self.modal_window.render(area, buf);
+        let message_area = self.modal_window.render(area, buf, self.height, self.width);
         let rows = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
@@ -154,9 +162,7 @@ impl Component for ModalMultipleChoice {
             KeyCode::Esc => ComponentStatus::Escaped,
             KeyCode::Enter => ComponentStatus::Closed,
             KeyCode::Left => {
-                if let Some(selected) = self.selected.checked_sub(1) {
-                    self.selected = selected;
-                }
+                self.selected = self.selected.saturating_sub(1);
                 ComponentStatus::Active
             }
             KeyCode::Right => {
@@ -174,5 +180,29 @@ impl Component for ModalMultipleChoice {
 fn message_dimensions(message: &str) -> (Height, Width) {
     let height = message.lines().count();
     let width = message.lines().map(|l| l.len()).max().unwrap_or(0);
-    (height, width)
+    (height as u16, width as u16)
+}
+
+pub struct ModalWithComponent {
+    modal: ModalWindow,
+    component: Box<dyn SizedComponent>,
+}
+
+impl ModalWithComponent {
+    pub fn new<S1: Into<String>>(title: S1, component: Box<dyn SizedComponent>) -> Self {
+        let modal = ModalWindow { title: title.into() };
+        Self { modal, component }
+    }
+}
+
+impl Component for ModalWithComponent {
+    fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        let (height, width) = self.component.get_render_size(area);
+        let inner_area = self.modal.render(area, buf, height, width);
+        self.component.render(inner_area, buf);
+    }
+
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
+        self.component.handle_key_event(key_event)
+    }
 }
