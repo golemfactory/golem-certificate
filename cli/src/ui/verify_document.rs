@@ -2,7 +2,6 @@ use std::fs::read_to_string;
 use std::path::PathBuf;
 
 use anyhow::Result;
-use golem_certificate::validator::validated_data::{ValidatedCertificate, ValidatedNodeDescriptor};
 use golem_certificate::{validate_certificate, validate_node_descriptor, Error::*, SignedCertificate, SignedNodeDescriptor};
 use serde_json::Value;
 use tui::widgets::{Block, BorderType, Widget, Padding, Borders};
@@ -87,7 +86,7 @@ fn verify_selected_file(path: &PathBuf) -> Result<VerifiedDocument, String> {
 
 fn verify_json(json: Value) -> Result<VerifiedDocument, String> {
     match validate_certificate(json.clone(), None) {
-        Ok(cert) => {
+        Ok(_) => {
             let signed_cert = serde_json::from_value(json.clone()).unwrap();
             Ok(VerifiedDocument::Certificate(signed_cert))
         }
@@ -103,7 +102,7 @@ fn verify_json(json: Value) -> Result<VerifiedDocument, String> {
 }
 
 fn show_cert_details(path: &PathBuf, cert: &SignedCertificate) -> Box<dyn Component> {
-    let component = SignedCertificateDetails::new(cert);
+    let component = SignedCertificateDetails::new(cert, 2, true);
     let modal = ModalWithComponent::new(path.to_string_lossy(), Box::new(component));
     Box::new(modal)
 }

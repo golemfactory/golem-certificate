@@ -8,8 +8,6 @@ use tui::{
     widgets::{Paragraph, Widget},
 };
 
-
-use super::open_file_dialog::OpenFileDialog;
 use super::util::{Component, default_style, get_middle_rectangle, ComponentStatus};
 use super::verify_document::VerifyDocument;
 

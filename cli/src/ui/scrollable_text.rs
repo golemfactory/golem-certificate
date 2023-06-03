@@ -5,6 +5,7 @@ pub struct ScrollableTextState {
     offset: usize,
 }
 
+#[allow(dead_code)]
 impl ScrollableTextState {
     pub fn new<S: Into<String>>(text: S) -> Self {
         let lines = text.into().lines().map(|l| l.to_owned()).collect();
@@ -42,6 +43,7 @@ pub struct ScrollableText {
     style: Style,
 }
 
+#[allow(dead_code)]
 impl ScrollableText {
     pub fn alignment(mut self, alignment: Alignment) -> Self {
         self.alignment = alignment;
