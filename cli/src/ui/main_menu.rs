@@ -8,6 +8,7 @@ use tui::{
     widgets::{Paragraph, Widget},
 };
 
+use super::keypair::CreateKeyPairDialog;
 use super::util::{Component, default_style, get_middle_rectangle, ComponentStatus};
 use super::verify_document::VerifyDocument;
 
@@ -59,6 +60,7 @@ impl MainMenu {
             KeyCode::Enter => {
                 match self.selected_item {
                     0 => self.child = Some(Box::new(VerifyDocument::new()?)),
+                    5 => self.child = Some(Box::new(CreateKeyPairDialog::new()?)),
                     7 => return Ok(ComponentStatus::Closed),
                     _ => {}
                 }

@@ -1,9 +1,12 @@
 pub mod app;
 pub mod certificate;
+pub mod keypair;
 pub mod main_menu;
 pub mod modal;
 pub mod node_descriptor;
 pub mod open_file_dialog;
-pub mod util;
+pub mod save_file_dialog;
 pub mod scrollable_text;
+pub mod text_input;
+pub mod util;
 pub mod verify_document;

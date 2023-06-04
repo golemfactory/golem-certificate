@@ -2,8 +2,11 @@ use std::fs::read_to_string;
 use std::path::PathBuf;
 
 use anyhow::Result;
+use crossterm::event::KeyEvent;
 use golem_certificate::{validate_certificate, validate_node_descriptor, Error::*, SignedCertificate, SignedNodeDescriptor};
 use serde_json::Value;
+use tui::buffer::Buffer;
+use tui::layout::Rect;
 use tui::widgets::{Block, BorderType, Widget, Padding, Borders};
 
 use super::certificate::SignedCertificateDetails;
@@ -34,7 +37,7 @@ impl VerifyDocument {
 }
 
 impl Component for VerifyDocument {
-    fn render(&mut self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+    fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let block = Block::default()
             .title("Verify document")
             .borders(Borders::ALL)
@@ -50,7 +53,7 @@ impl Component for VerifyDocument {
         }
     }
 
-    fn handle_key_event(&mut self, key_event: crossterm::event::KeyEvent) -> Result<ComponentStatus> {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         if let Some(component) = &mut self.modal {
             if component.handle_key_event(key_event)? != ComponentStatus::Active {
                 self.modal = None;

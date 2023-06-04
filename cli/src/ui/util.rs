@@ -1,8 +1,9 @@
-use std::fmt::Write;
+use std::{fmt::Write, path::Path, io::{BufWriter, Write as _, self}, fs};
 
 use anyhow::Result;
 use crossterm::event::KeyEvent;
 use golem_certificate::{SignedCertificate, schemas::{subject::Subject, certificate::{Certificate, key_usage::KeyUsage}, validity_period::ValidityPeriod, permissions::{Permissions, OutboundPermissions::{Unrestricted, Urls}}, node_descriptor::NodeDescriptor}, Signature, Signer, SignedNodeDescriptor};
+use serde::Serialize;
 use tui::{
     buffer::Buffer,
     layout::{self, Constraint, Layout, Rect},
@@ -32,6 +33,7 @@ pub type CalculateHeight = Box<dyn Fn(u16) -> u16>;
 pub type CalculateWidth = Box<dyn Fn(u16) -> u16>;
 pub type AreaCalculators = (CalculateHeight, CalculateWidth);
 
+#[allow(dead_code)]
 pub fn identity_area_calculators() -> AreaCalculators {
     (Box::new(|n: u16| n), Box::new(|n: u16| n))
 }
@@ -62,6 +64,14 @@ pub fn get_middle_rectangle(area: Rect, height: u16, width: u16) -> Rect {
     message_box
 }
 
+pub fn save_json_to_file<C: ?Sized + Serialize>(path: impl AsRef<Path>, content: &C) -> io::Result<()> {
+    let mut writer = BufWriter::new(fs::File::create(path)?);
+    serde_json::to_writer_pretty(&mut writer, content)?;
+    let _ = writer.write(b"\n")?;
+    writer.flush()?;
+    Ok(())
+}
+
 pub fn certificate_to_string(cert: &SignedCertificate, indent: usize, detailed_signer: bool) -> String {
     let mut buf = StringBuffer::new(indent);
     write_certificate(&mut buf, cert, detailed_signer);
@@ -90,7 +100,7 @@ struct StringBuffer {
 impl StringBuffer {
     fn new(indent: usize) -> Self {
         let buf = String::new();
-        let indent = vec![" "; indent].join("");
+        let indent = (0..indent).map(|_| ' ').collect();
         let indent_level = 0;
         Self { buf, indent, indent_level }
     }

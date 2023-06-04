@@ -74,7 +74,7 @@ impl Component for ModalMessage {
             .alignment(Alignment::Center)
             .style(default_style())
             .render(chunks[0], buf);
-        let message_rest: String = self.message.lines().skip(1).collect();
+        let message_rest: String = self.message.lines().skip(1).collect::<Vec<_>>().join("\n");
         Paragraph::new(message_rest)
             .alignment(Alignment::Left)
             .style(default_style())
@@ -90,7 +90,7 @@ pub struct ModalMultipleChoice {
     modal_window: ModalWindow,
     message: String,
     choices: Vec<String>,
-    selected: usize,
+    pub selected: usize,
     height: u16,
     width: u16,
 }

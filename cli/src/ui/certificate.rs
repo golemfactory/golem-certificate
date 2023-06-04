@@ -1,4 +1,5 @@
-use crossterm::event::KeyCode;
+use anyhow::Result;
+use crossterm::event::{KeyCode, KeyEvent};
 use golem_certificate::SignedCertificate;
 use tui::{widgets::{ StatefulWidget }, layout::Rect};
 
@@ -29,7 +30,7 @@ impl Component for SignedCertificateDetails {
             .render(area, buf, &mut self.render_state);
     }
 
-    fn handle_key_event(&mut self, key_event: crossterm::event::KeyEvent) -> anyhow::Result<ComponentStatus> {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         let status = match key_event.code {
             KeyCode::Esc => ComponentStatus::Escaped,
             KeyCode::Up => {

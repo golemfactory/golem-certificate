@@ -11,6 +11,7 @@ pub use cryptography::sign_json;
 pub use cryptography::verify_signature_json;
 
 pub use cryptography::Key;
+pub use cryptography::KeyPair;
 
 pub use schemas::signature::Signature;
 pub use schemas::signature::SignatureAlgorithm;

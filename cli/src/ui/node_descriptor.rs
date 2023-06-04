@@ -1,6 +1,7 @@
-use crossterm::event::KeyCode;
+use anyhow::Result;
+use crossterm::event::{KeyCode, KeyEvent};
 use golem_certificate::SignedNodeDescriptor;
-use tui::{widgets::{ StatefulWidget }, layout::Rect};
+use tui::{widgets::StatefulWidget, layout::Rect, buffer::Buffer};
 
 use super::{util::{ Component, ComponentStatus, default_style, SizedComponent, Height, Width, node_descriptor_to_string, CalculateWidth, CalculateHeight, AreaCalculators }, scrollable_text::{ ScrollableText, ScrollableTextState }};
 
@@ -23,13 +24,13 @@ impl SignedNodeDescriptorDetails {
 }
 
 impl Component for SignedNodeDescriptorDetails {
-    fn render(&mut self, area: Rect, buf: &mut tui::buffer::Buffer) {
+    fn render(&mut self, area: Rect, buf: &mut Buffer) {
         ScrollableText::default()
             .style(default_style())
             .render(area, buf, &mut self.render_state);
     }
 
-    fn handle_key_event(&mut self, key_event: crossterm::event::KeyEvent) -> anyhow::Result<ComponentStatus> {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         let status = match key_event.code {
             KeyCode::Esc => ComponentStatus::Escaped,
             KeyCode::Up => {

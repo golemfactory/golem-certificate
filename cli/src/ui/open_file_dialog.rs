@@ -20,9 +20,10 @@ struct FolderEntry {
     directory: bool,
 }
 
-#[derive(Default)]
 pub struct OpenFileDialog {
-    current_directory: PathBuf,
+    pub active: bool,
+    pub border_type: BorderType,
+    pub current_directory: PathBuf,
     files: Vec<FolderEntry>,
     list_state: ListState,
     error_message: Option<ModalMessage>,
@@ -31,10 +32,27 @@ pub struct OpenFileDialog {
 
 impl OpenFileDialog {
     pub fn new() -> Result<Self> {
-        let mut dialog = OpenFileDialog::default();
+        let mut dialog = Self {
+            active: true,
+            border_type: BorderType::Rounded,
+            current_directory: PathBuf::new(),
+            files: vec![],
+            list_state: ListState::default(),
+            error_message: None,
+            selected: None,
+        };
         let current_directory = std::env::current_dir()?;
         dialog.set_directory(current_directory)?;
         Ok(dialog)
+    }
+
+    pub fn get_selected_filename(&self) -> Option<String> {
+        let selected_entry = &self.files[self.list_state.selected().unwrap()];
+        if selected_entry.directory {
+            None
+        } else {
+            Some(selected_entry.filename.to_string_lossy().into())
+        }
     }
 
     fn go_to_parent(&mut self) -> Result<()> {
@@ -119,7 +137,7 @@ impl Component for OpenFileDialog {
         let block = Block::default()
             .title(Span::raw(self.current_directory.to_string_lossy()))
             .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
+            .border_type(self.border_type)
             .style(default_style());
         let list_area = block.inner(area);
         block.render(area, buf);
@@ -137,9 +155,11 @@ impl Component for OpenFileDialog {
             .map(|entry| ListItem::new(format!("{} {}", if entry.directory { "\u{1F4C1}" } else { " " }, entry.filename.to_string_lossy())))
             .collect::<Vec<_>>();
 
-        let list = List::new(list_items)
-            .style(default_style())
-            .highlight_style(default_style().add_modifier(Modifier::REVERSED));
+        let mut list = List::new(list_items)
+            .style(default_style());
+        if self.active {
+            list = list.highlight_style(default_style().add_modifier(Modifier::REVERSED));
+        }
         StatefulWidget::render(list, list_parts[1], buf, &mut self.list_state);
         if self.list_state.offset() > 0 {
             Paragraph::new("  ^^^^^")
