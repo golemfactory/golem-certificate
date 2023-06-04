@@ -32,6 +32,7 @@ impl SaveFileDialog {
             save_path: None,
         };
         dialog.file_browser.border_type = BorderType::Thick;
+        dialog.filename_input.active = false;
         Ok(dialog)
     }
 
@@ -88,9 +89,11 @@ impl Component for SaveFileDialog {
                     DialogParts::FileBrowser => {
                         self.file_browser.active = false;
                         self.file_browser.border_type = BorderType::Rounded;
+                        self.filename_input.active = true;
                         DialogParts::FilenameInput
                     }
                     DialogParts::FilenameInput => {
+                        self.filename_input.active = false;
                         self.file_browser.active = true;
                         self.file_browser.border_type = BorderType::Thick;
                         DialogParts::FileBrowser
