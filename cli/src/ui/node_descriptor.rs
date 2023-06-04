@@ -1,28 +1,28 @@
 use crossterm::event::KeyCode;
-use golem_certificate::SignedCertificate;
+use golem_certificate::SignedNodeDescriptor;
 use tui::{widgets::{ StatefulWidget }, layout::Rect};
 
-use super::{util::{ Component, ComponentStatus, default_style, SizedComponent, Height, Width, certificate_to_string, CalculateHeight, CalculateWidth, AreaCalculators }, scrollable_text::{ ScrollableText, ScrollableTextState }};
+use super::{util::{ Component, ComponentStatus, default_style, SizedComponent, Height, Width, node_descriptor_to_string, CalculateWidth, CalculateHeight, AreaCalculators }, scrollable_text::{ ScrollableText, ScrollableTextState }};
 
-pub struct SignedCertificateDetails {
+pub struct SignedNodeDescriptorDetails {
     calculate_height: CalculateHeight,
     calculate_width: CalculateWidth,
     render_state: ScrollableTextState,
 }
 
-impl SignedCertificateDetails {
+impl SignedNodeDescriptorDetails {
     pub fn new(
-        cert: &SignedCertificate,
+        node_descriptor: &SignedNodeDescriptor,
         indent: usize,
         detailed_signer: bool,
         (calculate_height, calculate_width): AreaCalculators,
     ) -> Self {
-        let text = certificate_to_string(cert, indent, detailed_signer);
+        let text = node_descriptor_to_string(node_descriptor, indent, detailed_signer);
         Self { render_state: ScrollableTextState::new(text), calculate_height, calculate_width }
     }
 }
 
-impl Component for SignedCertificateDetails {
+impl Component for SignedNodeDescriptorDetails {
     fn render(&mut self, area: Rect, buf: &mut tui::buffer::Buffer) {
         ScrollableText::default()
             .style(default_style())
@@ -48,7 +48,7 @@ impl Component for SignedCertificateDetails {
     }
 }
 
-impl SizedComponent for SignedCertificateDetails {
+impl SizedComponent for SignedNodeDescriptorDetails {
     fn get_render_size(&self, area: Rect) -> (Height, Width) {
         ((self.calculate_height)(area.height), (self.calculate_width)(area.width))
     }

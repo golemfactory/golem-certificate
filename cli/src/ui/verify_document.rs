@@ -8,8 +8,9 @@ use tui::widgets::{Block, BorderType, Widget, Padding, Borders};
 
 use super::certificate::SignedCertificateDetails;
 use super::modal::{ModalMessage, ModalWithComponent};
+use super::node_descriptor::SignedNodeDescriptorDetails;
 use super::open_file_dialog::OpenFileDialog;
-use super::util::{Component, ComponentStatus, default_style};
+use super::util::{Component, ComponentStatus, default_style, CalculateHeight, CalculateWidth};
 
 enum VerifiedDocument {
     Certificate(SignedCertificate),
@@ -61,7 +62,7 @@ impl Component for VerifyDocument {
                     if let Some(path) = self.open_file_dialog.selected.as_mut() {
                         let modal: Box<dyn Component> = match verify_selected_file(&path) {
                             Ok(VerifiedDocument::Certificate(cert)) => show_cert_details(path, &cert),
-                            Ok(VerifiedDocument::NodeDescriptor(node_descriptor)) => show_node_descriptor_details(path, node_descriptor),
+                            Ok(VerifiedDocument::NodeDescriptor(node_descriptor)) => show_node_descriptor_details(path, &node_descriptor),
                             Err(err) => show_error(path, err),
                         };
                         self.modal = Some(modal);
@@ -102,15 +103,14 @@ fn verify_json(json: Value) -> Result<VerifiedDocument, String> {
 }
 
 fn show_cert_details(path: &PathBuf, cert: &SignedCertificate) -> Box<dyn Component> {
-    let component = SignedCertificateDetails::new(cert, 2, true);
+    let component = SignedCertificateDetails::new(cert, 2, true, get_area_calculators());
     let modal = ModalWithComponent::new(path.to_string_lossy(), Box::new(component));
     Box::new(modal)
 }
 
-fn show_node_descriptor_details(path: &PathBuf, node_descriptor: SignedNodeDescriptor) -> Box<dyn Component> {
-    let title = "Node Descriptor";
-    let message = "All looks good!";
-    let modal = ModalMessage::new(title, message);
+fn show_node_descriptor_details(path: &PathBuf, node_descriptor: &SignedNodeDescriptor) -> Box<dyn Component> {
+    let component = SignedNodeDescriptorDetails::new(node_descriptor, 2, true, get_area_calculators());
+    let modal = ModalWithComponent::new(path.to_string_lossy(), Box::new(component));
     Box::new(modal)
 }
 
@@ -119,4 +119,10 @@ fn show_error(path: &PathBuf, err: String) -> Box<dyn Component> {
     let message = format!("Verifying {}\nError: {}", path.to_string_lossy(), err);
     let modal = ModalMessage::new(title, message);
     Box::new(modal)
+}
+
+fn get_area_calculators() -> (CalculateHeight, CalculateWidth) {
+    let calculate_height = |height: u16| (height * 9) / 10;
+    let calculate_width = |width: u16| (width * 8) / 10;
+    (Box::new(calculate_height), Box::new(calculate_width))
 }
