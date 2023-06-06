@@ -1,16 +1,18 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
-use tui::layout::Direction;
-use tui::style::Modifier;
 use tui::{
     buffer::Buffer,
-    layout::{Alignment, Constraint, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    style::Modifier,
     widgets::{Paragraph, Widget},
 };
 
-use super::keypair::CreateKeyPairDialog;
-use super::util::{default_style, get_middle_rectangle, Component, ComponentStatus};
-use super::verify_document::VerifyDocument;
+use super::{
+    component::*,
+    keypair::CreateKeyPairDialog,
+    util::{default_style, get_middle_rectangle},
+    verify_document::VerifyDocument,
+};
 
 const MENU_ITEMS: [&str; 8] = [
     "Verify document",
@@ -38,7 +40,7 @@ impl MainMenu {
         }
     }
 
-    fn handle_key_event_self(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
+    fn navigation_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         match key_event.code {
             KeyCode::Up => {
                 if self.selected_item > 0 {
@@ -100,7 +102,7 @@ impl MainMenu {
                     .alignment(Alignment::Center)
                     .render(rows[idx], buf);
             }
-        })
+        });
     }
 }
 
@@ -108,20 +110,21 @@ impl Component for MainMenu {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         if let Some(component) = &mut self.child {
             match component.handle_key_event(key_event)? {
-                ComponentStatus::Active => {}
+                ComponentStatus::Active => {},
                 _ => self.child = None,
-            }
+            };
             Ok(ComponentStatus::Active)
         } else {
-            self.handle_key_event_self(key_event)
+            self.navigation_key_event(key_event)
         }
     }
 
-    fn render(&mut self, area: Rect, buf: &mut Buffer) {
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
         if let Some(component) = &mut self.child {
             component.render(area, buf)
         } else {
-            self.render_self(area, buf)
+            self.render_self(area, buf);
+            None
         }
     }
 }

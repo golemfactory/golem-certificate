@@ -1,12 +1,14 @@
 use std::io;
 
 use anyhow::Result;
-use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+use crossterm::event::{self, Event};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use tui::backend::{Backend, CrosstermBackend};
 use tui::Terminal;
 
-use super::ui::app::{App, AppScreen};
+use crate::ui::component::CursorPosition;
+
+use super::ui::app::{App, AppScreen, AppStatus};
 
 pub fn start() -> Result<()> {
     let backend = CrosstermBackend::new(io::stdout());
@@ -19,12 +21,12 @@ pub fn start() -> Result<()> {
     terminal.clear()?;
 
     let mut error_message = None;
-    let mut app_exited = false;
-    while !app_exited {
+    let mut app_running = true;
+    while app_running {
         match app_loop(&mut terminal, &mut app) {
-            Ok(exited) => app_exited = exited,
+            Ok(app_status) => app_running = app_status == AppStatus::Running,
             Err(err) => {
-                app_exited = true;
+                app_running = false;
                 error_message = Some(format!(
                     "Some unrecoverable error occurred: {}",
                     err.to_string()
@@ -41,18 +43,15 @@ pub fn start() -> Result<()> {
     Ok(())
 }
 
-fn app_loop<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool> {
-    terminal.draw(|frame| frame.render_stateful_widget(AppScreen {}, frame.size(), app))?;
-    match event::read()? {
-        Event::Key(e) => {
-            if (e.code == KeyCode::Char('c') || e.code == KeyCode::Char('C'))
-                && e.modifiers == KeyModifiers::CONTROL
-            {
-                Ok(true)
-            } else {
-                app.handle_key_event(e)
-            }
+fn app_loop<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<AppStatus> {
+    terminal.draw(|frame| {
+        frame.render_stateful_widget(AppScreen {}, frame.size(), app);
+        if let Some(CursorPosition { x, y}) = app.get_cursor() {
+            frame.set_cursor(*x, *y);
         }
-        _ => Ok(false),
+    })?;
+    match event::read()? {
+        Event::Key(e) => app.handle_key_event(e),
+        _ => Ok(AppStatus::Running),
     }
 }

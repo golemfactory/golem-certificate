@@ -10,9 +10,10 @@ use tui::{
 };
 
 use super::{
+    component::*,
     modal::{ModalMessage, ModalMultipleChoice},
     save_file_dialog::SaveFileDialog,
-    util::{default_style, save_json_to_file, Component, ComponentStatus},
+    util::{default_style, save_json_to_file},
 };
 
 pub struct CreateKeyPairDialog {
@@ -84,27 +85,6 @@ impl CreateKeyPairDialog {
 }
 
 impl Component for CreateKeyPairDialog {
-    fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let block = Block::default()
-            .title("Save keypair")
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(default_style())
-            .padding(Padding::vertical(1));
-        let dialog_inner = block.inner(area);
-        block.render(area, buf);
-
-        self.save_file_dialog.render(dialog_inner, buf);
-
-        if let Some(modal) = self.save_error.as_mut() {
-            modal.render(dialog_inner, buf);
-        } else if let Some(modal) = self.overwrite_dialog.as_mut() {
-            modal.render(dialog_inner, buf);
-        } else if let Some(modal) = self.saved_message.as_mut() {
-            modal.render(dialog_inner, buf);
-        }
-    }
-
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         if let Some(modal) = self.saved_message.as_mut() {
             modal.handle_key_event(key_event)
@@ -136,6 +116,29 @@ impl Component for CreateKeyPairDialog {
                 }
                 status => Ok(status),
             }
+        }
+    }
+
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
+        let block = Block::default()
+            .title("Save keypair")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(default_style())
+            .padding(Padding::vertical(1));
+        let dialog_inner = block.inner(area);
+        block.render(area, buf);
+
+        let cursor = self.save_file_dialog.render(dialog_inner, buf);
+
+        if let Some(modal) = self.save_error.as_mut() {
+            modal.render(dialog_inner, buf)
+        } else if let Some(modal) = self.overwrite_dialog.as_mut() {
+            modal.render(dialog_inner, buf)
+        } else if let Some(modal) = self.saved_message.as_mut() {
+            modal.render(dialog_inner, buf)
+        } else {
+            cursor
         }
     }
 }

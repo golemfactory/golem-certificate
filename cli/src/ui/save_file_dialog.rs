@@ -9,9 +9,10 @@ use tui::{
 };
 
 use super::{
+    component::*,
     open_file_dialog::OpenFileDialog,
     text_input::TextInput,
-    util::{default_style, Component, ComponentStatus},
+    util::default_style,
 };
 
 #[derive(PartialEq)]
@@ -46,7 +47,7 @@ impl SaveFileDialog {
             ComponentStatus::Closed => self.save_path = self.file_browser.selected.clone(),
             ComponentStatus::Active => {
                 if let Some(filename) = self.file_browser.get_selected_filename() {
-                    self.filename_input.text_entered = filename;
+                    self.filename_input.set_text(filename);
                 }
             }
             _ => {}
@@ -58,7 +59,7 @@ impl SaveFileDialog {
         let status = self.filename_input.handle_key_event(key_event)?;
         if status == ComponentStatus::Closed {
             let mut path = self.file_browser.current_directory.clone();
-            path.push(&self.filename_input.text_entered);
+            path.push(self.filename_input.get_text());
             self.save_path = Some(path);
         }
         Ok(status)
@@ -66,28 +67,6 @@ impl SaveFileDialog {
 }
 
 impl Component for SaveFileDialog {
-    fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Min(3), Constraint::Max(3)])
-            .split(area);
-        self.file_browser.render(chunks[0], buf);
-
-        let block = Block::default()
-            .title("Filename")
-            .borders(Borders::ALL)
-            .border_type(if self.active_component == DialogParts::FilenameInput {
-                BorderType::Thick
-            } else {
-                BorderType::Rounded
-            })
-            .style(default_style());
-        let filename_input_area = block.inner(chunks[1]);
-        block.render(chunks[1], buf);
-
-        self.filename_input.render(filename_input_area, buf);
-    }
-
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         match key_event.code {
             KeyCode::Tab => {
@@ -111,6 +90,35 @@ impl Component for SaveFileDialog {
                 DialogParts::FileBrowser => self.file_browser_key_event(key_event),
                 DialogParts::FilenameInput => self.filename_input_key_event(key_event),
             },
+        }
+    }
+
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Min(3), Constraint::Max(3)])
+            .split(area);
+        let browser_cursor = self.file_browser.render(chunks[0], buf);
+
+        let block = Block::default()
+            .title("Filename")
+            .borders(Borders::ALL)
+            .border_type(if self.active_component == DialogParts::FilenameInput {
+                BorderType::Thick
+            } else {
+                BorderType::Rounded
+            })
+            .style(default_style());
+        let filename_input_area = block.inner(chunks[1]);
+        block.render(chunks[1], buf);
+
+        let filename_cursor = self.filename_input.render(filename_input_area, buf);
+        if self.file_browser.active {
+            browser_cursor
+        } else if self.filename_input.active {
+            filename_cursor
+        } else {
+            None
         }
     }
 }

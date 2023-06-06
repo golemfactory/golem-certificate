@@ -10,8 +10,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use golem_certificate as gcert;
-
+#[cfg(feature = "tui")]
 mod app;
+#[cfg(feature = "tui")]
 mod ui;
 
 #[derive(Parser)]
@@ -21,6 +22,7 @@ enum GolemCertificateCli {
     SelfSignCertificate(SelfSignArguments),
     Sign(SignArguments),
     Verify { signed_file_path: PathBuf },
+    #[cfg(feature = "tui")]
     Ui,
 }
 
@@ -177,6 +179,7 @@ fn main() -> Result<()> {
         GolemCertificateCli::Verify { signed_file_path } => {
             verify_signature(&signed_file_path, Some(Utc::now()))
         }
+        #[cfg(feature = "tui")]
         GolemCertificateCli::Ui => app::start(),
     }
 }

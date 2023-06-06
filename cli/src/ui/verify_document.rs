@@ -14,11 +14,12 @@ use tui::{
 };
 
 use super::{
+    component::*,
     certificate::SignedCertificateDetails,
     modal::{ModalMessage, ModalWithComponent},
     node_descriptor::SignedNodeDescriptorDetails,
     open_file_dialog::OpenFileDialog,
-    util::{default_style, CalculateHeight, CalculateWidth, Component, ComponentStatus},
+    util::{default_style, CalculateHeight, CalculateWidth},
 };
 
 enum VerifiedDocument {
@@ -43,22 +44,6 @@ impl VerifyDocument {
 }
 
 impl Component for VerifyDocument {
-    fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let block = Block::default()
-            .title("Verify document")
-            .borders(Borders::ALL)
-            .border_type(BorderType::Thick)
-            .border_style(default_style())
-            .padding(Padding::vertical(1));
-        let inner_area = block.inner(area);
-        block.render(area, buf);
-
-        self.open_file_dialog.render(inner_area, buf);
-        if let Some(component) = &mut self.modal {
-            component.render(inner_area, buf);
-        }
-    }
-
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         if let Some(component) = &mut self.modal {
             if component.handle_key_event(key_event)? != ComponentStatus::Active {
@@ -84,6 +69,24 @@ impl Component for VerifyDocument {
                 }
                 s => Ok(s),
             }
+        }
+    }
+
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
+        let block = Block::default()
+            .title("Verify document")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Thick)
+            .border_style(default_style())
+            .padding(Padding::vertical(1));
+        let inner_area = block.inner(area);
+        block.render(area, buf);
+
+        let browser_cursor = self.open_file_dialog.render(inner_area, buf);
+        if let Some(component) = &mut self.modal {
+            component.render(inner_area, buf)
+        } else {
+            browser_cursor
         }
     }
 }

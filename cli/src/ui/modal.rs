@@ -9,8 +9,9 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Widget},
 };
 
-use super::util::{
-    default_style, get_middle_rectangle, Component, ComponentStatus, Height, SizedComponent, Width,
+use super::{
+    component::*,
+    util::{default_style, get_middle_rectangle},
 };
 
 struct ModalWindow {
@@ -58,7 +59,11 @@ impl ModalMessage {
 }
 
 impl Component for ModalMessage {
-    fn render(&mut self, area: Rect, buf: &mut Buffer) {
+    fn handle_key_event(&mut self, _key_event: KeyEvent) -> Result<ComponentStatus> {
+        Ok(ComponentStatus::Closed)
+    }
+
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
         let message_area = self.modal_window.render(area, buf, self.height, self.width);
         let chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -74,10 +79,7 @@ impl Component for ModalMessage {
             .alignment(Alignment::Left)
             .style(default_style())
             .render(chunks[1], buf);
-    }
-
-    fn handle_key_event(&mut self, _key_event: KeyEvent) -> Result<ComponentStatus> {
-        Ok(ComponentStatus::Closed)
+        None
     }
 }
 
@@ -114,10 +116,34 @@ impl ModalMultipleChoice {
             width: choices_width.max(message_width + 2),
         }
     }
+
+    fn selection_key_event(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Left => self.selected = self.selected.saturating_sub(1),
+            KeyCode::Right => {
+                if self.selected < self.choices.len() - 1 {
+                    self.selected += 1;
+                }
+            }
+            _ => {},
+        }
+    }
 }
 
 impl Component for ModalMultipleChoice {
-    fn render(&mut self, area: Rect, buf: &mut Buffer) {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
+        let res = match key_event.code {
+            KeyCode::Esc => ComponentStatus::Escaped,
+            KeyCode::Enter => ComponentStatus::Closed,
+            _ => {
+                self.selection_key_event(key_event);
+                ComponentStatus::Active
+            }
+        };
+        Ok(res)
+    }
+
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
         let message_area = self.modal_window.render(area, buf, self.height, self.width);
         let rows = Layout::default()
             .direction(Direction::Vertical)
@@ -153,25 +179,7 @@ impl Component for ModalMultipleChoice {
                     .style(style)
                     .render(area, buf);
             });
-    }
-
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        let res = match key_event.code {
-            KeyCode::Esc => ComponentStatus::Escaped,
-            KeyCode::Enter => ComponentStatus::Closed,
-            KeyCode::Left => {
-                self.selected = self.selected.saturating_sub(1);
-                ComponentStatus::Active
-            }
-            KeyCode::Right => {
-                if self.selected < self.choices.len() - 1 {
-                    self.selected += 1;
-                }
-                ComponentStatus::Active
-            }
-            _ => ComponentStatus::Active,
-        };
-        Ok(res)
+        None
     }
 }
 
@@ -196,13 +204,14 @@ impl ModalWithComponent {
 }
 
 impl Component for ModalWithComponent {
-    fn render(&mut self, area: Rect, buf: &mut Buffer) {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
+        self.component.handle_key_event(key_event)
+    }
+
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
         let (height, width) = self.component.get_render_size(area);
         let inner_area = self.modal.render(area, buf, height, width);
         self.component.render(inner_area, buf);
-    }
-
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        self.component.handle_key_event(key_event)
+        None
     }
 }

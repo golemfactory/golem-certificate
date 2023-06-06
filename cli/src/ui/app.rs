@@ -7,33 +7,46 @@ use tui::{
 };
 
 use super::{
+    component::*,
     main_menu::MainMenu,
-    util::{default_style, Component, ComponentStatus},
+    util::default_style,
 };
 
 pub struct App {
+    cursor: Cursor,
     main_menu: MainMenu,
 }
 
+#[derive(PartialEq)]
+pub enum AppStatus {
+    Exiting,
+    Running,
+}
+
 impl App {
-    pub fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<bool> {
+    pub fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<AppStatus> {
         match key_event.code {
             KeyCode::Char('c') | KeyCode::Char('C')
                 if key_event.modifiers == KeyModifiers::CONTROL =>
             {
-                Ok(true)
+                Ok(AppStatus::Exiting)
             }
-            _ => self
-                .main_menu
-                .handle_key_event(key_event)
-                .map(|status| status != ComponentStatus::Active),
+            _ => match self.main_menu.handle_key_event(key_event)? {
+                ComponentStatus::Active => Ok(AppStatus::Running),
+                _ => Ok(AppStatus::Exiting),
+            }
         }
+    }
+
+    pub fn get_cursor(&self) -> &Cursor {
+        &self.cursor
     }
 }
 
 impl App {
     pub fn new() -> Self {
         Self {
+            cursor: None,
             main_menu: MainMenu::new(),
         }
     }
@@ -61,6 +74,6 @@ impl StatefulWidget for AppScreen {
         let main_area = main_border.inner(area);
         main_border.render(area, buf);
 
-        state.main_menu.render(main_area, buf);
+        state.cursor = state.main_menu.render(main_area, buf);
     }
 }

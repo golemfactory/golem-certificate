@@ -14,8 +14,11 @@ use tui::{
     },
 };
 
-use super::modal::ModalMessage;
-use super::util::{default_style, Component, ComponentStatus};
+use super::{
+    component::*,
+    modal::ModalMessage,
+    util::default_style,
+};
 
 struct FolderEntry {
     filename: std::ffi::OsString,
@@ -158,7 +161,19 @@ impl OpenFileDialog {
 }
 
 impl Component for OpenFileDialog {
-    fn render(&mut self, area: Rect, buf: &mut Buffer) {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
+        if let Some(component) = &mut self.error_message {
+            match component.handle_key_event(key_event)? {
+                ComponentStatus::Active => {},
+                _ => self.error_message = None,
+            }
+            Ok(ComponentStatus::Active)
+        } else {
+            self.handle_key_event_self(key_event)
+        }
+    }
+
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
         let block = Block::default()
             .title(Span::raw(self.current_directory.to_string_lossy()))
             .borders(Borders::ALL)
@@ -205,18 +220,8 @@ impl Component for OpenFileDialog {
         }
         if let Some(component) = &mut self.error_message {
             component.render(area, buf)
-        }
-    }
-
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        if let Some(component) = &mut self.error_message {
-            let res = component.handle_key_event(key_event)?;
-            if res != ComponentStatus::Active {
-                self.error_message = None;
-            }
-            Ok(ComponentStatus::Active)
         } else {
-            self.handle_key_event_self(key_event)
+            None
         }
     }
 }

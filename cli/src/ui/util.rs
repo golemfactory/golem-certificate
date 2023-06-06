@@ -4,33 +4,11 @@ use std::{
     path::Path,
 };
 
-use anyhow::Result;
-use crossterm::event::KeyEvent;
 use serde::Serialize;
 use tui::{
-    buffer::Buffer,
     layout::{self, Constraint, Layout, Rect},
     style::{Color, Style},
 };
-
-#[derive(PartialEq)]
-pub enum ComponentStatus {
-    Active,
-    Closed,
-    Escaped,
-}
-
-pub trait Component {
-    fn render(&mut self, area: Rect, buf: &mut Buffer);
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus>;
-}
-
-pub type Height = u16;
-pub type Width = u16;
-
-pub trait SizedComponent: Component {
-    fn get_render_size(&self, area: Rect) -> (Height, Width);
-}
 
 pub type CalculateHeight = Box<dyn Fn(u16) -> u16>;
 pub type CalculateWidth = Box<dyn Fn(u16) -> u16>;
