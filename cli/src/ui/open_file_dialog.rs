@@ -9,11 +9,13 @@ use tui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::Modifier,
     text::Span,
-    widgets::{Block, BorderType, Borders, ListItem, List, ListState, Paragraph, StatefulWidget, Widget},
+    widgets::{
+        Block, BorderType, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget,
+    },
 };
 
 use super::modal::ModalMessage;
-use super::util::{Component, default_style, ComponentStatus};
+use super::util::{default_style, Component, ComponentStatus};
 
 struct FolderEntry {
     filename: std::ffi::OsString,
@@ -57,13 +59,23 @@ impl OpenFileDialog {
 
     fn go_to_parent(&mut self) -> Result<()> {
         if let Some(parent) = self.current_directory.parent() {
-            let directory_name = self.current_directory.file_name()
+            let directory_name = self
+                .current_directory
+                .file_name()
                 .map(|filename| filename.to_owned())
-                .ok_or_else(|| anyhow::anyhow!("Some error happened reading the filename of current directory"))?;
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Some error happened reading the filename of current directory")
+                })?;
             self.set_directory(parent.to_path_buf())?;
-            let previous_directory_index = self.files.iter().enumerate()
-                .find_map(|(idx, file)| if file.filename == directory_name { Some(idx) } else { None });
-            self.list_state = ListState::default().with_selected(previous_directory_index.or(Some(0)));
+            let previous_directory_index = self.files.iter().enumerate().find_map(|(idx, file)| {
+                if file.filename == directory_name {
+                    Some(idx)
+                } else {
+                    None
+                }
+            });
+            self.list_state =
+                ListState::default().with_selected(previous_directory_index.or(Some(0)));
         }
         Ok(())
     }
@@ -80,10 +92,20 @@ impl OpenFileDialog {
                 a.file_name().cmp(&b.file_name())
             }
         });
-        self.files = files.into_iter()
-            .map(|entry| FolderEntry { filename: entry.file_name(), directory: entry.path().is_dir() })
+        self.files = files
+            .into_iter()
+            .map(|entry| FolderEntry {
+                filename: entry.file_name(),
+                directory: entry.path().is_dir(),
+            })
             .collect();
-        self.files.insert(0, FolderEntry { filename: std::ffi::OsStr::new("..").into(), directory: true });
+        self.files.insert(
+            0,
+            FolderEntry {
+                filename: std::ffi::OsStr::new("..").into(),
+                directory: true,
+            },
+        );
         self.list_state = ListState::default().with_selected(Some(0));
         Ok(())
     }
@@ -114,7 +136,10 @@ impl OpenFileDialog {
                         self.selected = Some(path);
                         return Ok(ComponentStatus::Closed);
                     } else {
-                        let message = format!("Not a directory neither a file...\n{}", self.files[idx].filename.to_string_lossy());
+                        let message = format!(
+                            "Not a directory neither a file...\n{}",
+                            self.files[idx].filename.to_string_lossy()
+                        );
                         let modal = ModalMessage::new("Error", message);
                         self.error_message = Some(modal);
                     }
@@ -151,12 +176,19 @@ impl Component for OpenFileDialog {
             ])
             .split(list_area);
 
-        let list_items = self.files.iter()
-            .map(|entry| ListItem::new(format!("{} {}", if entry.directory { "\u{1F4C1}" } else { " " }, entry.filename.to_string_lossy())))
+        let list_items = self
+            .files
+            .iter()
+            .map(|entry| {
+                ListItem::new(format!(
+                    "{} {}",
+                    if entry.directory { "\u{1F4C1}" } else { " " },
+                    entry.filename.to_string_lossy()
+                ))
+            })
             .collect::<Vec<_>>();
 
-        let mut list = List::new(list_items)
-            .style(default_style());
+        let mut list = List::new(list_items).style(default_style());
         if self.active {
             list = list.highlight_style(default_style().add_modifier(Modifier::REVERSED));
         }

@@ -5,8 +5,6 @@ use serde_json::Value;
 use crate::{
     cryptography::{create_default_hash, verify_signature_json},
     schemas::{
-        SIGNED_CERTIFICATE_SCHEMA_ID,
-        SIGNED_NODE_DESCRIPTOR_SCHEMA_ID,
         certificate::{
             key_usage::validator::{validate_certificates_key_usage, validate_sign_node},
             Certificate, Fingerprint,
@@ -15,6 +13,7 @@ use crate::{
         permissions::validator::validate_permissions,
         signature::{SignedCertificate, SignedNodeDescriptor, Signer},
         validity_period::validator::{validate_timestamp, validate_validity_period},
+        SIGNED_CERTIFICATE_SCHEMA_ID, SIGNED_NODE_DESCRIPTOR_SCHEMA_ID,
     },
     Error,
 };
@@ -43,11 +42,7 @@ pub fn validate_certificate(
     value: Value,
     timestamp: Option<DateTime<Utc>>,
 ) -> Result<ValidatedCertificate, Error> {
-    validate_schema(
-        &value,
-        SIGNED_CERTIFICATE_SCHEMA_ID,
-        "certificate",
-    )?;
+    validate_schema(&value, SIGNED_CERTIFICATE_SCHEMA_ID, "certificate")?;
     let signed_certificate: SignedCertificate = serde_json::from_value(value)
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
     let mut validated_certificate = validate_signed_certificate(&signed_certificate, timestamp)?;
@@ -63,11 +58,7 @@ pub fn validate_node_descriptor_str(data: &str) -> Result<ValidatedNodeDescripto
 }
 
 pub fn validate_node_descriptor(value: Value) -> Result<ValidatedNodeDescriptor, Error> {
-    validate_schema(
-        &value,
-        SIGNED_NODE_DESCRIPTOR_SCHEMA_ID,
-        "node descriptor",
-    )?;
+    validate_schema(&value, SIGNED_NODE_DESCRIPTOR_SCHEMA_ID, "node descriptor")?;
     let signed_node_descriptor: SignedNodeDescriptor = serde_json::from_value(value)
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
     let mut validated_node_descriptor = validate_signed_node_descriptor(signed_node_descriptor)?;

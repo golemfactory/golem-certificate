@@ -1,4 +1,9 @@
-use tui::{widgets::{Paragraph, StatefulWidget, Widget}, layout::{Rect, Alignment}, buffer::Buffer, style::Style};
+use tui::{
+    buffer::Buffer,
+    layout::{Alignment, Rect},
+    style::Style,
+    widgets::{Paragraph, StatefulWidget, Widget},
+};
 
 pub struct ScrollableTextState {
     lines: Vec<String>,
@@ -71,7 +76,13 @@ impl StatefulWidget for ScrollableText {
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let (start, end) = state.render_range(area.height as usize);
         *state.offset_mut() = start;
-        let rendered_text = state.lines.iter().skip(start).take(end - start).map(|l| l.to_owned()).collect::<Vec<_>>();
+        let rendered_text = state
+            .lines
+            .iter()
+            .skip(start)
+            .take(end - start)
+            .map(|l| l.to_owned())
+            .collect::<Vec<_>>();
         Paragraph::new(rendered_text.join("\n"))
             .alignment(self.alignment)
             .style(self.style)

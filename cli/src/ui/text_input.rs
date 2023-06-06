@@ -1,9 +1,14 @@
 use anyhow::Result;
-use crossterm::event::{KeyEvent, KeyCode};
-use tui::{widgets::{Paragraph, Widget}, layout::{Alignment, Rect}, buffer::Buffer, text::{Span, Line}, style::Modifier};
+use crossterm::event::{KeyCode, KeyEvent};
+use tui::{
+    buffer::Buffer,
+    layout::{Alignment, Rect},
+    style::Modifier,
+    text::{Line, Span},
+    widgets::{Paragraph, Widget},
+};
 
-use super::util::{Component, default_style, ComponentStatus};
-
+use super::util::{default_style, Component, ComponentStatus};
 
 pub struct TextInput {
     pub active: bool,
@@ -33,11 +38,10 @@ impl TextInput {
 
 impl Component for TextInput {
     fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let mut text = vec![
-            Span::styled(self.get_text_for_display(), default_style()),
-        ];
+        let mut text = vec![Span::styled(self.get_text_for_display(), default_style())];
         if self.active {
-            text.push(Span::styled("█", default_style().add_modifier(Modifier::RAPID_BLINK)))
+            let cursor_style = default_style().add_modifier(Modifier::RAPID_BLINK);
+            text.push(Span::styled("█", cursor_style));
         }
         Paragraph::new(Line::from(text))
             .alignment(Alignment::Left)
@@ -61,8 +65,7 @@ impl Component for TextInput {
                 self.text_entered.pop();
                 Ok(ComponentStatus::Active)
             }
-            _ => Ok(ComponentStatus::Active)
+            _ => Ok(ComponentStatus::Active),
         }
     }
 }
-

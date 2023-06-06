@@ -9,7 +9,7 @@ use tui::{
 };
 
 use super::keypair::CreateKeyPairDialog;
-use super::util::{Component, default_style, get_middle_rectangle, ComponentStatus};
+use super::util::{default_style, get_middle_rectangle, Component, ComponentStatus};
 use super::verify_document::VerifyDocument;
 
 const MENU_ITEMS: [&str; 8] = [
@@ -57,14 +57,12 @@ impl MainMenu {
                     self.selected_item += 1;
                 }
             }
-            KeyCode::Enter => {
-                match self.selected_item {
-                    0 => self.child = Some(Box::new(VerifyDocument::new()?)),
-                    5 => self.child = Some(Box::new(CreateKeyPairDialog::new()?)),
-                    7 => return Ok(ComponentStatus::Closed),
-                    _ => {}
-                }
-            }
+            KeyCode::Enter => match self.selected_item {
+                0 => self.child = Some(Box::new(VerifyDocument::new()?)),
+                5 => self.child = Some(Box::new(CreateKeyPairDialog::new()?)),
+                7 => return Ok(ComponentStatus::Closed),
+                _ => {}
+            },
             KeyCode::Esc => return Ok(ComponentStatus::Closed),
             _ => {}
         }
@@ -92,8 +90,13 @@ impl MainMenu {
 
         self.items.iter().enumerate().for_each(|(idx, &item)| {
             if item.len() > 0 {
+                let style = if self.selected_item == idx {
+                    selected
+                } else {
+                    normal
+                };
                 Paragraph::new(item)
-                    .style(if self.selected_item == idx { selected } else { normal })
+                    .style(style)
                     .alignment(Alignment::Center)
                     .render(rows[idx], buf);
             }

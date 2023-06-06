@@ -1,19 +1,25 @@
-use std::fs::read_to_string;
-use std::path::PathBuf;
+use std::{fs::read_to_string, path::PathBuf};
 
 use anyhow::Result;
 use crossterm::event::KeyEvent;
-use golem_certificate::{validate_certificate, validate_node_descriptor, Error::*, SignedCertificate, SignedNodeDescriptor};
+use golem_certificate::{
+    validate_certificate, validate_node_descriptor, Error::*, SignedCertificate,
+    SignedNodeDescriptor,
+};
 use serde_json::Value;
-use tui::buffer::Buffer;
-use tui::layout::Rect;
-use tui::widgets::{Block, BorderType, Widget, Padding, Borders};
+use tui::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{Block, BorderType, Borders, Padding, Widget},
+};
 
-use super::certificate::SignedCertificateDetails;
-use super::modal::{ModalMessage, ModalWithComponent};
-use super::node_descriptor::SignedNodeDescriptorDetails;
-use super::open_file_dialog::OpenFileDialog;
-use super::util::{Component, ComponentStatus, default_style, CalculateHeight, CalculateWidth};
+use super::{
+    certificate::SignedCertificateDetails,
+    modal::{ModalMessage, ModalWithComponent},
+    node_descriptor::SignedNodeDescriptorDetails,
+    open_file_dialog::OpenFileDialog,
+    util::{default_style, CalculateHeight, CalculateWidth, Component, ComponentStatus},
+};
 
 enum VerifiedDocument {
     Certificate(SignedCertificate),
@@ -64,14 +70,18 @@ impl Component for VerifyDocument {
                 ComponentStatus::Closed => {
                     if let Some(path) = self.open_file_dialog.selected.as_mut() {
                         let modal: Box<dyn Component> = match verify_selected_file(&path) {
-                            Ok(VerifiedDocument::Certificate(cert)) => show_cert_details(path, &cert),
-                            Ok(VerifiedDocument::NodeDescriptor(node_descriptor)) => show_node_descriptor_details(path, &node_descriptor),
+                            Ok(VerifiedDocument::Certificate(cert)) => {
+                                show_cert_details(path, &cert)
+                            }
+                            Ok(VerifiedDocument::NodeDescriptor(node_descriptor)) => {
+                                show_node_descriptor_details(path, &node_descriptor)
+                            }
                             Err(err) => show_error(path, err),
                         };
                         self.modal = Some(modal);
                     }
                     Ok(ComponentStatus::Active)
-                },
+                }
                 s => Ok(s),
             }
         }
@@ -82,8 +92,7 @@ fn verify_selected_file(path: &PathBuf) -> Result<VerifiedDocument, String> {
     read_to_string(&path)
         .map_err(|err| format!("Cannot read file ({})", err))
         .and_then(|contents| {
-            serde_json::from_str::<Value>(&contents)
-                .map_err(|_| "File contents is not JSON".into())
+            serde_json::from_str::<Value>(&contents).map_err(|_| "File contents is not JSON".into())
         })
         .and_then(|json| verify_json(json))
 }
@@ -94,15 +103,13 @@ fn verify_json(json: Value) -> Result<VerifiedDocument, String> {
             let signed_cert = serde_json::from_value(json.clone()).unwrap();
             Ok(VerifiedDocument::Certificate(signed_cert))
         }
-        Err(UnsupportedSchema { .. }) => {
-            validate_node_descriptor(json.clone())
-                .map(|_| {
-                    let signed_node_descriptor = serde_json::from_value(json).unwrap();
-                    VerifiedDocument::NodeDescriptor(signed_node_descriptor)
-                })
-        }
-        Err(e) => Err(e)
-    }.map_err(|err| err.to_string())
+        Err(UnsupportedSchema { .. }) => validate_node_descriptor(json.clone()).map(|_| {
+            let signed_node_descriptor = serde_json::from_value(json).unwrap();
+            VerifiedDocument::NodeDescriptor(signed_node_descriptor)
+        }),
+        Err(e) => Err(e),
+    }
+    .map_err(|err| err.to_string())
 }
 
 fn show_cert_details(path: &PathBuf, cert: &SignedCertificate) -> Box<dyn Component> {
@@ -111,8 +118,12 @@ fn show_cert_details(path: &PathBuf, cert: &SignedCertificate) -> Box<dyn Compon
     Box::new(modal)
 }
 
-fn show_node_descriptor_details(path: &PathBuf, node_descriptor: &SignedNodeDescriptor) -> Box<dyn Component> {
-    let component = SignedNodeDescriptorDetails::new(node_descriptor, 2, true, get_area_calculators());
+fn show_node_descriptor_details(
+    path: &PathBuf,
+    node_descriptor: &SignedNodeDescriptor,
+) -> Box<dyn Component> {
+    let component =
+        SignedNodeDescriptorDetails::new(node_descriptor, 2, true, get_area_calculators());
     let modal = ModalWithComponent::new(path.to_string_lossy(), Box::new(component));
     Box::new(modal)
 }

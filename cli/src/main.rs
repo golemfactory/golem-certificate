@@ -11,8 +11,8 @@ use serde_json::Value;
 
 use golem_certificate as gcert;
 
-mod ui;
 mod app;
+mod ui;
 
 #[derive(Parser)]
 enum GolemCertificateCli {

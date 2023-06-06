@@ -25,11 +25,13 @@ pub fn start() -> Result<()> {
             Ok(exited) => app_exited = exited,
             Err(err) => {
                 app_exited = true;
-                error_message = Some(format!("Some unrecoverable error occurred: {}", err.to_string()));
+                error_message = Some(format!(
+                    "Some unrecoverable error occurred: {}",
+                    err.to_string()
+                ));
             }
         }
     }
-
 
     terminal::disable_raw_mode()?;
     crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
@@ -43,13 +45,14 @@ fn app_loop<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<boo
     terminal.draw(|frame| frame.render_stateful_widget(AppScreen {}, frame.size(), app))?;
     match event::read()? {
         Event::Key(e) => {
-            if (e.code == KeyCode::Char('c') || e.code == KeyCode::Char('C')) && e.modifiers == KeyModifiers::CONTROL {
+            if (e.code == KeyCode::Char('c') || e.code == KeyCode::Char('C'))
+                && e.modifiers == KeyModifiers::CONTROL
+            {
                 Ok(true)
             } else {
                 app.handle_key_event(e)
             }
-        },
-        // Event::Resize(_w, _h) => Ok(false),
-        _ => Ok(false)
+        }
+        _ => Ok(false),
     }
 }

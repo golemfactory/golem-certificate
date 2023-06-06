@@ -1,5 +1,6 @@
 pub mod app;
 pub mod certificate;
+pub mod display_details;
 pub mod keypair;
 pub mod main_menu;
 pub mod modal;

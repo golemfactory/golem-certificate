@@ -1,9 +1,16 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use golem_certificate::SignedCertificate;
-use tui::{widgets::{ StatefulWidget }, layout::Rect};
+use tui::{layout::Rect, widgets::StatefulWidget};
 
-use super::{util::{ Component, ComponentStatus, default_style, SizedComponent, Height, Width, certificate_to_string, CalculateHeight, CalculateWidth, AreaCalculators }, scrollable_text::{ ScrollableText, ScrollableTextState }};
+use super::{
+    display_details::certificate_to_string,
+    scrollable_text::{ScrollableText, ScrollableTextState},
+    util::{
+        default_style, AreaCalculators, CalculateHeight, CalculateWidth, Component,
+        ComponentStatus, Height, SizedComponent, Width,
+    },
+};
 
 pub struct SignedCertificateDetails {
     calculate_height: CalculateHeight,
@@ -19,7 +26,11 @@ impl SignedCertificateDetails {
         (calculate_height, calculate_width): AreaCalculators,
     ) -> Self {
         let text = certificate_to_string(cert, indent, detailed_signer);
-        Self { render_state: ScrollableTextState::new(text), calculate_height, calculate_width }
+        Self {
+            render_state: ScrollableTextState::new(text),
+            calculate_height,
+            calculate_width,
+        }
     }
 }
 
@@ -43,7 +54,7 @@ impl Component for SignedCertificateDetails {
                 *offset = offset.saturating_add(1);
                 ComponentStatus::Active
             }
-            _ => ComponentStatus::Active
+            _ => ComponentStatus::Active,
         };
         Ok(status)
     }
@@ -51,6 +62,9 @@ impl Component for SignedCertificateDetails {
 
 impl SizedComponent for SignedCertificateDetails {
     fn get_render_size(&self, area: Rect) -> (Height, Width) {
-        ((self.calculate_height)(area.height), (self.calculate_width)(area.width))
+        (
+            (self.calculate_height)(area.height),
+            (self.calculate_width)(area.width),
+        )
     }
 }

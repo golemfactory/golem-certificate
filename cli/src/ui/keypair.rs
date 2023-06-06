@@ -2,10 +2,18 @@ use std::fmt::Write;
 
 use anyhow::Result;
 use crossterm::event::KeyEvent;
-use golem_certificate::{KeyPair, create_key_pair};
-use tui::{layout::Rect, buffer::Buffer, widgets::{Block, Borders, BorderType, Padding, Widget}};
+use golem_certificate::{create_key_pair, KeyPair};
+use tui::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{Block, BorderType, Borders, Padding, Widget},
+};
 
-use super::{save_file_dialog::SaveFileDialog, modal::{ModalMultipleChoice, ModalMessage}, util::{Component, ComponentStatus, default_style, save_json_to_file}};
+use super::{
+    modal::{ModalMessage, ModalMultipleChoice},
+    save_file_dialog::SaveFileDialog,
+    util::{default_style, save_json_to_file, Component, ComponentStatus},
+};
 
 pub struct CreateKeyPairDialog {
     keypair: KeyPair,
@@ -34,30 +42,42 @@ impl CreateKeyPairDialog {
             let mut key_path = path.clone();
             key_path.set_extension(extension);
             if key_path.exists() && !overwrite {
-                writeln!(&mut file_exists_message, "File exists: {}", key_path.to_string_lossy()).unwrap();
+                writeln!(
+                    &mut file_exists_message,
+                    "File exists: {}",
+                    key_path.to_string_lossy()
+                )
+                .unwrap();
             }
             key_path
         };
         let public_key_path = create_key_path("pub.json");
         let private_key_path = create_key_path("key.json");
         if !file_exists_message.is_empty() {
-            let dialog = ModalMultipleChoice::new("File exists", file_exists_message, vec!["Overwrite", "Cancel"], 1);
+            let dialog = ModalMultipleChoice::new(
+                "File exists",
+                file_exists_message,
+                vec!["Overwrite", "Cancel"],
+                1,
+            );
             self.overwrite_dialog = Some(dialog);
         } else {
-            let result =
-                save_json_to_file(&private_key_path, &self.keypair.private_key)
-                    .and_then(|_| save_json_to_file(&public_key_path, &self.keypair.public_key));
+            let result = save_json_to_file(&private_key_path, &self.keypair.private_key)
+                .and_then(|_| save_json_to_file(&public_key_path, &self.keypair.public_key));
             match result {
                 Ok(_) => {
-                    let message =
-                        format!("Files saved successfully\n{}\n{}\n", private_key_path.to_string_lossy(), public_key_path.to_string_lossy());
+                    let message = format!(
+                        "Files saved successfully\n{}\n{}\n",
+                        private_key_path.to_string_lossy(),
+                        public_key_path.to_string_lossy()
+                    );
                     let dialog = ModalMessage::new("Keypair saved", message);
                     self.saved_message = Some(dialog);
-                },
+                }
                 Err(err) => {
                     let dialog = ModalMessage::new("Error saving file", err.to_string());
                     self.save_error = Some(dialog);
-                },
+                }
             }
         }
     }
@@ -90,7 +110,7 @@ impl Component for CreateKeyPairDialog {
             modal.handle_key_event(key_event)
         } else if let Some(modal) = self.save_error.as_mut() {
             match modal.handle_key_event(key_event)? {
-                ComponentStatus::Active => {},
+                ComponentStatus::Active => {}
                 _ => {
                     self.save_error = None;
                 }
@@ -98,7 +118,7 @@ impl Component for CreateKeyPairDialog {
             Ok(ComponentStatus::Active)
         } else if let Some(modal) = self.overwrite_dialog.as_mut() {
             match modal.handle_key_event(key_event)? {
-                ComponentStatus::Active => {},
+                ComponentStatus::Active => {}
                 ComponentStatus::Closed => {
                     if modal.selected == 0 {
                         self.save_keypair(true);
@@ -114,9 +134,8 @@ impl Component for CreateKeyPairDialog {
                     self.save_keypair(false);
                     Ok(ComponentStatus::Active)
                 }
-                status => Ok(status)
+                status => Ok(status),
             }
         }
     }
 }
-

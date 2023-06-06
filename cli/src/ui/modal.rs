@@ -2,16 +2,16 @@ use std::fmt::Display;
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
-use tui::layout::Direction;
-use tui::style::Modifier;
-use tui::widgets::{Clear, Padding};
 use tui::{
     buffer::Buffer,
-    layout::{Alignment, Constraint, Layout, Rect},
-    widgets::{Block, BorderType, Borders, Paragraph, Widget},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    style::Modifier,
+    widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Widget},
 };
 
-use super::util::{Component, default_style, get_middle_rectangle, ComponentStatus, SizedComponent, Height, Width};
+use super::util::{
+    default_style, get_middle_rectangle, Component, ComponentStatus, Height, SizedComponent, Width,
+};
 
 struct ModalWindow {
     title: String,
@@ -47,14 +47,12 @@ impl ModalMessage {
         let (message_height, message_width) = message_dimensions(&message);
         let title: String = title.into();
         let width = message_width.max(title.len() as u16) + 2;
-        let modal_window = ModalWindow {
-            title: title,
-        };
+        let modal_window = ModalWindow { title: title };
         Self {
             height: message_height + 2,
             width,
             modal_window,
-            message
+            message,
         }
     }
 }
@@ -64,10 +62,7 @@ impl Component for ModalMessage {
         let message_area = self.modal_window.render(area, buf, self.height, self.width);
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![
-                Constraint::Max(1),
-                Constraint::Min(0),
-            ])
+            .constraints(vec![Constraint::Max(1), Constraint::Min(0)])
             .split(message_area);
         let message_top: String = self.message.lines().take(1).collect();
         Paragraph::new(message_top)
@@ -98,8 +93,10 @@ pub struct ModalMultipleChoice {
 impl ModalMultipleChoice {
     pub fn new<S1, S2, S3, I>(title: S1, message: S2, choices: I, selected: usize) -> Self
     where
-        S1: Into<String>, S2: Into<String>, S3: Display,
-        I: IntoIterator<Item = S3>
+        S1: Into<String>,
+        S2: Into<String>,
+        S3: Display,
+        I: IntoIterator<Item = S3>,
     {
         let message: String = message.into();
         let choices: Vec<String> = choices.into_iter().map(|c| format!(" {} ", c)).collect();
@@ -114,7 +111,7 @@ impl ModalMultipleChoice {
             choices,
             selected,
             height: message_height + 4,
-            width: choices_width.max(message_width + 2, ),
+            width: choices_width.max(message_width + 2),
         }
     }
 }
@@ -146,7 +143,8 @@ impl Component for ModalMultipleChoice {
         let mut styles = vec![default_style(); self.choices.len()];
         styles[self.selected] = default_style().add_modifier(Modifier::REVERSED);
 
-        self.choices.iter()
+        self.choices
+            .iter()
             .zip(choice_areas.into_iter())
             .zip(styles.into_iter())
             .for_each(|((choice, &area), style)| {
@@ -171,7 +169,7 @@ impl Component for ModalMultipleChoice {
                 }
                 ComponentStatus::Active
             }
-            _ => ComponentStatus::Active
+            _ => ComponentStatus::Active,
         };
         Ok(res)
     }
@@ -190,7 +188,9 @@ pub struct ModalWithComponent {
 
 impl ModalWithComponent {
     pub fn new<S1: Into<String>>(title: S1, component: Box<dyn SizedComponent>) -> Self {
-        let modal = ModalWindow { title: title.into() };
+        let modal = ModalWindow {
+            title: title.into(),
+        };
         Self { modal, component }
     }
 }

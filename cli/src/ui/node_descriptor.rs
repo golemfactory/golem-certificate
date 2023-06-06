@@ -1,9 +1,16 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use golem_certificate::SignedNodeDescriptor;
-use tui::{widgets::StatefulWidget, layout::Rect, buffer::Buffer};
+use tui::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
-use super::{util::{ Component, ComponentStatus, default_style, SizedComponent, Height, Width, node_descriptor_to_string, CalculateWidth, CalculateHeight, AreaCalculators }, scrollable_text::{ ScrollableText, ScrollableTextState }};
+use super::{
+    display_details::node_descriptor_to_string,
+    scrollable_text::{ScrollableText, ScrollableTextState},
+    util::{
+        default_style, AreaCalculators, CalculateHeight, CalculateWidth, Component,
+        ComponentStatus, Height, SizedComponent, Width,
+    },
+};
 
 pub struct SignedNodeDescriptorDetails {
     calculate_height: CalculateHeight,
@@ -19,7 +26,11 @@ impl SignedNodeDescriptorDetails {
         (calculate_height, calculate_width): AreaCalculators,
     ) -> Self {
         let text = node_descriptor_to_string(node_descriptor, indent, detailed_signer);
-        Self { render_state: ScrollableTextState::new(text), calculate_height, calculate_width }
+        Self {
+            render_state: ScrollableTextState::new(text),
+            calculate_height,
+            calculate_width,
+        }
     }
 }
 
@@ -43,7 +54,7 @@ impl Component for SignedNodeDescriptorDetails {
                 *offset = offset.saturating_add(1);
                 ComponentStatus::Active
             }
-            _ => ComponentStatus::Active
+            _ => ComponentStatus::Active,
         };
         Ok(status)
     }
@@ -51,6 +62,9 @@ impl Component for SignedNodeDescriptorDetails {
 
 impl SizedComponent for SignedNodeDescriptorDetails {
     fn get_render_size(&self, area: Rect) -> (Height, Width) {
-        ((self.calculate_height)(area.height), (self.calculate_width)(area.width))
+        (
+            (self.calculate_height)(area.height),
+            (self.calculate_width)(area.width),
+        )
     }
 }
