@@ -17,7 +17,7 @@ use tui::{
 use super::{
     component::*,
     modal::ModalMessage,
-    util::default_style,
+    util::{default_style, highlight_style},
 };
 
 struct FolderEntry {
@@ -205,7 +205,7 @@ impl Component for OpenFileDialog {
 
         let mut list = List::new(list_items).style(default_style());
         if self.active {
-            list = list.highlight_style(default_style().add_modifier(Modifier::REVERSED));
+            list = list.highlight_style(highlight_style());
         }
         StatefulWidget::render(list, list_parts[1], buf, &mut self.list_state);
         if self.list_state.offset() > 0 {

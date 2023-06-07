@@ -7,7 +7,7 @@ use std::{
 use serde::Serialize;
 use tui::{
     layout::{self, Constraint, Layout, Rect},
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
 };
 
 pub type CalculateHeight = Box<dyn Fn(u16) -> u16>;
@@ -21,6 +21,10 @@ pub fn identity_area_calculators() -> AreaCalculators {
 
 pub fn default_style() -> Style {
     Style::default().fg(Color::Cyan).bg(Color::Black)
+}
+
+pub fn highlight_style() -> Style {
+    default_style().add_modifier(Modifier::REVERSED)
 }
 
 pub fn get_middle_rectangle(area: Rect, height: u16, width: u16) -> Rect {

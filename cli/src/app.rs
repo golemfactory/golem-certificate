@@ -45,7 +45,7 @@ pub fn start() -> Result<()> {
 
 fn app_loop<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<AppStatus> {
     terminal.draw(|frame| {
-        frame.render_stateful_widget(AppScreen {}, frame.size(), app);
+        frame.render_stateful_widget(AppScreen, frame.size(), app);
         if let Some(CursorPosition { x, y}) = app.get_cursor() {
             frame.set_cursor(*x, *y);
         }

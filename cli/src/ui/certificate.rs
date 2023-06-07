@@ -6,6 +6,10 @@ use tui::{layout::Rect, widgets::StatefulWidget};
 use super::{
     component::*,
     display_details::certificate_to_string,
+    editors::{
+        EditorComponent,
+        permission::PermissionEditor,
+    },
     scrollable_text::{ScrollableText, ScrollableTextState},
     util::{
         default_style, AreaCalculators, CalculateHeight, CalculateWidth,
@@ -74,5 +78,34 @@ impl SizedComponent for SignedCertificateDetails {
             (self.calculate_height)(area.height),
             (self.calculate_width)(area.width),
         )
+    }
+}
+
+pub struct CertificateEditor {
+    permissions_editor: PermissionEditor,
+}
+
+impl CertificateEditor {
+    pub fn new() -> Self {
+        let mut permissions_editor = PermissionEditor::new(None);
+        permissions_editor.enter_from_top();
+        Self {
+            permissions_editor: permissions_editor,
+        }
+    }
+}
+
+impl Component for CertificateEditor {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
+        match self.permissions_editor.handle_key_event(key_event) {
+            super::editors::EditorEventResult::ExitTop => self.permissions_editor.enter_from_top(),
+            super::editors::EditorEventResult::ExitBottom => self.permissions_editor.enter_from_below(),
+            _ => {},
+        }
+        Ok(ComponentStatus::Active)
+    }
+
+    fn render(&mut self, area: Rect, buf: &mut tui::buffer::Buffer) -> Cursor {
+        self.permissions_editor.render(area, buf)
     }
 }

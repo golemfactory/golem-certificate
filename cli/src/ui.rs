@@ -2,7 +2,7 @@ pub(crate) mod app;
 pub(crate) mod certificate;
 pub(crate) mod component;
 pub(crate) mod display_details;
-pub(crate) mod edit_utils;
+pub(crate) mod editors;
 pub(crate) mod keypair;
 pub(crate) mod main_menu;
 pub(crate) mod modal;

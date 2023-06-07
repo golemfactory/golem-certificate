@@ -5,13 +5,12 @@ use crossterm::event::{KeyCode, KeyEvent};
 use tui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::Modifier,
     widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Widget},
 };
 
 use super::{
     component::*,
-    util::{default_style, get_middle_rectangle},
+    util::{default_style, get_middle_rectangle, highlight_style},
 };
 
 struct ModalWindow {
@@ -167,7 +166,7 @@ impl Component for ModalMultipleChoice {
             .constraints(choice_constraints)
             .split(rows[2]);
         let mut styles = vec![default_style(); self.choices.len()];
-        styles[self.selected] = default_style().add_modifier(Modifier::REVERSED);
+        styles[self.selected] = highlight_style();
 
         self.choices
             .iter()

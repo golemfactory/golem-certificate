@@ -52,7 +52,7 @@ impl App {
     }
 }
 
-pub struct AppScreen {}
+pub struct AppScreen;
 
 impl StatefulWidget for AppScreen {
     type State = App;

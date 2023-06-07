@@ -3,22 +3,21 @@ use crossterm::event::{KeyCode, KeyEvent};
 use tui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::Modifier,
     widgets::{Paragraph, Widget},
 };
 
 use super::{
     component::*,
     keypair::CreateKeyPairDialog,
-    util::{default_style, get_middle_rectangle},
-    verify_document::VerifyDocument,
+    util::{default_style, get_middle_rectangle, highlight_style},
+    verify_document::VerifyDocument, certificate::CertificateEditor,
 };
 
 const MENU_ITEMS: [&str; 8] = [
     "Verify document",
     "",
-    "Create node descriptor",
     "Create certificate",
+    "Create node descriptor",
     "",
     "Create key pair",
     "",
@@ -46,7 +45,7 @@ impl MainMenu {
                 if self.selected_item > 0 {
                     self.selected_item -= 1;
                 }
-                while self.selected_item > 0 && self.items[self.selected_item].len() < 1 {
+                while self.selected_item > 0 && self.items[self.selected_item].is_empty() {
                     self.selected_item -= 1;
                 }
             }
@@ -55,12 +54,13 @@ impl MainMenu {
                 if self.selected_item < max {
                     self.selected_item += 1;
                 }
-                while self.selected_item < max && self.items[self.selected_item].len() < 1 {
+                while self.selected_item < max && self.items[self.selected_item].is_empty() {
                     self.selected_item += 1;
                 }
             }
             KeyCode::Enter => match self.selected_item {
                 0 => self.child = Some(Box::new(VerifyDocument::new()?)),
+                2 => self.child = Some(Box::new(CertificateEditor::new())),
                 5 => self.child = Some(Box::new(CreateKeyPairDialog::new()?)),
                 7 => return Ok(ComponentStatus::Closed),
                 _ => {}
@@ -87,15 +87,12 @@ impl MainMenu {
             .constraints(row_constraints)
             .split(menu_area);
 
-        let normal = default_style();
-        let selected = default_style().add_modifier(Modifier::REVERSED);
-
         self.items.iter().enumerate().for_each(|(idx, &item)| {
             if item.len() > 0 {
                 let style = if self.selected_item == idx {
-                    selected
+                    highlight_style()
                 } else {
-                    normal
+                    default_style()
                 };
                 Paragraph::new(item)
                     .style(style)
