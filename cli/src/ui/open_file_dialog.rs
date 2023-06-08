@@ -7,7 +7,6 @@ use crossterm::event::{KeyCode, KeyEvent};
 use tui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    style::Modifier,
     text::Span,
     widgets::{
         Block, BorderType, Borders, List, ListItem, ListState, Paragraph, StatefulWidget, Widget,

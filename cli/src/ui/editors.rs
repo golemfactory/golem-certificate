@@ -1,28 +1,9 @@
 use std::fmt::Write;
 
-
 use crossterm::event::{KeyEvent, KeyCode};
-use golem_certificate::schemas::{certificate::key_usage::KeyUsage};
-use tui::{layout::Rect, buffer::Buffer};
+use tui::{layout::Rect, buffer::Buffer, widgets::{Paragraph, Widget}, text::Span};
 
-use super::component::*;
-
-pub struct X {}
-
-struct Tree {
-    entries: Vec<TreeEntry>,
-}
-
-enum TreeValue {
-    KeyUsage(Vec<KeyUsage>),
-    Object(Tree),
-    Text(String),
-}
-
-struct TreeEntry {
-    name: String,
-    value: TreeValue,
-}
+use super::{component::*, util::{default_style, highlight_style}};
 
 pub enum EditorEventResult {
     ExitTop,
@@ -46,14 +27,14 @@ pub mod permission {
     use std::collections::HashSet;
 
     use golem_certificate::schemas::permissions::{Permissions, PermissionDetails, OutboundPermissions};
-    use tui::{widgets::{Paragraph, Widget, Clear}, style::Modifier, text::Span};
+    use tui::widgets::{Paragraph, Widget, Clear};
     use url::Url;
 
-    use crate::ui::{text_input::TextInput, modal::ModalMessage, util::{default_style, highlight_style}};
+    use crate::ui::{text_input::TextInput, modal::ModalMessage, util::{default_style}};
 
     pub struct PermissionEditor {
         highlight: Option<usize>,
-        pub permissions: Permissions,
+        permissions: Permissions,
         urls: Vec<Url>,
         url_editor: Option<TextInput>,
         url_error: Option<ModalMessage>,
@@ -65,10 +46,19 @@ pub mod permission {
                 Permissions::Object(PermissionDetails {
                     outbound: Some(OutboundPermissions::Urls(HashSet::new()))
                 });
+            let mut urls = vec![];
             Self {
                 highlight: None,
-                permissions: permissions.unwrap_or(default_permissions),
-                urls: vec![],
+                permissions: permissions.map(|p| match &p {
+                    Permissions::Object(PermissionDetails { outbound: None }) => default_permissions.clone(),
+                    Permissions::Object(PermissionDetails { outbound: Some(OutboundPermissions::Urls(url_set)) }) => {
+                        url_set.iter().for_each(|url| urls.push(url.to_owned()));
+                        urls.sort();
+                        p
+                    }
+                    _ => p,
+                }).unwrap_or(default_permissions),
+                urls,
                 url_editor: None,
                 url_error: None,
             }
@@ -79,26 +69,34 @@ pub mod permission {
             write!(&mut output, "Permissions").unwrap();
             match &self.permissions {
                 Permissions::All => writeln!(&mut output, ": All").unwrap(),
-                Permissions::Object(PermissionDetails { outbound }) => match outbound {
-                    Some(outbound_details) => {
-                        writeln!(&mut output, "").unwrap();
-                        write!(&mut output, "  Outbound").unwrap();
-                        match outbound_details {
-                            OutboundPermissions::Unrestricted => {
-                                writeln!(&mut output, ": Unrestricted").unwrap();
-                            }
-                            OutboundPermissions::Urls(_) => {
-                                writeln!(&mut output, "").unwrap();
-                                writeln!(&mut output, "    Urls").unwrap();
-                                self.urls.iter()
-                                    .for_each(|url| writeln!(&mut output, "      {}", url).unwrap());
-                            },
+                Permissions::Object(PermissionDetails { outbound: None }) => writeln!(&mut output, "None").unwrap(),
+                Permissions::Object(PermissionDetails { outbound: Some(outbound_details) }) => {
+                    writeln!(&mut output, "").unwrap();
+                    write!(&mut output, "  Outbound").unwrap();
+                    match outbound_details {
+                        OutboundPermissions::Unrestricted => {
+                            writeln!(&mut output, ": Unrestricted").unwrap();
+                        }
+                        OutboundPermissions::Urls(_) => {
+                            writeln!(&mut output, "").unwrap();
+                            writeln!(&mut output, "    Urls").unwrap();
+                            self.urls.iter()
+                                .for_each(|url| writeln!(&mut output, "      {}", url).unwrap());
                         }
                     }
-                    None => writeln!(&mut output, "None").unwrap(),
                 }
             }
             output
+        }
+
+        fn get_permissions(&self) -> Permissions {
+            match &self.permissions {
+                Permissions::Object(PermissionDetails { outbound: Some(OutboundPermissions::Urls(_)) }) => {
+                    let urls = self.urls.iter().map(|url| url.to_owned()).collect();
+                    Permissions::Object(PermissionDetails { outbound: Some(OutboundPermissions::Urls(urls)) })
+                }
+                p => p.clone(),
+            }
         }
     }
 
@@ -181,13 +179,13 @@ pub mod permission {
                         } else if highlight == 1 {
                             match &mut self.permissions {
                                 Permissions::All => unreachable!("permission editor internal state error"),
-                                Permissions::Object(PermissionDetails { outbound }) => match outbound.as_ref().unwrap() {
-                                    OutboundPermissions::Unrestricted => {
-                                        let urls = self.urls.iter().map(|url| url.to_owned()).collect::<HashSet<_>>();
-                                        outbound.insert(OutboundPermissions::Urls(urls))
+                                Permissions::Object(PermissionDetails { outbound }) =>
+                                    match outbound.as_ref().unwrap() {
+                                        OutboundPermissions::Unrestricted =>
+                                            outbound.insert(OutboundPermissions::Urls(Default::default())),
+                                        OutboundPermissions::Urls(_) =>
+                                            outbound.insert(OutboundPermissions::Unrestricted),
                                     },
-                                    OutboundPermissions::Urls(_) => outbound.insert(OutboundPermissions::Unrestricted),
-                                },
                             };
                         } else if highlight > 2 && highlight <= render_height {
                             let idx = highlight - 3;
@@ -247,55 +245,13 @@ pub mod permission {
                 Clear.render(editor_area, buf);
                 let cursor = url_editor.render(editor_area, buf);
                 if let Some(url_error) = self.url_error.as_mut() {
-                    url_error.render(area, buf);
+                    url_error.render(area, buf)
+                } else {
+                    cursor
                 }
-                cursor
             } else {
                 if let Some(highlight) = self.highlight {
-                    let pre = text.lines().take(highlight).collect::<Vec<_>>().join("\n");
-                    let highlighted = text.lines().skip(highlight).take(1).collect::<String>();
-                    let post = text.lines().skip(highlight + 1).collect::<Vec<_>>().join("\n");
-                    let highlight_area = adjust_render_area(&area, &pre);
-                    Paragraph::new(pre)
-                        .alignment(tui::layout::Alignment::Left)
-                        .style(default_style())
-                        .render(area, buf);
-                    if let Some(mut area) = highlight_area {
-                        let post_area = adjust_render_area(&area, &highlighted);
-                        area.height = area.height.min(1);
-                        let (spaces, highlighted_text) = {
-                            if highlighted.is_empty() {
-                                ("      ".into(), "<Add another URL>".into())
-                            } else {
-                                let spaces = highlighted.chars().take_while(|&c| c == ' ').collect::<String>();
-                                let highlighted_text = highlighted.chars().skip(spaces.len()).collect::<String>();
-                                (spaces, highlighted_text)
-                            }
-                        };
-                        let text_area = Rect {
-                            x: area.x + spaces.len() as u16,
-                            y: area.y,
-                            width: area.width.saturating_sub(spaces.len() as u16),
-                            height: area.height,
-                        };
-                        Paragraph::new(spaces)
-                            .alignment(tui::layout::Alignment::Left)
-                            .style(default_style())
-                            .render(area, buf);
-                        let span =
-                            Span::styled(highlighted_text, highlight_style());
-                        Paragraph::new(span)
-                            .alignment(tui::layout::Alignment::Left)
-                            .render(text_area, buf);
-                        if let Some(area) = post_area {
-                            Paragraph::new(post)
-                                .alignment(tui::layout::Alignment::Left)
-                                .style(default_style())
-                                .render(area, buf);
-                        }
-                    } else {
-                        unreachable!("Highlighted part is not within render area");
-                    }
+                    render_with_highlight(&text, highlight, area, buf);
                 } else {
                     Paragraph::new(text)
                         .alignment(tui::layout::Alignment::Left)
@@ -305,6 +261,52 @@ pub mod permission {
                 None
             }
         }
+    }
+}
+
+fn render_with_highlight(text: &String, highlight: usize, area: Rect, buf: &mut Buffer) {
+    let pre = text.lines().take(highlight).collect::<Vec<_>>().join("\n");
+    let highlighted = text.lines().skip(highlight).take(1).collect::<String>();
+    let post = text.lines().skip(highlight + 1).collect::<Vec<_>>().join("\n");
+    let highlight_area = adjust_render_area(&area, &pre);
+    Paragraph::new(pre)
+        .alignment(tui::layout::Alignment::Left)
+        .style(default_style())
+        .render(area, buf);
+    if let Some(mut area) = highlight_area {
+        let post_area = adjust_render_area(&area, &highlighted);
+        area.height = area.height.min(1);
+        let (spaces, highlighted_text) = {
+            if highlighted.is_empty() {
+                ("      ".into(), "<Add another URL>".into())
+            } else {
+                let spaces = highlighted.chars().take_while(|&c| c == ' ').collect::<String>();
+                let highlighted_text = highlighted.chars().skip(spaces.len()).collect::<String>();
+                (spaces, highlighted_text)
+            }
+        };
+        let text_area = Rect {
+            x: area.x + spaces.len() as u16,
+            y: area.y,
+            width: area.width.saturating_sub(spaces.len() as u16),
+            height: area.height,
+        };
+        Paragraph::new(spaces)
+            .alignment(tui::layout::Alignment::Left)
+            .style(default_style())
+            .render(area, buf);
+        let span = Span::styled(highlighted_text, highlight_style());
+        Paragraph::new(span)
+            .alignment(tui::layout::Alignment::Left)
+            .render(text_area, buf);
+        if let Some(area) = post_area {
+            Paragraph::new(post)
+                .alignment(tui::layout::Alignment::Left)
+                .style(default_style())
+                .render(area, buf);
+        }
+    } else {
+        unreachable!("Highlighted part is not within render area");
     }
 }
 
