@@ -1,24 +1,132 @@
 use std::fmt::Write;
 
 use crossterm::event::{KeyEvent, KeyCode};
-use tui::{layout::Rect, buffer::Buffer, widgets::{Paragraph, Widget}, text::Span};
+use tui::{layout::Rect, buffer::Buffer, widgets::{Clear, Paragraph, Widget}, text::Span};
 
-use super::{component::*, util::{default_style, highlight_style}};
+use super::{
+    component::*,
+    modal::ModalMessage,
+    text_input::TextInput,
+    util::{default_style, highlight_style},
+};
 
 pub enum EditorEventResult {
     ExitTop,
     ExitBottom,
     KeepActive,
+    Escaped,
     Inactive,
 }
 
 pub trait EditorComponent {
     fn enter_from_below(&mut self);
     fn enter_from_top(&mut self);
-    fn get_highlighted_line(&self) -> Option<usize>;
+    fn get_highlight(&self) -> Option<usize>;
     fn handle_key_event(&mut self, key_event: KeyEvent) -> EditorEventResult;
-    fn calculate_render_height(&self) -> usize ;
-    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor;
+    fn calculate_render_height(&self) -> usize;
+    fn get_text_output(&self, text: &mut String);
+    fn get_highlight_prefix(&self) -> Option<usize>;
+    fn get_editor(&mut self) -> Option<&mut TextInput>;
+    fn get_parse_error(&mut self) -> Option<&mut ModalMessage>;
+
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
+        let text = {
+            let mut text = String::new();
+            self.get_text_output(&mut text);
+            text
+        };
+        if self.get_editor().is_some() || self.get_highlight().is_none() {
+            Paragraph::new(text)
+                .alignment(tui::layout::Alignment::Left)
+                .style(default_style())
+                .render(area, buf);
+
+            let highlight = self.get_highlight();
+            let highlight_prefix = self.get_highlight_prefix();
+            if let Some(url_editor) = self.get_editor() {
+                let prefix = highlight_prefix.expect("Cannot have text input active without highlight in the component") as u16;
+                let editor_area = Rect {
+                    x: area.x + prefix,
+                    y: area.y + highlight.expect("Cannot have text input active without highlight in the component") as u16,
+                    width: area.width.saturating_sub(prefix),
+                    height: 1.min(area.height),
+                };
+                Clear.render(editor_area, buf);
+                let editor_cursor = url_editor.render(editor_area, buf);
+                if let Some(parse_error) = self.get_parse_error() {
+                    parse_error.render(area, buf)
+                } else {
+                    editor_cursor
+                }
+            } else {
+                None
+            }
+        } else {
+            render_with_highlight(&text, self.get_highlight().unwrap(), self.get_highlight_prefix().unwrap(), area, buf);
+            None
+        }
+    }
+}
+
+fn render_with_highlight(text: &String, highlight: usize, prefix: usize, area: Rect, buf: &mut Buffer) {
+    let pre = text.lines().take(highlight).collect::<Vec<_>>().join("\n");
+    let highlighted = text.lines().skip(highlight).take(1).collect::<String>();
+    let post = text.lines().skip(highlight + 1).collect::<Vec<_>>().join("\n");
+    let highlight_area = adjust_render_area(&area, &pre);
+    Paragraph::new(pre)
+        .alignment(tui::layout::Alignment::Left)
+        .style(default_style())
+        .render(area, buf);
+    if let Some(mut area) = highlight_area {
+        let post_area = adjust_render_area(&area, &highlighted);
+        area.height = area.height.min(1);
+        let (highlight_prefix, highlighted_text) = {
+            if highlighted.is_empty() {
+                ("      ".into(), "<Add another URL>".into())
+            } else {
+                let highlight_prefix = highlighted.chars().take(prefix).collect::<String>();
+                let highlighted_text = highlighted.chars().skip(prefix).collect::<String>();
+                (highlight_prefix, highlighted_text)
+            }
+        };
+        let text_area = Rect {
+            x: area.x + prefix as u16,
+            y: area.y,
+            width: area.width.saturating_sub(prefix as u16),
+            height: area.height,
+        };
+        Paragraph::new(highlight_prefix)
+            .alignment(tui::layout::Alignment::Left)
+            .style(default_style())
+            .render(area, buf);
+        let span = Span::styled(highlighted_text, highlight_style());
+        Paragraph::new(span)
+            .alignment(tui::layout::Alignment::Left)
+            .render(text_area, buf);
+        if let Some(area) = post_area {
+            Paragraph::new(post)
+                .alignment(tui::layout::Alignment::Left)
+                .style(default_style())
+                .render(area, buf);
+        }
+    } else {
+        unreachable!("Highlighted part is not within render area");
+    }
+}
+
+fn adjust_render_area(area: &Rect, text: &String) -> Option<Rect> {
+    let text_height = text.lines().count() as u16;
+    let adjusted_area = Rect {
+        x: area.x,
+        y: area.y + text_height,
+        width: area.width,
+        height: area.height.saturating_sub(text_height),
+    };
+    if adjusted_area.height > 0 {
+        Some(adjusted_area)
+    } else {
+        None
+    }
 }
 
 pub mod permission {
@@ -27,17 +135,14 @@ pub mod permission {
     use std::collections::HashSet;
 
     use golem_certificate::schemas::permissions::{Permissions, PermissionDetails, OutboundPermissions};
-    use tui::widgets::{Paragraph, Widget, Clear};
     use url::Url;
-
-    use crate::ui::{text_input::TextInput, modal::ModalMessage, util::{default_style}};
 
     pub struct PermissionEditor {
         highlight: Option<usize>,
         permissions: Permissions,
         urls: Vec<Url>,
         url_editor: Option<TextInput>,
-        url_error: Option<ModalMessage>,
+        parse_error: Option<ModalMessage>,
     }
 
     impl PermissionEditor {
@@ -60,33 +165,8 @@ pub mod permission {
                 }).unwrap_or(default_permissions),
                 urls,
                 url_editor: None,
-                url_error: None,
+                parse_error: None,
             }
-        }
-
-        fn get_permissions_output(&self) -> String {
-            let mut output = String::new();
-            write!(&mut output, "Permissions").unwrap();
-            match &self.permissions {
-                Permissions::All => writeln!(&mut output, ": All").unwrap(),
-                Permissions::Object(PermissionDetails { outbound: None }) => writeln!(&mut output, "None").unwrap(),
-                Permissions::Object(PermissionDetails { outbound: Some(outbound_details) }) => {
-                    writeln!(&mut output, "").unwrap();
-                    write!(&mut output, "  Outbound").unwrap();
-                    match outbound_details {
-                        OutboundPermissions::Unrestricted => {
-                            writeln!(&mut output, ": Unrestricted").unwrap();
-                        }
-                        OutboundPermissions::Urls(_) => {
-                            writeln!(&mut output, "").unwrap();
-                            writeln!(&mut output, "    Urls").unwrap();
-                            self.urls.iter()
-                                .for_each(|url| writeln!(&mut output, "      {}", url).unwrap());
-                        }
-                    }
-                }
-            }
-            output
         }
 
         fn get_permissions(&self) -> Permissions {
@@ -109,17 +189,17 @@ pub mod permission {
             self.highlight = Some(0);
         }
 
-        fn get_highlighted_line(&self) -> Option<usize> {
+        fn get_highlight(&self) -> Option<usize> {
             self.highlight.clone()
         }
 
         fn handle_key_event(&mut self, key_event: KeyEvent) -> EditorEventResult {
             let render_height = self.calculate_render_height();
-            if let Some(error_message) = self.url_error.as_mut() {
-                match error_message.handle_key_event(key_event) {
+            if let Some(parse_error) = self.parse_error.as_mut() {
+                match parse_error.handle_key_event(key_event) {
                     Ok(status) => match status {
                         ComponentStatus::Active => {},
-                        _ => self.url_error = None,
+                        _ => self.parse_error = None,
                     }
                     Err(_) => {},
                 }
@@ -139,7 +219,7 @@ pub mod permission {
                                     }
                                     self.url_editor = None;
                                 },
-                                Err(err) => self.url_error = Some(ModalMessage::new("Url parse error", err.to_string())),
+                                Err(err) => self.parse_error = Some(ModalMessage::new("Url parse error", err.to_string())),
                             }
                         },
                         ComponentStatus::Escaped => self.url_editor = None,
@@ -147,9 +227,9 @@ pub mod permission {
                     Err(_) => {},
                 }
                 EditorEventResult::KeepActive
-            } else if let Some(highlight) = self.highlight.as_ref() {
-                let highlight = highlight.clone();
+            } else if let Some(highlight) = self.highlight {
                 match key_event.code {
+                    KeyCode::Esc => EditorEventResult::Escaped,
                     KeyCode::Down => {
                         if highlight < render_height - 1 {
                             let inc = if highlight == 1 { 2 } else { 1 };
@@ -228,99 +308,194 @@ pub mod permission {
             }
         }
 
-        fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
-            let text = self.get_permissions_output();
-            if let Some(url_editor) = self.url_editor.as_mut() {
-                Paragraph::new(text)
-                    .alignment(tui::layout::Alignment::Left)
-                    .style(default_style())
-                    .render(area, buf);
+        fn get_text_output(&self, text: &mut String) {
+            write!(text, "Permissions").unwrap();
+            match &self.permissions {
+                Permissions::All => writeln!(text, ": All").unwrap(),
+                Permissions::Object(PermissionDetails { outbound: None }) => writeln!(text, "None").unwrap(),
+                Permissions::Object(PermissionDetails { outbound: Some(outbound_details) }) => {
+                    writeln!(text, "").unwrap();
+                    write!(text, "  Outbound").unwrap();
+                    match outbound_details {
+                        OutboundPermissions::Unrestricted => {
+                            writeln!(text, ": Unrestricted").unwrap();
+                        }
+                        OutboundPermissions::Urls(_) => {
+                            writeln!(text, "").unwrap();
+                            writeln!(text, "    Urls").unwrap();
+                            self.urls.iter()
+                                .for_each(|url| writeln!(text, "      {}", url).unwrap());
+                        }
+                    }
+                }
+            }
+        }
 
-                let editor_area = Rect {
-                    x: area.x + 6,
-                    y: area.y + self.highlight.expect("Cannot have text input active without highlight in the component") as u16,
-                    width: area.width.saturating_sub(6),
-                    height: 1.min(area.height),
+        fn get_highlight_prefix(&self) -> Option<usize> {
+            self.highlight.map(|highlight| {
+                match highlight {
+                    0 => 0,
+                    1 => 2,
+                    _ => 6,
+                }
+            })
+        }
+
+        fn get_editor(&mut self) -> Option<&mut TextInput> {
+            self.url_editor.as_mut()
+        }
+
+        fn get_parse_error(&mut self) -> Option<&mut ModalMessage> {
+            self.parse_error.as_mut()
+        }
+    }
+}
+
+pub mod validity_period {
+    use crate::ui::text_input::TextInput;
+
+    use super::*;
+
+    use chrono::{DateTime, Utc};
+    use golem_certificate::schemas::validity_period::ValidityPeriod;
+
+    pub struct ValidityPeriodEditor {
+        not_before: DateTime<Utc>,
+        not_after: DateTime<Utc>,
+        highlight: Option<usize>,
+        date_editor: Option<TextInput>,
+        parse_error: Option<ModalMessage>,
+    }
+
+    impl ValidityPeriodEditor {
+        pub fn new(validity_period: Option<ValidityPeriod>) -> Self {
+            let (not_before, not_after) = match validity_period {
+                Some(ValidityPeriod { not_before, not_after }) => (not_before, not_after),
+                None => (Utc::now(), Utc::now()),
+            };
+            Self {
+                not_before,
+                not_after,
+                highlight: None,
+                date_editor: None,
+                parse_error: None,
+            }
+        }
+
+        pub fn get_validity_period(&self) -> ValidityPeriod {
+            ValidityPeriod {
+                not_before: self.not_before.clone(),
+                not_after: self.not_after.clone(),
+            }
+        }
+    }
+
+    impl EditorComponent for ValidityPeriodEditor {
+        fn enter_from_below(&mut self) {
+            self.highlight = Some(2);
+        }
+
+        fn enter_from_top(&mut self) {
+            self.highlight = Some(1);
+        }
+
+        fn get_highlight(&self) -> Option<usize> {
+            self.highlight
+        }
+
+        fn handle_key_event(&mut self, key_event: KeyEvent) -> EditorEventResult {
+            if let Some(parse_error) = self.parse_error.as_mut() {
+                match parse_error.handle_key_event(key_event) {
+                    Ok(status) => match status {
+                        ComponentStatus::Active => {},
+                        _ => self.parse_error = None,
+                    }
+                    Err(_) => {},
                 };
-                Clear.render(editor_area, buf);
-                let cursor = url_editor.render(editor_area, buf);
-                if let Some(url_error) = self.url_error.as_mut() {
-                    url_error.render(area, buf)
-                } else {
-                    cursor
+                EditorEventResult::KeepActive
+            } else if let Some(date_editor) = self.date_editor.as_mut() {
+                match date_editor.handle_key_event(key_event) {
+                    Ok(status) => match status {
+                        ComponentStatus::Active => {},
+                        ComponentStatus::Closed => {
+                            match date_editor.get_text().parse::<DateTime<Utc>>() {
+                                Ok(datetime) => {
+                                    if self.highlight.unwrap() == 1 {
+                                        self.not_before = datetime;
+                                    } else {
+                                        self.not_after = datetime;
+                                    }
+                                    self.date_editor = None;
+                                }
+                                Err(err) => {
+                                    let error = ModalMessage::new("Datetime parse error", err.to_string());
+                                    self.parse_error = Some(error);
+                                }
+                            }
+
+                        }
+                        ComponentStatus::Escaped => self.date_editor = None,
+                    }
+                    Err(_) => {},
+                };
+                EditorEventResult::KeepActive
+            } else if let Some(highlight) = self.highlight {
+                match key_event.code {
+                    KeyCode::Esc => EditorEventResult::Escaped,
+                    KeyCode::Down =>
+                        if highlight == 2 {
+                            self.highlight = None;
+                            EditorEventResult::ExitBottom
+                        } else {
+                            self.highlight = Some(2);
+                            EditorEventResult::KeepActive
+                        },
+                    KeyCode::Up =>
+                        if highlight == 1 {
+                            self.highlight = None;
+                            EditorEventResult::ExitTop
+                        } else {
+                            self.highlight = Some(1);
+                            EditorEventResult::KeepActive
+                        },
+                    KeyCode::Enter => {
+                        // 2014-11-28T21:00:09+09:00 => 25
+                        let mut editor = TextInput::new(30, false);
+                        if highlight == 1 {
+                            editor.set_text(self.not_before.to_string());
+                        } else {
+                            editor.set_text(self.not_after.to_string());
+                        }
+                        self.date_editor = Some(editor);
+                        EditorEventResult::KeepActive
+                    },
+                    _ => EditorEventResult::KeepActive,
                 }
             } else {
-                if let Some(highlight) = self.highlight {
-                    render_with_highlight(&text, highlight, area, buf);
-                } else {
-                    Paragraph::new(text)
-                        .alignment(tui::layout::Alignment::Left)
-                        .style(default_style())
-                        .render(area, buf);
-                }
-                None
+                EditorEventResult::Inactive
             }
         }
-    }
-}
 
-fn render_with_highlight(text: &String, highlight: usize, area: Rect, buf: &mut Buffer) {
-    let pre = text.lines().take(highlight).collect::<Vec<_>>().join("\n");
-    let highlighted = text.lines().skip(highlight).take(1).collect::<String>();
-    let post = text.lines().skip(highlight + 1).collect::<Vec<_>>().join("\n");
-    let highlight_area = adjust_render_area(&area, &pre);
-    Paragraph::new(pre)
-        .alignment(tui::layout::Alignment::Left)
-        .style(default_style())
-        .render(area, buf);
-    if let Some(mut area) = highlight_area {
-        let post_area = adjust_render_area(&area, &highlighted);
-        area.height = area.height.min(1);
-        let (spaces, highlighted_text) = {
-            if highlighted.is_empty() {
-                ("      ".into(), "<Add another URL>".into())
-            } else {
-                let spaces = highlighted.chars().take_while(|&c| c == ' ').collect::<String>();
-                let highlighted_text = highlighted.chars().skip(spaces.len()).collect::<String>();
-                (spaces, highlighted_text)
-            }
-        };
-        let text_area = Rect {
-            x: area.x + spaces.len() as u16,
-            y: area.y,
-            width: area.width.saturating_sub(spaces.len() as u16),
-            height: area.height,
-        };
-        Paragraph::new(spaces)
-            .alignment(tui::layout::Alignment::Left)
-            .style(default_style())
-            .render(area, buf);
-        let span = Span::styled(highlighted_text, highlight_style());
-        Paragraph::new(span)
-            .alignment(tui::layout::Alignment::Left)
-            .render(text_area, buf);
-        if let Some(area) = post_area {
-            Paragraph::new(post)
-                .alignment(tui::layout::Alignment::Left)
-                .style(default_style())
-                .render(area, buf);
+        fn calculate_render_height(&self) -> usize  {
+            3
         }
-    } else {
-        unreachable!("Highlighted part is not within render area");
-    }
-}
 
-fn adjust_render_area(area: &Rect, text: &String) -> Option<Rect> {
-    let text_height = text.lines().count() as u16;
-    let adjusted_area = Rect {
-        x: area.x,
-        y: area.y + text_height,
-        width: area.width,
-        height: area.height.saturating_sub(text_height),
-    };
-    if adjusted_area.height > 0 {
-        Some(adjusted_area)
-    } else {
-        None
+        fn get_text_output(&self, text: &mut String) {
+            writeln!(text, "Validity Period").unwrap();
+            writeln!(text, "  Not Before: {}", self.not_before).unwrap();
+            writeln!(text, "  Not After:  {}", self.not_after).unwrap();
+        }
+
+        fn get_highlight_prefix(&self) -> Option<usize> {
+            self.highlight.map(|_| 14)
+        }
+
+        fn get_editor(&mut self) -> Option<&mut TextInput> {
+            self.date_editor.as_mut()
+        }
+
+        fn get_parse_error(&mut self) -> Option<&mut ModalMessage> {
+            self.parse_error.as_mut()
+        }
     }
 }

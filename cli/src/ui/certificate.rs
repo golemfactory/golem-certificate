@@ -1,14 +1,15 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use golem_certificate::SignedCertificate;
-use tui::{layout::Rect, widgets::StatefulWidget};
+use tui::{layout::{Direction, Layout, Rect, Constraint}, widgets::StatefulWidget};
 
 use super::{
     component::*,
     display_details::certificate_to_string,
     editors::{
-        EditorComponent,
+        EditorComponent, EditorEventResult,
         permission::PermissionEditor,
+        validity_period::ValidityPeriodEditor,
     },
     scrollable_text::{ScrollableText, ScrollableTextState},
     util::{
@@ -81,8 +82,15 @@ impl SizedComponent for SignedCertificateDetails {
     }
 }
 
+enum ActiveEditor {
+    Permissions,
+    ValidityPeriod,
+}
+
 pub struct CertificateEditor {
+    active_editor: ActiveEditor,
     permissions_editor: PermissionEditor,
+    validity_period_editor: ValidityPeriodEditor,
 }
 
 impl CertificateEditor {
@@ -90,22 +98,49 @@ impl CertificateEditor {
         let mut permissions_editor = PermissionEditor::new(None);
         permissions_editor.enter_from_top();
         Self {
+            active_editor: ActiveEditor::Permissions,
             permissions_editor: permissions_editor,
+            validity_period_editor: ValidityPeriodEditor::new(None),
         }
     }
 }
 
 impl Component for CertificateEditor {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        match self.permissions_editor.handle_key_event(key_event) {
-            super::editors::EditorEventResult::ExitTop => self.permissions_editor.enter_from_top(),
-            super::editors::EditorEventResult::ExitBottom => self.permissions_editor.enter_from_below(),
-            _ => {},
+        match self.active_editor {
+            ActiveEditor::Permissions =>
+                match self.permissions_editor.handle_key_event(key_event) {
+                    EditorEventResult::ExitTop => self.permissions_editor.enter_from_top(),
+                    EditorEventResult::ExitBottom => {
+                        self.validity_period_editor.enter_from_top();
+                        self.active_editor = ActiveEditor::ValidityPeriod;
+                    }
+                    _ => {},
+                },
+            ActiveEditor::ValidityPeriod =>
+                match self.validity_period_editor.handle_key_event(key_event) {
+                    EditorEventResult::ExitTop => {
+                        self.permissions_editor.enter_from_below();
+                        self.active_editor = ActiveEditor::Permissions;
+                    }
+                    EditorEventResult::ExitBottom => self.validity_period_editor.enter_from_below(),
+                    _ => {},
+                }
         }
         Ok(ComponentStatus::Active)
     }
 
     fn render(&mut self, area: Rect, buf: &mut tui::buffer::Buffer) -> Cursor {
-        self.permissions_editor.render(area, buf)
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Max(self.permissions_editor.calculate_render_height() as u16),
+                Constraint::Max(self.validity_period_editor.calculate_render_height() as u16),
+                Constraint::Min(0),
+            ])
+            .split(area);
+        let permissions_cursor = self.permissions_editor.render(chunks[0], buf);
+        let validity_period_cursor = self.validity_period_editor.render(chunks[1], buf);
+        permissions_cursor.or(validity_period_cursor)
     }
 }
