@@ -6,11 +6,7 @@ use tui::{layout::{Direction, Layout, Rect, Constraint}, widgets::StatefulWidget
 use super::{
     component::*,
     display_details::certificate_to_string,
-    editors::{
-        EditorComponent, EditorEventResult,
-        permission::PermissionEditor,
-        validity_period::ValidityPeriodEditor,
-    },
+    editors::*,
     scrollable_text::{ScrollableText, ScrollableTextState},
     util::{
         default_style, AreaCalculators, CalculateHeight, CalculateWidth,
@@ -82,13 +78,8 @@ impl SizedComponent for SignedCertificateDetails {
     }
 }
 
-enum ActiveEditor {
-    Permissions,
-    ValidityPeriod,
-}
-
 pub struct CertificateEditor {
-    active_editor: ActiveEditor,
+    active_editor: Editor,
     permissions_editor: PermissionEditor,
     validity_period_editor: ValidityPeriodEditor,
 }
@@ -98,7 +89,7 @@ impl CertificateEditor {
         let mut permissions_editor = PermissionEditor::new(None);
         permissions_editor.enter_from_top();
         Self {
-            active_editor: ActiveEditor::Permissions,
+            active_editor: Editor::Permissions,
             permissions_editor: permissions_editor,
             validity_period_editor: ValidityPeriodEditor::new(None),
         }
@@ -108,24 +99,25 @@ impl CertificateEditor {
 impl Component for CertificateEditor {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         match self.active_editor {
-            ActiveEditor::Permissions =>
+            Editor::Permissions =>
                 match self.permissions_editor.handle_key_event(key_event) {
                     EditorEventResult::ExitTop => self.permissions_editor.enter_from_top(),
                     EditorEventResult::ExitBottom => {
                         self.validity_period_editor.enter_from_top();
-                        self.active_editor = ActiveEditor::ValidityPeriod;
+                        self.active_editor = Editor::ValidityPeriod;
                     }
                     _ => {},
-                },
-            ActiveEditor::ValidityPeriod =>
+                }
+            Editor::ValidityPeriod =>
                 match self.validity_period_editor.handle_key_event(key_event) {
                     EditorEventResult::ExitTop => {
                         self.permissions_editor.enter_from_below();
-                        self.active_editor = ActiveEditor::Permissions;
+                        self.active_editor = Editor::Permissions;
                     }
                     EditorEventResult::ExitBottom => self.validity_period_editor.enter_from_below(),
                     _ => {},
                 }
+            _ => {},
         }
         Ok(ComponentStatus::Active)
     }
