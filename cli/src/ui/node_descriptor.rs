@@ -1,7 +1,7 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use golem_certificate::SignedNodeDescriptor;
-use tui::{buffer::Buffer, layout::{Rect, Layout, Direction, Constraint}, widgets::StatefulWidget};
+use tui::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use super::{
     component::*,
@@ -78,8 +78,9 @@ impl SizedComponent for SignedNodeDescriptorDetails {
     }
 }
 
+#[derive(Default)]
 pub struct NodeDescriptorEditor {
-    active: Editor,
+    active_editor_idx: usize,
     node_id: NodeIdEditor,
     permissions: PermissionEditor,
     validity_period: ValidityPeriodEditor,
@@ -87,87 +88,31 @@ pub struct NodeDescriptorEditor {
 
 impl NodeDescriptorEditor {
     pub fn new() -> Self {
-        let mut node_id = NodeIdEditor::new();
-        node_id.enter_from_top();
-        Self {
-            active: Editor::NodeId,
-            node_id: node_id,
-            permissions: PermissionEditor::new(None),
-            validity_period: ValidityPeriodEditor::new(None),
-        }
+        let mut node_descriptor_editor = Self::default();
+        node_descriptor_editor.init();
+        node_descriptor_editor
+    }
+}
+
+impl EditorGroup for NodeDescriptorEditor {
+    fn get_editor_group_state(&mut self) -> (&mut usize, Vec<&mut dyn EditorComponent>) {
+        let editors: Vec<&mut dyn EditorComponent> = vec![
+            &mut self.node_id,
+            &mut self.permissions,
+            &mut self.validity_period,
+        ];
+        (&mut self.active_editor_idx, editors)
     }
 }
 
 impl Component for NodeDescriptorEditor {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        match self.active {
-            Editor::NodeId => {
-                match self.node_id.handle_key_event(key_event) {
-                    EditorEventResult::Escaped => Ok(ComponentStatus::Escaped),
-                    event => {
-                        match event {
-                            EditorEventResult::ExitTop => self.node_id.enter_from_top(),
-                            EditorEventResult::ExitBottom => {
-                                self.permissions.enter_from_top();
-                                self.active = Editor::Permissions;
-                            },
-                            _ => {},
-                        };
-                        Ok(ComponentStatus::Active)
-                    }
-                }
-            }
-            Editor::Permissions => {
-                match self.permissions.handle_key_event(key_event) {
-                    EditorEventResult::Escaped => Ok(ComponentStatus::Escaped),
-                    event => {
-                        match event {
-                            EditorEventResult::ExitTop => {
-                                self.node_id.enter_from_below();
-                                self.active = Editor::NodeId;
-                            }
-                            EditorEventResult::ExitBottom => {
-                                self.validity_period.enter_from_top();
-                                self.active = Editor::ValidityPeriod;
-                            },
-                            _ => {},
-                        };
-                        Ok(ComponentStatus::Active)
-                    }
-                }
-            }
-            Editor::ValidityPeriod => {
-                match self.validity_period.handle_key_event(key_event) {
-                    EditorEventResult::Escaped => Ok(ComponentStatus::Escaped),
-                    event => {
-                        match event {
-                            EditorEventResult::ExitTop => {
-                                self.permissions.enter_from_below();
-                                self.active = Editor::Permissions;
-                            }
-                            EditorEventResult::ExitBottom => self.validity_period.enter_from_below(),
-                            _ => {},
-                        };
-                        Ok(ComponentStatus::Active)
-                    }
-                }
-            }
-        }
+        let editor_group: &mut dyn EditorGroup = self;
+        editor_group.handle_key_event(key_event)
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(vec![
-                Constraint::Max(self.node_id.calculate_render_height() as u16 + 1),
-                Constraint::Max(self.permissions.calculate_render_height() as u16),
-                Constraint::Max(self.validity_period.calculate_render_height() as u16),
-                Constraint::Min(0),
-            ])
-            .split(area);
-        let node_id_cursor = self.node_id.render(chunks[0], buf);
-        let permissions_cursor = self.permissions.render(chunks[1], buf);
-        let validity_period_cursor = self.validity_period.render(chunks[2], buf);
-        node_id_cursor.or(permissions_cursor).or(validity_period_cursor)
+        let editor_group: &mut dyn EditorGroup = self;
+        editor_group.render(area, buf)
     }
 }

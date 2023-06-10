@@ -1,7 +1,8 @@
 use std::fmt::Write;
 
+use anyhow::Result;
 use crossterm::event::{KeyEvent, KeyCode};
-use tui::{layout::Rect, buffer::Buffer, widgets::{Clear, Paragraph, Widget}, text::Span};
+use tui::{layout::{Constraint, Direction, Layout, Rect}, buffer::Buffer, widgets::{Clear, Paragraph, Widget}, text::Span};
 
 use super::{
     component::*,
@@ -18,10 +19,57 @@ pub enum EditorEventResult {
     Inactive,
 }
 
-pub enum Editor {
-    NodeId,
-    Permissions,
-    ValidityPeriod,
+pub trait EditorGroup {
+    fn get_editor_group_state(&mut self) -> (&mut usize, Vec<&mut dyn EditorComponent>);
+
+    fn init(&mut self) {
+        let (active_editor_idx, mut editors) = self.get_editor_group_state();
+        editors[*active_editor_idx].enter_from_top();
+    }
+}
+
+impl Component for dyn EditorGroup {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
+        let (active_editor_idx, mut editors) =
+            self.get_editor_group_state();
+        match editors[*active_editor_idx].handle_key_event(key_event) {
+            EditorEventResult::ExitTop => {
+                if *active_editor_idx > 0 {
+                    *active_editor_idx -= 1;
+                    editors[*active_editor_idx].enter_from_below();
+                } else {
+                    editors[*active_editor_idx].enter_from_below();
+                }
+            }
+            EditorEventResult::ExitBottom => {
+                if *active_editor_idx < editors.len() - 1 {
+                    *active_editor_idx += 1;
+                    editors[*active_editor_idx].enter_from_top();
+                } else {
+                    editors[*active_editor_idx].enter_from_below();
+                }
+            }
+            EditorEventResult::Escaped => return Ok(ComponentStatus::Escaped),
+            _ => {},
+        }
+        Ok(ComponentStatus::Active)
+    }
+
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
+        let (_, mut editors) = self.get_editor_group_state();
+        let mut constraints = editors.iter()
+            .map(|editor| Constraint::Max(editor.calculate_render_height() as u16 + 1))
+            .collect::<Vec<_>>();
+        constraints.push(Constraint::Min(0));
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(constraints)
+            .split(area);
+        editors.iter_mut()
+            .enumerate()
+            .map(|(idx, editor)| editor.render(chunks[idx], buf))
+            .fold(None, |acc, cursor| acc.or(cursor))
+    }
 }
 
 pub use node_id::NodeIdEditor;
@@ -154,9 +202,9 @@ mod node_id {
     }
 
     impl NodeIdEditor {
-        pub fn new() -> Self {
+        pub fn new(node_id: Option<NodeId>) -> Self {
             Self {
-                node_id: String::from("0x0000000000000000000000000000000000000000"),
+                node_id: node_id.map(|id| id.to_string()).unwrap_or(String::from("0x0000000000000000000000000000000000000000")),
                 highlight: false,
                 editor: None,
                 parse_error: None,
@@ -165,6 +213,12 @@ mod node_id {
 
         pub fn get_node_id(&self) -> NodeId {
             NodeId::from_str(&self.node_id).unwrap()
+        }
+    }
+
+    impl Default for NodeIdEditor {
+        fn default() -> Self {
+            Self::new(None)
         }
     }
 
@@ -321,6 +375,12 @@ pub mod permission {
                 }
                 p => p.clone(),
             }
+        }
+    }
+
+    impl Default for PermissionEditor {
+        fn default() -> Self {
+            Self::new(None)
         }
     }
 
@@ -531,6 +591,12 @@ pub mod validity_period {
                 not_before: self.not_before.clone(),
                 not_after: self.not_after.clone(),
             }
+        }
+    }
+
+    impl Default for ValidityPeriodEditor {
+        fn default() -> Self {
+            Self::new(None)
         }
     }
 
