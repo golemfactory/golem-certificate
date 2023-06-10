@@ -6,6 +6,7 @@ pub(crate) mod editors;
 pub(crate) mod keypair;
 pub(crate) mod main_menu;
 pub(crate) mod modal;
+pub(crate) mod multiple_choice;
 pub(crate) mod node_descriptor;
 pub(crate) mod open_file_dialog;
 pub(crate) mod save_file_dialog;

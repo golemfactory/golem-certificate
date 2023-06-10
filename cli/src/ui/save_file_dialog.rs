@@ -96,7 +96,7 @@ impl Component for SaveFileDialog {
     fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Min(3), Constraint::Max(3)])
+            .constraints([Constraint::Min(3), Constraint::Max(3)])
             .split(area);
         let browser_cursor = self.file_browser.render(chunks[0], buf);
 

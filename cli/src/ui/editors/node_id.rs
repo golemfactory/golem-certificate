@@ -60,7 +60,7 @@ impl EditorComponent for NodeIdEditor {
             }
             EditorEventResult::KeepActive
         } else if let Some(editor) = self.editor.as_mut() {
-            match editor.handle_key_event(key_event) {
+            match Component::handle_key_event(editor, key_event) {
                 Ok(status) => match status {
                     ComponentStatus::Active => {},
                     ComponentStatus::Closed => {

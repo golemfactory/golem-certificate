@@ -24,6 +24,8 @@ pub struct CreateKeyPairDialog {
     saved_message: Option<ModalMessage>,
 }
 
+static OVERWRITE_CHOICES: [&str; 2] = ["Overwrite", "Cancel"];
+
 impl CreateKeyPairDialog {
     pub fn new() -> Result<Self> {
         let dialog = Self {
@@ -58,7 +60,7 @@ impl CreateKeyPairDialog {
             let dialog = ModalMultipleChoice::new(
                 "File exists",
                 file_exists_message,
-                vec!["Overwrite", "Cancel"],
+                &OVERWRITE_CHOICES,
                 1,
             );
             self.overwrite_dialog = Some(dialog);
@@ -96,11 +98,11 @@ impl Component for CreateKeyPairDialog {
                 }
             }
             Ok(ComponentStatus::Active)
-        } else if let Some(modal) = self.overwrite_dialog.as_mut() {
-            match modal.handle_key_event(key_event)? {
+        } else if let Some(multiple_choice) = self.overwrite_dialog.as_mut() {
+            match multiple_choice.handle_key_event(key_event)? {
                 ComponentStatus::Active => {}
                 ComponentStatus::Closed => {
-                    if modal.selected == 0 {
+                    if multiple_choice.get_selected() == OVERWRITE_CHOICES[0] {
                         self.save_keypair(true);
                     }
                     self.overwrite_dialog = None;

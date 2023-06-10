@@ -1,14 +1,16 @@
+use std::fmt::Write;
+
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use tui::{
     buffer::Buffer,
     layout::{Alignment, Rect},
-    widgets::{Paragraph, Widget}, text::Text,
+    widgets::{Paragraph, Widget},
 };
 
 use super::{
     component::*,
-    util::default_style,
+    util::default_style, editors::{EditorComponent, EditorEventResult}, modal::ModalMessage,
 };
 
 pub struct TextInput {
@@ -81,17 +83,15 @@ impl TextInput {
 
 impl Component for TextInput {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        match key_event.code {
-            KeyCode::Esc => {
-                self.text = String::new();
-                Ok(ComponentStatus::Escaped)
-            }
-            KeyCode::Enter => Ok(ComponentStatus::Closed),
+        let status = match key_event.code {
+            KeyCode::Esc => ComponentStatus::Escaped,
+            KeyCode::Enter => ComponentStatus::Closed,
             _ => {
                 self.text_editing_key_event(key_event);
-                Ok(ComponentStatus::Active)
+                ComponentStatus::Active
             }
-        }
+        };
+        Ok(status)
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
@@ -99,10 +99,71 @@ impl Component for TextInput {
             .alignment(Alignment::Left)
             .style(default_style())
             .render(area, buf);
-        if self.cursor_position < area.width as usize {
+        if self.active && self.cursor_position < area.width as usize {
             Some(CursorPosition { x: area.x + self.cursor_position as u16, y: area.y })
         } else {
             None
         }
+    }
+}
+
+impl EditorComponent for TextInput {
+    fn enter_from_below(&mut self) {
+        self.active = true;
+    }
+
+    fn enter_from_top(&mut self) {
+        self.active = true;
+    }
+
+    fn get_highlight(&self) -> Option<usize> {
+        None
+    }
+
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> EditorEventResult {
+        match key_event.code {
+            KeyCode::Esc => EditorEventResult::Escaped,
+            KeyCode::Enter => EditorEventResult::Closed,
+            KeyCode::Down => {
+                self.active = false;
+                EditorEventResult::ExitBottom
+            }
+            KeyCode::Up => {
+                self.active = false;
+                EditorEventResult::ExitTop
+            }
+            _ => {
+                self.text_editing_key_event(key_event);
+                EditorEventResult::KeepActive
+            }
+        }
+    }
+
+    fn calculate_render_height(&self) -> usize {
+        1
+    }
+
+    fn get_text_output(&self, text: &mut String) {
+        writeln!(text, "{}", self.get_text_for_display()).unwrap();
+    }
+
+    fn get_highlight_prefix(&self) -> Option<usize> {
+        None
+    }
+
+    fn get_editor(&mut self) -> Option<&mut TextInput> {
+        None
+    }
+
+    fn get_error_message(&mut self) -> Option<&mut ModalMessage> {
+        None
+    }
+
+    fn get_empty_highlight_filler(&self) -> (String, String) {
+        (String::new(), String::new())
+    }
+
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
+        Component::render(self, area, buf)
     }
 }

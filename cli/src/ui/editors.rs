@@ -27,6 +27,7 @@ mod validity_period;
 pub use validity_period::ValidityPeriodEditor;
 
 pub enum EditorEventResult {
+    Closed,
     ExitTop,
     ExitBottom,
     KeepActive,
@@ -71,7 +72,7 @@ impl Component for dyn EditorGroup {
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
-        let (_, mut editors) = self.get_editor_group_state();
+        let (active, mut editors) = self.get_editor_group_state();
         let mut constraints = editors.iter()
             .map(|editor| Constraint::Max(editor.calculate_render_height() as u16 + 1))
             .collect::<Vec<_>>();
@@ -84,6 +85,7 @@ impl Component for dyn EditorGroup {
             .enumerate()
             .map(|(idx, editor)| editor.render(chunks[idx], buf))
             .fold(None, |acc, cursor| acc.or(cursor))
+            .or(editors[*active].render_modal(area, buf))
     }
 }
 
@@ -95,8 +97,14 @@ pub trait EditorComponent {
     fn calculate_render_height(&self) -> usize;
     fn get_text_output(&self, text: &mut String);
     fn get_highlight_prefix(&self) -> Option<usize>;
-    fn get_editor(&mut self) -> Option<&mut TextInput>;
-    fn get_error_message(&mut self) -> Option<&mut ModalMessage>;
+
+    fn get_editor(&mut self) -> Option<&mut TextInput> {
+        None
+    }
+
+    fn get_error_message(&mut self) -> Option<&mut ModalMessage> {
+        None
+    }
 
     fn get_empty_highlight_filler(&self) -> (String, String) {
         (String::new(), String::new())
@@ -116,7 +124,7 @@ pub trait EditorComponent {
 
             let highlight = self.get_highlight();
             let highlight_prefix = self.get_highlight_prefix();
-            if let Some(url_editor) = self.get_editor() {
+            if let Some(editor) = self.get_editor() {
                 let prefix = highlight_prefix.expect("Cannot have text input active without highlight in the component") as u16;
                 let editor_area = Rect {
                     x: area.x + prefix,
@@ -125,17 +133,20 @@ pub trait EditorComponent {
                     height: 1.min(area.height),
                 };
                 Clear.render(editor_area, buf);
-                let editor_cursor = url_editor.render(editor_area, buf);
-                if let Some(parse_error) = self.get_error_message() {
-                    parse_error.render(area, buf)
-                } else {
-                    editor_cursor
-                }
+                Component::render(editor, editor_area, buf)
             } else {
                 None
             }
         } else {
             self.render_with_highlight(&text, area, buf);
+            None
+        }
+    }
+
+    fn render_modal(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
+        if let Some(parse_error) = self.get_error_message() {
+            parse_error.render(area, buf)
+        } else {
             None
         }
     }

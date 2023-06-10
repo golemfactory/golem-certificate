@@ -64,7 +64,7 @@ impl EditorComponent for ValidityPeriodEditor {
             };
             EditorEventResult::KeepActive
         } else if let Some(date_editor) = self.date_editor.as_mut() {
-            match date_editor.handle_key_event(key_event) {
+            match Component::handle_key_event(date_editor, key_event) {
                 Ok(status) => match status {
                     ComponentStatus::Active => {},
                     ComponentStatus::Closed => {

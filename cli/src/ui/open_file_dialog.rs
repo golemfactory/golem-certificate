@@ -183,7 +183,7 @@ impl Component for OpenFileDialog {
 
         let list_parts = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![
+            .constraints([
                 Constraint::Max(1),
                 Constraint::Min(1),
                 Constraint::Max(1),

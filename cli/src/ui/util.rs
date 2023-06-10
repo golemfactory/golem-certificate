@@ -32,7 +32,7 @@ pub fn get_middle_rectangle(area: Rect, height: u16, width: u16) -> Rect {
     let vertical_border = area.width.saturating_sub(width) / 2;
     let row = Layout::default()
         .direction(layout::Direction::Vertical)
-        .constraints(vec![
+        .constraints([
             Constraint::Max(horizontal_border),
             Constraint::Min(height),
             Constraint::Max(horizontal_border),
@@ -40,7 +40,7 @@ pub fn get_middle_rectangle(area: Rect, height: u16, width: u16) -> Rect {
         .split(area)[1];
     let message_box = Layout::default()
         .direction(layout::Direction::Horizontal)
-        .constraints(vec![
+        .constraints([
             Constraint::Max(vertical_border),
             Constraint::Min(width),
             Constraint::Max(vertical_border),
@@ -59,3 +59,4 @@ pub fn save_json_to_file<C: ?Sized + Serialize>(
     writer.flush()?;
     Ok(())
 }
+
