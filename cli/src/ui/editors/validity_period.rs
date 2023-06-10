@@ -144,7 +144,7 @@ impl EditorComponent for ValidityPeriodEditor {
         self.date_editor.as_mut()
     }
 
-    fn get_parse_error(&mut self) -> Option<&mut ModalMessage> {
+    fn get_error_message(&mut self) -> Option<&mut ModalMessage> {
         self.parse_error.as_mut()
     }
 }

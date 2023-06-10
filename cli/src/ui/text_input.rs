@@ -3,7 +3,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use tui::{
     buffer::Buffer,
     layout::{Alignment, Rect},
-    widgets::{Paragraph, Widget},
+    widgets::{Paragraph, Widget}, text::Text,
 };
 
 use super::{

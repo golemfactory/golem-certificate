@@ -104,6 +104,12 @@ impl MainMenu {
     }
 }
 
+impl Default for MainMenu {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Component for MainMenu {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         if let Some(component) = &mut self.child {

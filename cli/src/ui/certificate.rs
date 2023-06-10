@@ -83,6 +83,7 @@ pub struct CertificateEditor {
     active_editor_idx: usize,
     key_usage_editor: KeyUsageEditor,
     permissions_editor: PermissionsEditor,
+    subject_editor: SubjectEditor,
     validity_period_editor: ValidityPeriodEditor,
 }
 
@@ -97,6 +98,7 @@ impl CertificateEditor {
 impl EditorGroup for CertificateEditor {
     fn get_editor_group_state(&mut self) -> (&mut usize, Vec<&mut dyn EditorComponent>) {
         let editors: Vec<&mut dyn EditorComponent> = vec![
+            &mut self.subject_editor,
             &mut self.permissions_editor,
             &mut self.validity_period_editor,
             &mut self.key_usage_editor,

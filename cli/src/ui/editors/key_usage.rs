@@ -20,7 +20,7 @@ impl KeyUsageEditor {
     pub fn new(key_usage: Option<KeyUsage>) -> Self {
         let key_usage = key_usage.unwrap_or(KeyUsage::Limited([Usage::SignNode].into()));
         let usage = match &key_usage {
-            KeyUsage::All => HashSet::new(),
+            KeyUsage::All => Default::default(),
             KeyUsage::Limited(usage) => usage.iter().map(|usage| usage.to_owned()).collect(),
         };
         Self {
@@ -109,9 +109,9 @@ impl EditorComponent for KeyUsageEditor {
     }
 
     fn get_text_output(&self, text: &mut String) {
-        write!(text, "Key usage:").unwrap();
+        write!(text, "Key usage").unwrap();
         match self.key_usage {
-            KeyUsage::All => write!(text, " All").unwrap(),
+            KeyUsage::All => write!(text, ": All").unwrap(),
             KeyUsage::Limited(_) => {
                 writeln!(text, "").unwrap();
                 KEY_USAGE_ORDER.iter().for_each(|(usage, usage_str)| {
@@ -129,7 +129,7 @@ impl EditorComponent for KeyUsageEditor {
         None
     }
 
-    fn get_parse_error(&mut self) -> Option<&mut ModalMessage> {
+    fn get_error_message(&mut self) -> Option<&mut ModalMessage> {
         None
     }
 }

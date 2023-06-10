@@ -12,6 +12,7 @@ use super::{
     util::default_style,
 };
 
+#[derive(Default)]
 pub struct App {
     cursor: Cursor,
     main_menu: MainMenu,
@@ -40,15 +41,6 @@ impl App {
 
     pub fn get_cursor(&self) -> &Cursor {
         &self.cursor
-    }
-}
-
-impl App {
-    pub fn new() -> Self {
-        Self {
-            cursor: None,
-            main_menu: MainMenu::new(),
-        }
     }
 }
 

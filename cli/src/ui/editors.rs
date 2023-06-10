@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 use anyhow::Result;
 use crossterm::event::{KeyEvent, KeyCode};
-use tui::{layout::{Constraint, Direction, Layout, Rect}, buffer::Buffer, widgets::{Clear, Paragraph, Widget}, text::Span};
+use tui::{layout::{Alignment, Constraint, Direction, Layout, Rect}, buffer::Buffer, widgets::{Clear, Paragraph, Widget}, text::Span};
 
 use super::{
     component::*,
@@ -19,6 +19,9 @@ pub use node_id::NodeIdEditor;
 
 mod permissions;
 pub use permissions::PermissionsEditor;
+
+mod subject;
+pub use subject::SubjectEditor;
 
 mod validity_period;
 pub use validity_period::ValidityPeriodEditor;
@@ -93,7 +96,11 @@ pub trait EditorComponent {
     fn get_text_output(&self, text: &mut String);
     fn get_highlight_prefix(&self) -> Option<usize>;
     fn get_editor(&mut self) -> Option<&mut TextInput>;
-    fn get_parse_error(&mut self) -> Option<&mut ModalMessage>;
+    fn get_error_message(&mut self) -> Option<&mut ModalMessage>;
+
+    fn get_empty_highlight_filler(&self) -> (String, String) {
+        (String::new(), String::new())
+    }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
         let text = {
@@ -103,7 +110,7 @@ pub trait EditorComponent {
         };
         if self.get_editor().is_some() || self.get_highlight().is_none() {
             Paragraph::new(text)
-                .alignment(tui::layout::Alignment::Left)
+                .alignment(Alignment::Left)
                 .style(default_style())
                 .render(area, buf);
 
@@ -119,7 +126,7 @@ pub trait EditorComponent {
                 };
                 Clear.render(editor_area, buf);
                 let editor_cursor = url_editor.render(editor_area, buf);
-                if let Some(parse_error) = self.get_parse_error() {
+                if let Some(parse_error) = self.get_error_message() {
                     parse_error.render(area, buf)
                 } else {
                     editor_cursor
@@ -128,55 +135,62 @@ pub trait EditorComponent {
                 None
             }
         } else {
-            render_with_highlight(&text, self.get_highlight().unwrap(), self.get_highlight_prefix().unwrap(), area, buf);
+            self.render_with_highlight(&text, area, buf);
             None
         }
     }
-}
 
-fn render_with_highlight(text: &String, highlight: usize, prefix: usize, area: Rect, buf: &mut Buffer) {
-    let pre = text.lines().take(highlight).collect::<Vec<_>>().join("\n");
-    let highlighted = text.lines().skip(highlight).take(1).collect::<String>();
-    let post = text.lines().skip(highlight + 1).collect::<Vec<_>>().join("\n");
-    let highlight_area = adjust_render_area(&area, &pre);
-    Paragraph::new(pre)
-        .alignment(tui::layout::Alignment::Left)
-        .style(default_style())
-        .render(area, buf);
-    if let Some(mut area) = highlight_area {
-        let post_area = adjust_render_area(&area, &highlighted);
-        area.height = area.height.min(1);
-        let (highlight_prefix, highlighted_text) = {
-            if highlighted.is_empty() {
-                ("      ".into(), "<Add another URL>".into())
-            } else {
-                let highlight_prefix = highlighted.chars().take(prefix).collect::<String>();
-                let highlighted_text = highlighted.chars().skip(prefix).collect::<String>();
-                (highlight_prefix, highlighted_text)
-            }
+    fn render_with_highlight(&self, text: &String, area: Rect, buf: &mut Buffer) {
+        let highlight = self.get_highlight().expect("Cannot render with highlight without highlight in the component");
+        let prefix = self.get_highlight_prefix().expect("Cannot render with highlight without highlight in the component");
+        let skip = if area.height < highlight as u16 + 1 {
+            1 + highlight - area.height as usize
+        } else {
+            0
         };
-        let text_area = Rect {
-            x: area.x + prefix as u16,
-            y: area.y,
-            width: area.width.saturating_sub(prefix as u16),
-            height: area.height,
-        };
-        Paragraph::new(highlight_prefix)
-            .alignment(tui::layout::Alignment::Left)
+        let pre = text.lines().skip(skip).take(highlight).collect::<Vec<_>>().join("\n");
+        let highlighted = text.lines().skip(highlight + skip).take(1).collect::<String>();
+        let post = text.lines().skip(highlight + skip + 1).collect::<Vec<_>>().join("\n");
+        let highlight_area = adjust_render_area(&area, &pre);
+        Paragraph::new(pre)
+            .alignment(Alignment::Left)
             .style(default_style())
             .render(area, buf);
-        let span = Span::styled(highlighted_text, highlight_style());
-        Paragraph::new(span)
-            .alignment(tui::layout::Alignment::Left)
-            .render(text_area, buf);
-        if let Some(area) = post_area {
-            Paragraph::new(post)
-                .alignment(tui::layout::Alignment::Left)
+        if let Some(mut area) = highlight_area {
+            let (highlight_prefix, highlighted_text) = {
+                if highlighted.is_empty() {
+                    self.get_empty_highlight_filler()
+                } else {
+                    let highlight_prefix = highlighted.chars().take(prefix).collect::<String>();
+                    let highlighted_text = highlighted.chars().skip(prefix).collect::<String>();
+                    (highlight_prefix, highlighted_text)
+                }
+            };
+            let post_area = adjust_render_area(&area, &highlighted_text);
+            area.height = area.height.min(1);
+            let text_area = Rect {
+                x: area.x + prefix as u16,
+                y: area.y,
+                width: area.width.saturating_sub(prefix as u16),
+                height: area.height,
+            };
+            Paragraph::new(highlight_prefix)
+                .alignment(Alignment::Left)
                 .style(default_style())
                 .render(area, buf);
+            let span = Span::styled(highlighted_text, highlight_style());
+            Paragraph::new(span)
+                .alignment(Alignment::Left)
+                .render(text_area, buf);
+            if let Some(area) = post_area {
+                Paragraph::new(post)
+                    .alignment(Alignment::Left)
+                    .style(default_style())
+                    .render(area, buf);
+            }
+        } else {
+            unreachable!("Highlighted part is not within render area");
         }
-    } else {
-        unreachable!("Highlighted part is not within render area");
     }
 }
 

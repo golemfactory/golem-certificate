@@ -14,7 +14,7 @@ pub fn start() -> Result<()> {
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
 
-    let mut app = App::new();
+    let mut app = App::default();
 
     terminal::enable_raw_mode()?;
     crossterm::execute!(io::stdout(), EnterAlternateScreen)?;

@@ -219,7 +219,11 @@ impl EditorComponent for PermissionsEditor {
         self.url_editor.as_mut()
     }
 
-    fn get_parse_error(&mut self) -> Option<&mut ModalMessage> {
+    fn get_error_message(&mut self) -> Option<&mut ModalMessage> {
         self.parse_error.as_mut()
+    }
+
+    fn get_empty_highlight_filler(&self) -> (String, String) {
+        ("      ".into(), "<Add another URL>".into())
     }
 }
