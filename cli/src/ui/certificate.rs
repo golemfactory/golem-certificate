@@ -81,6 +81,7 @@ impl SizedComponent for SignedCertificateDetails {
 #[derive(Default)]
 pub struct CertificateEditor {
     active_editor_idx: usize,
+    key_usage_editor: KeyUsageEditor,
     permissions_editor: PermissionEditor,
     validity_period_editor: ValidityPeriodEditor,
 }
@@ -98,6 +99,7 @@ impl EditorGroup for CertificateEditor {
         let editors: Vec<&mut dyn EditorComponent> = vec![
             &mut self.permissions_editor,
             &mut self.validity_period_editor,
+            &mut self.key_usage_editor,
         ];
         (&mut self.active_editor_idx, editors)
     }
