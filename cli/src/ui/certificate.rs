@@ -82,7 +82,7 @@ impl SizedComponent for SignedCertificateDetails {
 pub struct CertificateEditor {
     active_editor_idx: usize,
     key_usage_editor: KeyUsageEditor,
-    permissions_editor: PermissionEditor,
+    permissions_editor: PermissionsEditor,
     validity_period_editor: ValidityPeriodEditor,
 }
 

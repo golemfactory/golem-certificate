@@ -82,7 +82,7 @@ impl SizedComponent for SignedNodeDescriptorDetails {
 pub struct NodeDescriptorEditor {
     active_editor_idx: usize,
     node_id: NodeIdEditor,
-    permissions: PermissionEditor,
+    permissions: PermissionsEditor,
     validity_period: ValidityPeriodEditor,
 }
 
