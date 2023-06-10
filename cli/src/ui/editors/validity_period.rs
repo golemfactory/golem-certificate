@@ -1,11 +1,11 @@
 use super::*;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, Timelike};
 use golem_certificate::schemas::validity_period::ValidityPeriod;
 
 pub struct ValidityPeriodEditor {
-    not_before: DateTime<Utc>,
-    not_after: DateTime<Utc>,
+    not_before: String,
+    not_after: String,
     highlight: Option<usize>,
     date_editor: Option<TextInput>,
     parse_error: Option<ModalMessage>,
@@ -13,13 +13,16 @@ pub struct ValidityPeriodEditor {
 
 impl ValidityPeriodEditor {
     pub fn new(validity_period: Option<ValidityPeriod>) -> Self {
-        let (not_before, not_after) = match validity_period {
+        let now = Utc::now().with_nanosecond(0).unwrap();
+        let (not_before, not_after) = match &validity_period {
             Some(ValidityPeriod { not_before, not_after }) => (not_before, not_after),
-            None => (Utc::now(), Utc::now()),
+            None => {
+                (&now, &now)
+            }
         };
         Self {
-            not_before,
-            not_after,
+            not_before: not_before.to_string(),
+            not_after: not_after.to_string(),
             highlight: None,
             date_editor: None,
             parse_error: None,
@@ -28,8 +31,8 @@ impl ValidityPeriodEditor {
 
     pub fn get_validity_period(&self) -> ValidityPeriod {
         ValidityPeriod {
-            not_before: self.not_before.clone(),
-            not_after: self.not_after.clone(),
+            not_before: self.not_before.parse().unwrap(),
+            not_after: self.not_after.parse().unwrap(),
         }
     }
 }
@@ -69,13 +72,25 @@ impl EditorComponent for ValidityPeriodEditor {
                     ComponentStatus::Active => {},
                     ComponentStatus::Closed => {
                         match date_editor.get_text().parse::<DateTime<Utc>>() {
-                            Ok(datetime) => {
+                            Ok(utc_time) => {
+                                let datetime = date_editor.get_text().to_owned();
                                 if self.highlight.unwrap() == 1 {
-                                    self.not_before = datetime;
+                                    if utc_time > self.not_after.parse::<DateTime<Utc>>().unwrap() {
+                                        let error = ModalMessage::new("Datetime error", "Not Before must be before Not After");
+                                        self.parse_error = Some(error);
+                                    } else {
+                                        self.not_before = datetime;
+                                        self.date_editor = None;
+                                    }
                                 } else {
-                                    self.not_after = datetime;
+                                    if utc_time < self.not_before.parse::<DateTime<Utc>>().unwrap() {
+                                        let error = ModalMessage::new("Datetime error", "Not After must be after Not Before");
+                                        self.parse_error = Some(error);
+                                    } else {
+                                        self.not_after = datetime;
+                                        self.date_editor = None;
+                                    }
                                 }
-                                self.date_editor = None;
                             }
                             Err(err) => {
                                 let error = ModalMessage::new("Datetime parse error", err.to_string());
@@ -112,9 +127,9 @@ impl EditorComponent for ValidityPeriodEditor {
                     // 2014-11-28T21:00:09+09:00 => 25
                     let mut editor = TextInput::new(30, false);
                     if highlight == 1 {
-                        editor.set_text(self.not_before.to_string());
+                        editor.set_text(self.not_before.clone());
                     } else {
-                        editor.set_text(self.not_after.to_string());
+                        editor.set_text(self.not_after.clone());
                     }
                     self.date_editor = Some(editor);
                     EditorEventResult::KeepActive

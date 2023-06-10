@@ -1,7 +1,5 @@
 use super::*;
 
-use std::collections::HashSet;
-
 use golem_certificate::schemas::permissions::{Permissions, PermissionDetails, OutboundPermissions};
 use url::Url;
 
@@ -15,17 +13,18 @@ pub struct PermissionsEditor {
 
 impl PermissionsEditor {
     pub fn new(permissions: Option<Permissions>) -> Self {
+        let default_url: Url = "https://golem.network".parse().unwrap();
         let default_permissions =
             Permissions::Object(PermissionDetails {
-                outbound: Some(OutboundPermissions::Urls(HashSet::new()))
+                outbound: Some(OutboundPermissions::Urls([default_url.clone()].into()))
             });
-        let mut urls = vec![];
+        let mut urls = vec![default_url];
         Self {
             highlight: None,
             permissions: permissions.map(|p| match &p {
                 Permissions::Object(PermissionDetails { outbound: None }) => default_permissions.clone(),
                 Permissions::Object(PermissionDetails { outbound: Some(OutboundPermissions::Urls(url_set)) }) => {
-                    url_set.iter().for_each(|url| urls.push(url.to_owned()));
+                    urls = url_set.iter().map(|url| url.to_owned()).collect();
                     urls.sort();
                     p
                 }
