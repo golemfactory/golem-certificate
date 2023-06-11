@@ -23,7 +23,7 @@ impl ModalWindow {
     }
 
     pub fn render(&self, area: Rect, buf: &mut Buffer, inner_height: u16, inner_width: u16) -> Rect {
-        let window = get_middle_rectangle(area, inner_height + 2, inner_width + 2);
+        let window = get_middle_rectangle(area, inner_height + 4, inner_width + 4);
         Clear.render(window, buf);
         let border = Block::default()
             .title(self.title.clone())
@@ -105,15 +105,14 @@ impl ModalMultipleChoice {
         let modal_window = ModalWindow::new(title);
         let message: String = message.into();
         let (message_height, message_width) = message_dimensions(&message);
-        let choices: Vec<String> = choices.into_iter().map(|c| format!(" {} ", c)).collect();
         let multiple_choice = MultipleChoice::new(choices, selected);
         let choices_width = multiple_choice.get_render_width();
         Self {
             modal_window,
             multiple_choice,
             message,
-            height: message_height + 4,
-            width: choices_width.max(message_width + 2),
+            height: message_height + 2,
+            width: choices_width.max(message_width),
         }
     }
 

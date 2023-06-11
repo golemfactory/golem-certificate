@@ -5,7 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use tui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    widgets::{Paragraph, Widget},
+    widgets::{Paragraph, Widget}, text::{Line, Span},
 };
 
 use super::{
@@ -15,6 +15,7 @@ use super::{
 
 pub const DONE_CANCEL: [&str; 2] = ["Done", "Cancel"];
 pub const EXIT_WITHOUT_SAVE: [&str; 2] = ["Don't save", "Cancel"];
+pub const SIGN_OR_TEMPLATE: [&str; 2] = ["Sign", "Save as template"];
 
 pub struct MultipleChoice {
     pub active: bool,
@@ -37,7 +38,7 @@ impl MultipleChoice {
     }
 
     pub fn get_render_width(&self) -> u16 {
-        self.choices.iter().map(|c| c.len() + 2).sum::<usize>() as u16
+        (self.choices.iter().map(|c| c.len()).max().unwrap() * self.choices.len()) as u16
     }
 
     pub fn get_selected(&self) -> String {
@@ -74,6 +75,11 @@ impl Component for MultipleChoice {
         let choice_constraints =
             vec![Constraint::Ratio(1, self.choices.len() as u32); self.choices.len()];
 
+        let mut area = area;
+        if area.height > 1 {
+            area.height = 1;
+        }
+
         let choice_areas = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(choice_constraints)
@@ -88,9 +94,19 @@ impl Component for MultipleChoice {
             .zip(choice_areas.into_iter())
             .zip(styles.into_iter())
             .for_each(|((choice, &area), style)| {
-                Paragraph::new(choice.clone())
+                let line =
+                    if area.width  > choice.len() as u16  + 2 {
+                        let padding = (area.width - choice.len() as u16) / 2;
+                        Line::from(vec![
+                            Span::styled(" ".repeat(padding as usize), default_style()),
+                            Span::styled(choice.clone(), style),
+                            Span::styled(" ".repeat(padding as usize), default_style()),
+                        ])
+                    } else {
+                        Line::from(Span::styled(choice.clone(), style))
+                    };
+                Paragraph::new(line)
                     .alignment(Alignment::Center)
-                    .style(style)
                     .render(area, buf);
             });
         None

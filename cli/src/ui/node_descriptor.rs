@@ -95,7 +95,7 @@ impl NodeDescriptorEditor {
 }
 
 impl EditorGroup for NodeDescriptorEditor {
-    fn get_editor_group_state(&mut self) -> (&mut usize, Vec<&mut dyn EditorComponent>) {
+    fn editor_group_state_mut(&mut self) -> (&mut usize, Vec<&mut dyn EditorComponent>) {
         let editors: Vec<&mut dyn EditorComponent> = vec![
             &mut self.node_id,
             &mut self.permissions,

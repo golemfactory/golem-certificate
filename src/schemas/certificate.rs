@@ -13,9 +13,9 @@ pub type Fingerprint = String;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Certificate {
-    pub validity_period: ValidityPeriod,
     pub key_usage: KeyUsage,
     pub permissions: Permissions,
     pub public_key: Key,
     pub subject: Subject,
+    pub validity_period: ValidityPeriod,
 }

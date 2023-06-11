@@ -7,6 +7,6 @@ use super::{permissions::Permissions, validity_period::ValidityPeriod};
 #[serde(rename_all = "camelCase")]
 pub struct NodeDescriptor {
     pub node_id: NodeId,
-    pub validity_period: ValidityPeriod,
     pub permissions: Permissions,
+    pub validity_period: ValidityPeriod,
 }

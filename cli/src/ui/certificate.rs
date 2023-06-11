@@ -1,16 +1,18 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
-use golem_certificate::SignedCertificate;
-use tui::{layout::Rect, widgets::StatefulWidget};
+use golem_certificate::{SignedCertificate, schemas::certificate::Certificate};
+use tui::{layout::Rect, widgets::{StatefulWidget, Block, BorderType, Borders, Widget}};
 
 use super::{
     component::*,
     display_details::certificate_to_string,
     editors::*,
+    modal::ModalMultipleChoice,
+    multiple_choice::{EXIT_WITHOUT_SAVE, MultipleChoice, SIGN_OR_TEMPLATE},
     scrollable_text::{ScrollableText, ScrollableTextState},
     util::{
         default_style, AreaCalculators, CalculateHeight, CalculateWidth,
-    }, modal::{ModalMessage, ModalMultipleChoice}, multiple_choice::EXIT_WITHOUT_SAVE,
+    },
 };
 
 pub struct SignedCertificateDetails {
@@ -79,33 +81,68 @@ impl SizedComponent for SignedCertificateDetails {
 }
 
 #[derive(Default)]
-pub struct CertificateEditor {
-    active_editor_idx: usize,
+struct CertificateDocumentEditor {
     key_usage_editor: KeyUsageEditor,
     permissions_editor: PermissionsEditor,
     public_key_editor: PublicKeyEditor,
     subject_editor: SubjectEditor,
     validity_period_editor: ValidityPeriodEditor,
-    popup: Option<ModalMultipleChoice>,
 }
 
-impl CertificateEditor {
-    pub fn new() -> Self {
-        let mut certificate_editor = Self::default();
-        certificate_editor.init();
-        certificate_editor
+impl CertificateDocumentEditor {
+    fn get_data(&self) -> Result<serde_json::Value> {
+        if let Some(key) = self.public_key_editor.get_key() {
+            let cert = Certificate {
+                key_usage: self.key_usage_editor.get_key_usage(),
+                permissions: self.permissions_editor.get_permissions(),
+                public_key: key,
+                subject: self.subject_editor.get_subject(),
+                validity_period: self.validity_period_editor.get_validity_period(),
+            };
+            Ok(serde_json::to_value(cert)?)
+        } else {
+            anyhow::bail!("No public key")
+        }
     }
-}
 
-impl EditorGroup for CertificateEditor {
-    fn get_editor_group_state(&mut self) -> (&mut usize, Vec<&mut dyn EditorComponent>) {
-        let editors: Vec<&mut dyn EditorComponent> = vec![
+    fn editors_mut(&mut self) -> Vec<&mut dyn EditorComponent> {
+        vec![
             &mut self.subject_editor,
             &mut self.permissions_editor,
             &mut self.validity_period_editor,
             &mut self.public_key_editor,
             &mut self.key_usage_editor,
-        ];
+        ]
+    }
+}
+
+pub struct CertificateEditor {
+    active_editor_idx: usize,
+    document: CertificateDocumentEditor,
+    save_or_template: MultipleChoice,
+    popup: Option<ModalMultipleChoice>,
+}
+
+impl CertificateEditor {
+    pub fn new() -> Self {
+        let mut save_or_template = MultipleChoice::new(SIGN_OR_TEMPLATE, 0);
+        save_or_template.active = false;
+
+        let mut editor = Self {
+            active_editor_idx: 0,
+            document: CertificateDocumentEditor::default(),
+            save_or_template,
+            popup: None,
+        };
+        editor.init();
+        editor
+    }
+}
+
+impl EditorGroup for CertificateEditor {
+    fn editor_group_state_mut(&mut self) -> (&mut usize, Vec<&mut dyn EditorComponent>) {
+        let mut editors = self.document.editors_mut();
+        editors.push(&mut self.save_or_template);
         (&mut self.active_editor_idx, editors)
     }
 }
@@ -136,6 +173,7 @@ impl Component for CertificateEditor {
             let editor_group: &mut dyn EditorGroup = self;
             match editor_group.handle_key_event(key_event) {
                 Ok(status) => match status {
+                    ComponentStatus::Active => Ok(ComponentStatus::Active),
                     ComponentStatus::Escaped => {
                         self.popup = Some(ModalMultipleChoice::new(
                             "Exit without saving?",
@@ -144,8 +182,11 @@ impl Component for CertificateEditor {
                             1,
                         ));
                         Ok(ComponentStatus::Active)
-                    },
-                    status => Ok(status),
+                    }
+                    ComponentStatus::Closed => {
+                        println!("Closed");
+                        Ok(ComponentStatus::Active)
+                    }
                 },
                 Err(err) => Err(err),
             }
@@ -153,10 +194,19 @@ impl Component for CertificateEditor {
     }
 
     fn render(&mut self, area: Rect, buf: &mut tui::buffer::Buffer) -> Cursor {
+        let block = Block::default()
+            .title("Certificate editor")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Thick)
+            .border_style(default_style());
+
+        let editor_area = block.inner(area);
+        block.render(area, buf);
+
         let editor_group: &mut dyn EditorGroup = self;
-        let mut cursor = editor_group.render(area, buf);
+        let mut cursor = editor_group.render(editor_area, buf);
         if let Some(popup) = self.popup.as_mut() {
-            cursor = popup.render(area, buf);
+            cursor = popup.render(editor_area, buf);
         }
         cursor
     }

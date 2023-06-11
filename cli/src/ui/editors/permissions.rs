@@ -36,7 +36,7 @@ impl PermissionsEditor {
         }
     }
 
-    fn get_permissions(&self) -> Permissions {
+    pub fn get_permissions(&self) -> Permissions {
         match &self.permissions {
             Permissions::Object(PermissionDetails { outbound: Some(OutboundPermissions::Urls(_)) }) => {
                 let urls = self.urls.iter().map(|url| url.to_owned()).collect();

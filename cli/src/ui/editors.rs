@@ -23,6 +23,9 @@ pub use permissions::PermissionsEditor;
 mod public_key;
 pub use public_key::PublicKeyEditor;
 
+mod signature;
+pub use signature::SignatureEditor;
+
 mod subject;
 pub use subject::SubjectEditor;
 
@@ -39,10 +42,10 @@ pub enum EditorEventResult {
 }
 
 pub trait EditorGroup {
-    fn get_editor_group_state(&mut self) -> (&mut usize, Vec<&mut dyn EditorComponent>);
+    fn editor_group_state_mut(&mut self) -> (&mut usize, Vec<&mut dyn EditorComponent>);
 
     fn init(&mut self) {
-        let (active_editor_idx, mut editors) = self.get_editor_group_state();
+        let (active_editor_idx, mut editors) = self.editor_group_state_mut();
         editors[*active_editor_idx].enter_from_top();
     }
 }
@@ -50,7 +53,7 @@ pub trait EditorGroup {
 impl Component for dyn EditorGroup {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         let (active_editor_idx, mut editors) =
-            self.get_editor_group_state();
+            self.editor_group_state_mut();
         match editors[*active_editor_idx].handle_key_event(key_event) {
             EditorEventResult::ExitTop => {
                 if *active_editor_idx > 0 {
@@ -76,7 +79,7 @@ impl Component for dyn EditorGroup {
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
-        let (active, mut editors) = self.get_editor_group_state();
+        let (active, mut editors) = self.editor_group_state_mut();
         let mut constraints = editors.iter()
             .map(|editor| Constraint::Max(editor.calculate_render_height() as u16 + 1))
             .collect::<Vec<_>>();
@@ -85,11 +88,12 @@ impl Component for dyn EditorGroup {
             .direction(Direction::Vertical)
             .constraints(constraints)
             .split(area);
-        editors.iter_mut()
+        let editor_cursor = editors.iter_mut()
             .enumerate()
             .map(|(idx, editor)| editor.render(chunks[idx], buf))
-            .fold(None, |acc, cursor| acc.or(cursor))
-            .or(editors[*active].render_modal(area, buf))
+            .fold(None, |acc, cursor| acc.or(cursor));
+        let modal_cursor = editors[*active].render_modal(area, buf);
+        editor_cursor.or(modal_cursor)
     }
 }
 

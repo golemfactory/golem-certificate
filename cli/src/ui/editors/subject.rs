@@ -1,6 +1,6 @@
 use super::*;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use golem_certificate::schemas::subject::{Subject, Contact};
 
@@ -11,8 +11,8 @@ const FIXED_CONTACT_PROPERTY_NAMES: [&str; 1] = ["email"];
 
 pub struct SubjectEditor {
     subject: Subject,
-    additional_subject_properties: BTreeMap<String, String>,
-    additional_contact_properties: BTreeMap<String, String>,
+    additional_subject_properties: Vec<(String, String)>,
+    additional_contact_properties: Vec<(String, String)>,
     highlight: Option<usize>,
     property_editor: Option<PropertyEditor>,
     value_editor: Option<TextInput>,
@@ -66,28 +66,36 @@ impl SubjectEditor {
         }
     }
 
-    fn insert_subject_property(&mut self, name: String, value: String) {
-        self.additional_subject_properties.insert(name.clone(), value.clone());
-        self.subject.additional_properties.insert(name, serde_json::Value::String(value));
+    fn insert_subject_property(&mut self, idx: usize, key: String, value: String) {
+        if idx == self.additional_subject_properties.len() {
+            self.additional_subject_properties.push((key.clone(), value.clone()));
+        } else {
+            self.additional_subject_properties[idx] = (key.clone(), value.clone());
+        }
+        self.subject.additional_properties.insert(key, serde_json::Value::String(value));
     }
 
-    fn remove_subject_property(&mut self, name: &str) {
-        self.additional_subject_properties.remove(name);
-        self.subject.additional_properties.remove(name);
+    fn remove_subject_property(&mut self, idx: usize) {
+        let (key, _) = self.additional_subject_properties.remove(idx);
+        self.subject.additional_properties.remove(&key);
     }
 
-    fn insert_contact_property(&mut self, key: String, value: String) {
-        self.additional_contact_properties.insert(key.clone(), value.clone());
+    fn insert_contact_property(&mut self, idx: usize, key: String, value: String) {
+        if idx == self.additional_contact_properties.len() {
+            self.additional_contact_properties.push((key.clone(), value.clone()));
+        } else {
+            self.additional_contact_properties[idx] = (key.clone(), value.clone());
+        }
         self.subject.contact.additional_properties.insert(key, serde_json::Value::String(value));
     }
 
-    fn remove_contact_property(&mut self, key: &str) {
-        self.additional_contact_properties.remove(key);
-        self.subject.contact.additional_properties.remove(key);
+    fn remove_contact_property(&mut self, idx: usize) {
+        let (key, _) = self.additional_contact_properties.remove(idx);
+        self.subject.contact.additional_properties.remove(&key);
     }
 }
 
-fn filter_string_values(map: &HashMap<String, serde_json::Value>) -> BTreeMap<String, String> {
+fn filter_string_values(map: &HashMap<String, serde_json::Value>) -> Vec<(String, String)> {
     map.iter().filter_map(|(k, v)| {
         if v.is_string() {
             Some((k.to_owned(), v.as_str().unwrap().to_owned()))
@@ -97,8 +105,12 @@ fn filter_string_values(map: &HashMap<String, serde_json::Value>) -> BTreeMap<St
     }).collect()
 }
 
-fn map_string_values_to_value(map: &BTreeMap<String, String>) -> Vec<(String, serde_json::Value)> {
+fn map_string_values_to_value(map: &Vec<(String, String)>) -> Vec<(String, serde_json::Value)> {
     map.iter().map(|(k, v)| (k.to_owned(), serde_json::Value::String(v.to_owned()))).collect()
+}
+
+fn contains_key(vec: &Vec<(String, String)>, key: &String) -> bool {
+    vec.iter().any(|(k, _)| k == key)
 }
 
 impl Default for SubjectEditor {
@@ -166,50 +178,50 @@ impl EditorComponent for SubjectEditor {
                         } else {
                             let highlight = self.highlight.unwrap();
                             if highlight < self.calculate_contact_start_line() {
-                                if self.subject.additional_properties.contains_key(&name) && !self.additional_subject_properties.contains_key(&name) {
+                                if self.subject.additional_properties.contains_key(&name) && !contains_key(&self.additional_subject_properties, &name) {
                                     self.set_error(SubjectEditorError::LockedName);
                                 }
                                 let idx = highlight - 2;
                                 if FIXED_SUBJECT_PROPERTY_NAMES.contains(&name.as_str()) {
                                     self.set_error(SubjectEditorError::DuplicateName);
                                 } else if idx == self.additional_subject_properties.len() {
-                                    if self.additional_subject_properties.contains_key(&name) {
+                                    if contains_key(&self.additional_subject_properties, &name) {
                                         self.set_error(SubjectEditorError::DuplicateName);
                                     } else {
-                                        self.insert_subject_property(name, value);
+                                        self.insert_subject_property(idx, name, value);
                                         self.property_editor = None;
                                     }
                                 } else {
-                                    let key = self.additional_subject_properties.keys().nth(idx).unwrap().to_owned();
-                                    if *key != name && self.additional_subject_properties.contains_key(&key) {
+                                    let key = &self.additional_subject_properties[idx].0;
+                                    if *key != name && contains_key(&self.additional_subject_properties, &name) {
                                         self.set_error(SubjectEditorError::DuplicateName);
+                                    } else {
+                                        self.insert_subject_property(idx, name, value);
+                                        self.property_editor = None;
                                     }
-                                    self.remove_subject_property(&key);
-                                    self.insert_subject_property(name, value);
-                                    self.property_editor = None;
                                 }
                             } else {
-                                if self.subject.contact.additional_properties.contains_key(&name) && !self.additional_contact_properties.contains_key(&name) {
+                                if self.subject.contact.additional_properties.contains_key(&name) && !contains_key(&self.additional_contact_properties, &name) {
                                     self.set_error(SubjectEditorError::LockedName);
                                 }
                                 let idx = highlight - self.calculate_contact_start_line() - 2;
                                 if FIXED_CONTACT_PROPERTY_NAMES.contains(&name.as_str()) {
                                     self.set_error(SubjectEditorError::DuplicateName);
                                 } else if idx == self.additional_contact_properties.len() {
-                                    if self.additional_contact_properties.contains_key(&name) {
+                                    if contains_key(&self.additional_contact_properties, &name) {
                                         self.set_error(SubjectEditorError::DuplicateName);
                                     } else {
-                                        self.insert_contact_property(name, value);
+                                        self.insert_contact_property(idx, name, value);
                                         self.property_editor = None;
                                     }
                                 } else {
-                                    let key = self.additional_contact_properties.keys().nth(idx).unwrap().to_owned();
-                                    if *key != name && self.additional_contact_properties.contains_key(&key) {
+                                    let key = &self.additional_contact_properties[idx].0;
+                                    if *key != name && contains_key(&self.additional_contact_properties, &name) {
                                         self.set_error(SubjectEditorError::DuplicateName);
+                                    } else {
+                                        self.insert_contact_property(idx, name, value);
+                                        self.property_editor = None;
                                     }
-                                    self.remove_contact_property(&key);
-                                    self.insert_contact_property(name, value);
-                                    self.property_editor = None;
                                 }
                             }
                         }
@@ -252,12 +264,10 @@ impl EditorComponent for SubjectEditor {
                     KeyCode::Delete | KeyCode::Backspace => {
                         if highlight > 1 && highlight < self.calculate_contact_start_line() - 1 {
                             let idx = highlight - 2;
-                            let key = self.additional_subject_properties.keys().nth(idx).unwrap().to_owned();
-                            self.remove_subject_property(&key);
-                        } else if highlight > self.calculate_contact_start_line() && highlight < self.calculate_render_height() - 2 {
+                            self.remove_subject_property(idx);
+                        } else if highlight > self.calculate_contact_start_line() + 1 && highlight < self.calculate_render_height() - 2 {
                             let idx = highlight - self.calculate_contact_start_line() - 2;
-                            let key = self.additional_contact_properties.keys().nth(idx).unwrap().to_owned();
-                            self.remove_contact_property(&key);
+                            self.remove_contact_property(idx);
                         }
                         EditorEventResult::KeepActive
                     }
@@ -272,12 +282,12 @@ impl EditorComponent for SubjectEditor {
                             self.value_editor = Some(editor);
                         } else if highlight > 1 && highlight < self.calculate_contact_start_line() - 1 {
                             let idx = highlight - 2;
-                            let (name, value) = self.additional_subject_properties.iter().nth(idx).unwrap().to_owned();
+                            let (name, value) = &self.additional_subject_properties[idx];
                             let property_editor = PropertyEditor::new(name, value);
                             self.property_editor = Some(property_editor);
-                        } else if highlight > self.calculate_contact_start_line() + 1 && highlight < self.calculate_render_height() - 2 {
+                        } else if highlight > self.calculate_contact_start_line() + 1 && highlight < self.calculate_render_height() - 1 {
                             let idx = highlight - self.calculate_contact_start_line() - 2;
-                            let (name, value) = self.additional_contact_properties.iter().nth(idx).unwrap().to_owned();
+                            let (name, value) = &self.additional_contact_properties[idx];
                             let property_editor = PropertyEditor::new(name, value);
                             self.property_editor = Some(property_editor);
                         } else if highlight == self.calculate_contact_start_line() - 1 {
@@ -404,6 +414,7 @@ impl Component for PropertyEditor {
                         ComponentStatus::Active
                     }
                     EditorEventResult::Closed | EditorEventResult::ExitBottom => {
+                        self.name_editor.active = false;
                         self.value_editor.enter_from_top();
                         ComponentStatus::Active
                     }
@@ -417,6 +428,7 @@ impl Component for PropertyEditor {
                         ComponentStatus::Active
                     }
                     EditorEventResult::Closed | EditorEventResult::ExitBottom => {
+                        self.value_editor.active = false;
                         self.multiple_choice.enter_from_top();
                         ComponentStatus::Active
                     },
