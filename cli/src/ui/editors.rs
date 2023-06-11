@@ -20,6 +20,9 @@ pub use node_id::NodeIdEditor;
 mod permissions;
 pub use permissions::PermissionsEditor;
 
+mod public_key;
+pub use public_key::PublicKeyEditor;
+
 mod subject;
 pub use subject::SubjectEditor;
 
@@ -66,6 +69,7 @@ impl Component for dyn EditorGroup {
                 }
             }
             EditorEventResult::Escaped => return Ok(ComponentStatus::Escaped),
+            EditorEventResult::Closed => return Ok(ComponentStatus::Closed),
             _ => {},
         }
         Ok(ComponentStatus::Active)

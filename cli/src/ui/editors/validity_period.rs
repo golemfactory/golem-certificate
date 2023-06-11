@@ -97,7 +97,6 @@ impl EditorComponent for ValidityPeriodEditor {
                                 self.parse_error = Some(error);
                             }
                         }
-
                     }
                     ComponentStatus::Escaped => self.date_editor = None,
                 }

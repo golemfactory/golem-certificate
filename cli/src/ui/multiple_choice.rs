@@ -14,6 +14,7 @@ use super::{
 };
 
 pub const DONE_CANCEL: [&str; 2] = ["Done", "Cancel"];
+pub const EXIT_WITHOUT_SAVE: [&str; 2] = ["Don't save", "Cancel"];
 
 pub struct MultipleChoice {
     pub active: bool,

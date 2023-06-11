@@ -10,7 +10,7 @@ use super::{
     scrollable_text::{ScrollableText, ScrollableTextState},
     util::{
         default_style, AreaCalculators, CalculateHeight, CalculateWidth,
-    },
+    }, modal::{ModalMessage, ModalMultipleChoice}, multiple_choice::EXIT_WITHOUT_SAVE,
 };
 
 pub struct SignedCertificateDetails {
@@ -83,8 +83,10 @@ pub struct CertificateEditor {
     active_editor_idx: usize,
     key_usage_editor: KeyUsageEditor,
     permissions_editor: PermissionsEditor,
+    public_key_editor: PublicKeyEditor,
     subject_editor: SubjectEditor,
     validity_period_editor: ValidityPeriodEditor,
+    popup: Option<ModalMultipleChoice>,
 }
 
 impl CertificateEditor {
@@ -101,6 +103,7 @@ impl EditorGroup for CertificateEditor {
             &mut self.subject_editor,
             &mut self.permissions_editor,
             &mut self.validity_period_editor,
+            &mut self.public_key_editor,
             &mut self.key_usage_editor,
         ];
         (&mut self.active_editor_idx, editors)
@@ -109,12 +112,52 @@ impl EditorGroup for CertificateEditor {
 
 impl Component for CertificateEditor {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        let editor_group: &mut dyn EditorGroup = self;
-        editor_group.handle_key_event(key_event)
+        if let Some(popup) = self.popup.as_mut() {
+            match popup.handle_key_event(key_event) {
+                Ok(status) => match status {
+                    ComponentStatus::Active => Ok(ComponentStatus::Active),
+                    ComponentStatus::Escaped => {
+                        self.popup = None;
+                        Ok(ComponentStatus::Active)
+                    }
+                    ComponentStatus::Closed => {
+                        let selected = popup.get_selected();
+                        self.popup = None;
+                        if selected == EXIT_WITHOUT_SAVE[0] {
+                            Ok(ComponentStatus::Escaped)
+                        } else {
+                            Ok(ComponentStatus::Active)
+                        }
+                    }
+                },
+                Err(err) => return Err(err),
+            }
+        } else {
+            let editor_group: &mut dyn EditorGroup = self;
+            match editor_group.handle_key_event(key_event) {
+                Ok(status) => match status {
+                    ComponentStatus::Escaped => {
+                        self.popup = Some(ModalMultipleChoice::new(
+                            "Exit without saving?",
+                            "Changes will be lost.",
+                            EXIT_WITHOUT_SAVE,
+                            1,
+                        ));
+                        Ok(ComponentStatus::Active)
+                    },
+                    status => Ok(status),
+                },
+                Err(err) => Err(err),
+            }
+        }
     }
 
     fn render(&mut self, area: Rect, buf: &mut tui::buffer::Buffer) -> Cursor {
         let editor_group: &mut dyn EditorGroup = self;
-        editor_group.render(area, buf)
+        let mut cursor = editor_group.render(area, buf);
+        if let Some(popup) = self.popup.as_mut() {
+            cursor = popup.render(area, buf);
+        }
+        cursor
     }
 }

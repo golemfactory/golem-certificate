@@ -18,8 +18,8 @@ pub struct ModalWindow {
 }
 
 impl ModalWindow {
-    pub fn new(title: String) -> Self {
-        Self { title }
+    pub fn new<S: Into<String>>(title: S) -> Self {
+        Self { title: title.into() }
     }
 
     pub fn render(&self, area: Rect, buf: &mut Buffer, inner_height: u16, inner_width: u16) -> Rect {
@@ -102,7 +102,7 @@ impl ModalMultipleChoice {
         S3: Display,
         I: IntoIterator<Item = S3>,
     {
-        let modal_window = ModalWindow::new(title.into());
+        let modal_window = ModalWindow::new(title);
         let message: String = message.into();
         let (message_height, message_width) = message_dimensions(&message);
         let choices: Vec<String> = choices.into_iter().map(|c| format!(" {} ", c)).collect();
@@ -160,7 +160,7 @@ pub struct ModalWithComponent {
 
 impl ModalWithComponent {
     pub fn new<S1: Into<String>>(title: S1, component: Box<dyn SizedComponent>) -> Self {
-        let modal = ModalWindow::new(title.into());
+        let modal = ModalWindow::new(title);
         Self { modal, component }
     }
 }

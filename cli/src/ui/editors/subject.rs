@@ -346,10 +346,14 @@ impl EditorComponent for SubjectEditor {
     }
 
     fn render_modal(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
-        self.property_editor.as_mut()
-            .and_then(|editor| editor.render(area, buf))
-            .or(self.error_message.as_mut()
-                .and_then(|error_message| error_message.render(area, buf)))
+        let mut cursor = None;
+        if let Some(property_editor) = self.property_editor.as_mut() {
+            cursor = property_editor.render(area, buf);
+        }
+        if let Some(error_message) = self.error_message.as_mut() {
+            cursor = error_message.render(area, buf);
+        }
+        cursor
     }
 }
 
@@ -362,7 +366,7 @@ struct PropertyEditor {
 
 impl PropertyEditor {
     pub fn new(name: &str, value: &str) -> Self {
-        let modal_window = ModalWindow::new("Edit Property".into());
+        let modal_window = ModalWindow::new("Edit Property");
         let mut name_editor = TextInput::new(255, false);
         name_editor.set_text(name.to_owned());
         let mut value_editor = TextInput::new(255, false);
