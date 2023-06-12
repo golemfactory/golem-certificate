@@ -17,6 +17,7 @@ pub const DONE_CANCEL: [&str; 2] = ["Done", "Cancel"];
 pub const EXIT_WITHOUT_SAVE: [&str; 2] = ["Don't save", "Cancel"];
 pub const SIGN_OR_TEMPLATE: [&str; 2] = ["Sign", "Save as template"];
 pub const SIGN_OR_CANCEL: [&str; 2] = ["Sign", "Cancel"];
+pub const OVERWRITE_CHOICES: [&str; 2] = ["Overwrite", "Cancel"];
 
 pub struct MultipleChoice {
     pub active: bool,

@@ -15,7 +15,7 @@ pub struct SignedNodeDescriptor {
     pub signature: Signature<SignedCertificate>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Signature<T> {
     pub algorithm: SignatureAlgorithm,
@@ -51,7 +51,7 @@ impl Signature<SignedCertificate> {
 pub const SIGNED_CERTIFICATE_SCHEMA_ID: &'static str =
     "https://golem.network/schemas/v1/certificate.schema.json";
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SignedCertificate {
     #[serde(rename = "$schema")]
@@ -60,13 +60,13 @@ pub struct SignedCertificate {
     pub signature: Box<Signature<Signer>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SignatureAlgorithm {
     pub hash: HashAlgorithm,
     pub encryption: EncryptionAlgorithm,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
 pub enum Signer {

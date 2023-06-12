@@ -13,7 +13,7 @@ use super::{
     component::*,
     modal::{ModalMessage, ModalMultipleChoice},
     save_file_dialog::SaveFileDialog,
-    util::{default_style, save_json_to_file},
+    util::{default_style, save_json_to_file}, multiple_choice::OVERWRITE_CHOICES,
 };
 
 pub struct CreateKeyPairDialog {
@@ -23,8 +23,6 @@ pub struct CreateKeyPairDialog {
     save_error: Option<ModalMessage>,
     saved_message: Option<ModalMessage>,
 }
-
-static OVERWRITE_CHOICES: [&str; 2] = ["Overwrite", "Cancel"];
 
 impl CreateKeyPairDialog {
     pub fn new() -> Result<Self> {

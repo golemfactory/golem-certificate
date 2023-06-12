@@ -56,7 +56,7 @@ pub fn get_middle_rectangle(area: Rect, height: u16, width: u16) -> Rect {
     message_box
 }
 
-pub fn save_json_to_file<C: ?Sized + Serialize>(
+pub fn save_json_to_file<C: Serialize>(
     path: impl AsRef<Path>,
     content: &C,
 ) -> io::Result<()> {

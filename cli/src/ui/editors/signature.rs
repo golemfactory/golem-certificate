@@ -4,7 +4,7 @@ use std::{fs, path::PathBuf};
 
 use anyhow::Result;
 use chrono::Utc;
-use golem_certificate::{SignedCertificate, validate_certificate_str};
+use golem_certificate::{SignedCertificate, validate_certificate_str, Signer, Key};
 
 use crate::ui::{multiple_choice::{MultipleChoice, SIGN_OR_CANCEL}, certificate::SignedCertificateDetails, modal::{ModalMultipleChoice, ModalOpenFileDialog, ModalWithComponent, ModalWithSizedComponent}, util::reduce_area_fixed};
 
@@ -24,6 +24,19 @@ impl SignatureEditor {
             signing_key_editor: KeyEditor::new("Signing", None),
             signing_certificate_editor: SigningCertificateEditor::new(allow_self_sign),
             sign_or_cancel,
+        }
+    }
+
+    pub fn get_signing_key_and_signer(&self) -> Option<(Key, Signer)> {
+        let key = self.signing_key_editor.get_key();
+        let signer = match self.signing_certificate_editor.signature_type {
+            SignatureType::None => None,
+            SignatureType::SelfSigned => Some(Signer::SelfSigned),
+            SignatureType::Certificate => Some(Signer::Certificate(self.signing_certificate_editor.get_cert().unwrap().to_owned())),
+        };
+        match (key, signer) {
+            (Some(key), Some(signer)) => Some((key, signer)),
+            _ => None,
         }
     }
 }
@@ -69,6 +82,10 @@ impl SigningCertificateEditor {
         editor
     }
 
+    fn get_cert(&self) -> Option<&SignedCertificate> {
+        self.signed_certificate.as_ref().map(|(cert, _)| cert)
+    }
+
     fn select_signature_type(&mut self) {
         self.signature_type_question = Some(ModalMultipleChoice::new("Signature type", "", SELFSIGNED_OR_CERTIFICATE, 0));
     }
@@ -81,12 +98,14 @@ impl SigningCertificateEditor {
     }
 
     fn open_certificate_details(&mut self) {
-        let (cert, _) = self.signed_certificate.as_ref().unwrap();
-        let details =
-            SignedCertificateDetails::new(cert, 2, false, reduce_area_fixed(2, 4));
-        let modal =
-            ModalWithSizedComponent::new("Signing certificate details", Box::new(details));
-        self.signed_certificate_details = Some(modal);
+        match self.get_cert() {
+            Some(cert) => {
+                let details = SignedCertificateDetails::new(cert, 2, false, reduce_area_fixed(2, 4));
+                let modal = ModalWithSizedComponent::new("Signing certificate details", Box::new(details));
+                self.signed_certificate_details = Some(modal);
+            },
+            None => {},
+        }
     }
 }
 
