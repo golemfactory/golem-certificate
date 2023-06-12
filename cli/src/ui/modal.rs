@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, path::PathBuf};
 
 use anyhow::Result;
 use crossterm::event::KeyEvent;
@@ -10,7 +10,7 @@ use tui::{
 
 use super::{
     component::*,
-    util::{default_style, get_middle_rectangle}, multiple_choice::MultipleChoice,
+    util::{default_style, get_middle_rectangle, AreaCalculators, CalculateHeight, CalculateWidth}, multiple_choice::MultipleChoice, open_file_dialog::OpenFileDialog,
 };
 
 pub struct ModalWindow {
@@ -131,7 +131,7 @@ impl Component for ModalMultipleChoice {
         let rows = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Min(1),
+                Constraint::Min(0),
                 Constraint::Max(1),
                 Constraint::Max(1),
             ])
@@ -152,19 +152,19 @@ fn message_dimensions(message: &str) -> (Height, Width) {
     (height as u16, width as u16)
 }
 
-pub struct ModalWithComponent {
+pub struct ModalWithSizedComponent {
     modal: ModalWindow,
     component: Box<dyn SizedComponent>,
 }
 
-impl ModalWithComponent {
-    pub fn new<S1: Into<String>>(title: S1, component: Box<dyn SizedComponent>) -> Self {
+impl ModalWithSizedComponent {
+    pub fn new<S: Into<String>>(title: S, component: Box<dyn SizedComponent>) -> Self {
         let modal = ModalWindow::new(title);
         Self { modal, component }
     }
 }
 
-impl Component for ModalWithComponent {
+impl Component for ModalWithSizedComponent {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         self.component.handle_key_event(key_event)
     }
@@ -176,3 +176,68 @@ impl Component for ModalWithComponent {
         None
     }
 }
+
+pub struct ModalWithComponent<C: Component> {
+    modal: ModalWindow,
+    component: C,
+    calculate_height: CalculateHeight,
+    calculate_width: CalculateWidth,
+}
+
+impl <C: Component> ModalWithComponent<C> {
+    pub fn new<S: Into<String>>(
+        title: S,
+        component: C,
+        (calculate_height, calculate_width): AreaCalculators,
+    ) -> Self {
+        let modal = ModalWindow::new(title);
+        Self { modal, component, calculate_height, calculate_width }
+    }
+
+    pub fn get_component(&self) -> &C {
+        &self.component
+    }
+}
+
+impl <C: Component> Component for ModalWithComponent<C> {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
+        self.component.handle_key_event(key_event)
+    }
+
+    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
+        let height = (self.calculate_height)(area.height);
+        let width = (self.calculate_width)(area.width);
+        let inner_area = self.modal.render(area, buf, height, width);
+        self.component.render(inner_area, buf);
+        None
+    }
+}
+
+pub struct ModalOpenFileDialog {
+    modal: ModalWindow,
+    dialog: OpenFileDialog,
+}
+
+impl ModalOpenFileDialog {
+    pub fn new<S: Into<String>>(title: S) -> Result<Self> {
+        let modal = ModalWindow::new(title);
+        let dialog = OpenFileDialog::new()?;
+        Ok(Self { modal, dialog })
+    }
+
+    pub fn get_selected(&self) -> Option<&PathBuf> {
+        self.dialog.selected.as_ref()
+    }
+}
+
+impl ModalOpenFileDialog {
+    pub fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
+        self.dialog.handle_key_event(key_event)
+    }
+
+    pub fn render(&mut self, area: Rect, buf: &mut Buffer, height: u16, width: u16) -> Cursor {
+        let inner_area = self.modal.render(area, buf, height, width);
+        self.dialog.render(inner_area, buf)
+    }
+}
+

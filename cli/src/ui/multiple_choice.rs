@@ -16,6 +16,7 @@ use super::{
 pub const DONE_CANCEL: [&str; 2] = ["Done", "Cancel"];
 pub const EXIT_WITHOUT_SAVE: [&str; 2] = ["Don't save", "Cancel"];
 pub const SIGN_OR_TEMPLATE: [&str; 2] = ["Sign", "Save as template"];
+pub const SIGN_OR_CANCEL: [&str; 2] = ["Sign", "Cancel"];
 
 pub struct MultipleChoice {
     pub active: bool,
@@ -76,9 +77,7 @@ impl Component for MultipleChoice {
             vec![Constraint::Ratio(1, self.choices.len() as u32); self.choices.len()];
 
         let mut area = area;
-        if area.height > 1 {
-            area.height = 1;
-        }
+        area.height = area.height.min(1);
 
         let choice_areas = Layout::default()
             .direction(Direction::Horizontal)
@@ -116,12 +115,10 @@ impl Component for MultipleChoice {
 impl EditorComponent for MultipleChoice {
     fn enter_from_below(&mut self) {
         self.active = true;
-        self.selected = self.choices.len() - 1;
     }
 
     fn enter_from_top(&mut self) {
         self.active = true;
-        self.selected = 0;
     }
 
     fn get_highlight(&self) -> Option<usize> {

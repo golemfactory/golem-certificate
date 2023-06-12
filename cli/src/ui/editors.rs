@@ -11,6 +11,9 @@ use super::{
     util::{default_style, highlight_style},
 };
 
+mod key;
+pub use key::KeyEditor;
+
 mod key_usage;
 pub use key_usage::KeyUsageEditor;
 
@@ -19,9 +22,6 @@ pub use node_id::NodeIdEditor;
 
 mod permissions;
 pub use permissions::PermissionsEditor;
-
-mod public_key;
-pub use public_key::PublicKeyEditor;
 
 mod signature;
 pub use signature::SignatureEditor;

@@ -18,6 +18,10 @@ impl ScrollableTextState {
         Self { lines, offset }
     }
 
+    pub fn get_text_height(&self) -> usize {
+        self.lines.len()
+    }
+
     pub fn offset(&self) -> usize {
         self.offset
     }

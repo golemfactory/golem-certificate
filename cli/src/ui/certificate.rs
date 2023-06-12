@@ -1,17 +1,17 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
-use golem_certificate::{SignedCertificate, schemas::certificate::Certificate};
+use golem_certificate::{SignedCertificate, schemas::{certificate::Certificate, signature}};
 use tui::{layout::Rect, widgets::{StatefulWidget, Block, BorderType, Borders, Widget}};
 
 use super::{
     component::*,
     display_details::certificate_to_string,
     editors::*,
-    modal::ModalMultipleChoice,
+    modal::{ModalMultipleChoice, ModalWindow},
     multiple_choice::{EXIT_WITHOUT_SAVE, MultipleChoice, SIGN_OR_TEMPLATE},
     scrollable_text::{ScrollableText, ScrollableTextState},
     util::{
-        default_style, AreaCalculators, CalculateHeight, CalculateWidth,
+        default_style, AreaCalculators, CalculateHeight, CalculateWidth, identity_area,
     },
 };
 
@@ -34,6 +34,20 @@ impl SignedCertificateDetails {
             calculate_height,
             calculate_width,
         }
+    }
+
+    pub fn new_with_defaults(cert: &SignedCertificate) -> Self {
+        let text = certificate_to_string(cert, 2, false);
+        let (calculate_height, calculate_width) = identity_area();
+        Self {
+            render_state: ScrollableTextState::new(text),
+            calculate_height,
+            calculate_width,
+        }
+    }
+
+    pub fn get_text_height(&self) -> usize {
+        self.render_state.get_text_height()
     }
 
     fn scrolling_key_event(&mut self, key_event: KeyEvent) {
@@ -84,7 +98,7 @@ impl SizedComponent for SignedCertificateDetails {
 struct CertificateDocumentEditor {
     key_usage_editor: KeyUsageEditor,
     permissions_editor: PermissionsEditor,
-    public_key_editor: PublicKeyEditor,
+    public_key_editor: KeyEditor,
     subject_editor: SubjectEditor,
     validity_period_editor: ValidityPeriodEditor,
 }
@@ -120,6 +134,7 @@ pub struct CertificateEditor {
     active_editor_idx: usize,
     document: CertificateDocumentEditor,
     save_or_template: MultipleChoice,
+    signature_editor: Option<(ModalWindow, SignatureEditor)>,
     popup: Option<ModalMultipleChoice>,
 }
 
@@ -132,10 +147,18 @@ impl CertificateEditor {
             active_editor_idx: 0,
             document: CertificateDocumentEditor::default(),
             save_or_template,
+            signature_editor: None,
             popup: None,
         };
         editor.init();
         editor
+    }
+
+    fn add_signature_editor(&mut self) {
+        let mut signature_editor = SignatureEditor::new(true);
+        signature_editor.init();
+        let modal_window = ModalWindow::new("Signature details");
+        self.signature_editor = Some((modal_window, signature_editor));
     }
 }
 
@@ -150,46 +173,56 @@ impl EditorGroup for CertificateEditor {
 impl Component for CertificateEditor {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         if let Some(popup) = self.popup.as_mut() {
-            match popup.handle_key_event(key_event) {
-                Ok(status) => match status {
-                    ComponentStatus::Active => Ok(ComponentStatus::Active),
-                    ComponentStatus::Escaped => {
-                        self.popup = None;
+            match popup.handle_key_event(key_event)? {
+                ComponentStatus::Active => Ok(ComponentStatus::Active),
+                ComponentStatus::Escaped => {
+                    self.popup = None;
+                    Ok(ComponentStatus::Active)
+                }
+                ComponentStatus::Closed => {
+                    let selected = popup.get_selected();
+                    self.popup = None;
+                    if selected == EXIT_WITHOUT_SAVE[0] {
+                        Ok(ComponentStatus::Escaped)
+                    } else {
                         Ok(ComponentStatus::Active)
                     }
-                    ComponentStatus::Closed => {
-                        let selected = popup.get_selected();
-                        self.popup = None;
-                        if selected == EXIT_WITHOUT_SAVE[0] {
-                            Ok(ComponentStatus::Escaped)
-                        } else {
-                            Ok(ComponentStatus::Active)
-                        }
-                    }
-                },
-                Err(err) => return Err(err),
+                }
+            }
+        } else if let Some((_, signature_editor)) = self.signature_editor.as_mut() {
+            let editor: &mut dyn EditorGroup = signature_editor;
+            match editor.handle_key_event(key_event)? {
+                ComponentStatus::Active => Ok(ComponentStatus::Active),
+                ComponentStatus::Escaped => {
+                    self.signature_editor = None;
+                    Ok(ComponentStatus::Active)
+                }
+                ComponentStatus::Closed => {
+                    // TODO handle signing
+                    Ok(ComponentStatus::Active)
+                }
             }
         } else {
             let editor_group: &mut dyn EditorGroup = self;
-            match editor_group.handle_key_event(key_event) {
-                Ok(status) => match status {
-                    ComponentStatus::Active => Ok(ComponentStatus::Active),
-                    ComponentStatus::Escaped => {
-                        self.popup = Some(ModalMultipleChoice::new(
-                            "Exit without saving?",
-                            "Changes will be lost.",
-                            EXIT_WITHOUT_SAVE,
-                            1,
-                        ));
-                        Ok(ComponentStatus::Active)
+            match editor_group.handle_key_event(key_event)? {
+                ComponentStatus::Active => {},
+                ComponentStatus::Escaped => {
+                    self.popup = Some(ModalMultipleChoice::new(
+                        "Exit without saving?",
+                        "Changes will be lost.",
+                        EXIT_WITHOUT_SAVE,
+                        1,
+                    ));
+                }
+                ComponentStatus::Closed => {
+                    if self.save_or_template.get_selected() == SIGN_OR_TEMPLATE[0] {
+                        self.add_signature_editor();
+                    } else {
+                        // TODO handle signing or saving as template
                     }
-                    ComponentStatus::Closed => {
-                        println!("Closed");
-                        Ok(ComponentStatus::Active)
-                    }
-                },
-                Err(err) => Err(err),
+                }
             }
+            Ok(ComponentStatus::Active)
         }
     }
 
@@ -205,6 +238,11 @@ impl Component for CertificateEditor {
 
         let editor_group: &mut dyn EditorGroup = self;
         let mut cursor = editor_group.render(editor_area, buf);
+        if let Some((modal_window, signature_editor)) = self.signature_editor.as_mut() {
+            let inner_area = modal_window.render(editor_area, buf, area.height.saturating_sub(4), area.width.saturating_sub(4));
+            let editor: &mut dyn EditorGroup = signature_editor;
+            cursor = editor.render(inner_area, buf);
+        }
         if let Some(popup) = self.popup.as_mut() {
             cursor = popup.render(editor_area, buf);
         }

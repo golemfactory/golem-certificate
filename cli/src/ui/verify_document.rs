@@ -1,4 +1,4 @@
-use std::{fs::read_to_string, path::PathBuf};
+use std::{fs, path::PathBuf};
 
 use anyhow::Result;
 use crossterm::event::KeyEvent;
@@ -16,13 +16,13 @@ use tui::{
 use super::{
     component::*,
     certificate::SignedCertificateDetails,
-    modal::{ModalMessage, ModalWithComponent},
+    modal::{ModalMessage, ModalWithSizedComponent},
     node_descriptor::SignedNodeDescriptorDetails,
     open_file_dialog::OpenFileDialog,
     util::{default_style, CalculateHeight, CalculateWidth},
 };
 
-enum VerifiedDocument {
+pub enum VerifiedDocument {
     Certificate(SignedCertificate),
     NodeDescriptor(SignedNodeDescriptor),
 }
@@ -92,7 +92,7 @@ impl Component for VerifyDocument {
 }
 
 fn verify_selected_file(path: &PathBuf) -> Result<VerifiedDocument, String> {
-    read_to_string(&path)
+    fs::read_to_string(&path)
         .map_err(|err| format!("Cannot read file ({})", err))
         .and_then(|contents| {
             serde_json::from_str::<Value>(&contents).map_err(|_| "File contents is not JSON".into())
@@ -117,7 +117,7 @@ fn verify_json(json: Value) -> Result<VerifiedDocument, String> {
 
 fn show_cert_details(path: &PathBuf, cert: &SignedCertificate) -> Box<dyn Component> {
     let component = SignedCertificateDetails::new(cert, 2, true, get_area_calculators());
-    let modal = ModalWithComponent::new(path.to_string_lossy(), Box::new(component));
+    let modal = ModalWithSizedComponent::new(path.to_string_lossy(), Box::new(component));
     Box::new(modal)
 }
 
@@ -127,7 +127,7 @@ fn show_node_descriptor_details(
 ) -> Box<dyn Component> {
     let component =
         SignedNodeDescriptorDetails::new(node_descriptor, 2, true, get_area_calculators());
-    let modal = ModalWithComponent::new(path.to_string_lossy(), Box::new(component));
+    let modal = ModalWithSizedComponent::new(path.to_string_lossy(), Box::new(component));
     Box::new(modal)
 }
 

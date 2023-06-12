@@ -14,8 +14,15 @@ pub type CalculateHeight = Box<dyn Fn(u16) -> u16>;
 pub type CalculateWidth = Box<dyn Fn(u16) -> u16>;
 pub type AreaCalculators = (CalculateHeight, CalculateWidth);
 
-#[allow(dead_code)]
-pub fn identity_area_calculators() -> AreaCalculators {
+pub fn reduce_area_fixed(height: u16, width: u16) -> AreaCalculators {
+    (Box::new(move |h| h - height), Box::new(move |w| w - width))
+}
+
+pub fn reduce_area_percent(height: u16, width: u16) -> AreaCalculators {
+    (Box::new(move |h| (h * height) / 100), Box::new(move |w| (w * width) / 100))
+}
+
+pub fn identity_area() -> AreaCalculators {
     (Box::new(|n: u16| n), Box::new(|n: u16| n))
 }
 

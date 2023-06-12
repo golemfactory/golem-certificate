@@ -5,30 +5,26 @@ use std::{fs, path::PathBuf};
 use anyhow::Result;
 use golem_certificate::Key;
 
-use crate::ui::{open_file_dialog::OpenFileDialog, modal::ModalWindow};
+use crate::ui::modal::ModalOpenFileDialog;
 
 struct KeyFile {
     filename: String,
     key: Key,
 }
 
-struct ModalOpenFileDialog {
-    modal: ModalWindow,
-    dialog: OpenFileDialog,
-}
-
-#[derive(Default)]
-pub struct PublicKeyEditor {
+pub struct KeyEditor {
+    key_type: String,
     key: Option<KeyFile>,
     open_file_dialog: Option<ModalOpenFileDialog>,
     error_message: Option<ModalMessage>,
     active: bool,
 }
 
-impl PublicKeyEditor {
-    pub fn new(key: Key) -> Self {
+impl KeyEditor {
+    pub fn new<S: Into<String>>(key_type: S, key: Option<Key>) -> Self {
         let mut editor = Self::default();
-        editor.key = Some(KeyFile {
+        editor.key_type = key_type.into();
+        editor.key = key.map(|key| KeyFile {
             filename: "Loaded from template".into(),
             key,
         });
@@ -40,7 +36,19 @@ impl PublicKeyEditor {
     }
 }
 
-impl EditorComponent for PublicKeyEditor {
+impl Default for KeyEditor {
+    fn default() -> Self {
+        Self {
+            key_type: "Public".into(),
+            key: None,
+            open_file_dialog: None,
+            error_message: None,
+            active: false,
+        }
+    }
+}
+
+impl EditorComponent for KeyEditor {
     fn enter_from_below(&mut self) {
         self.active = true;
     }
@@ -65,11 +73,11 @@ impl EditorComponent for PublicKeyEditor {
             }
             EditorEventResult::KeepActive
         } else if let Some(open_file_dialog) = self.open_file_dialog.as_mut() {
-            match open_file_dialog.dialog.handle_key_event(key_event) {
+            match open_file_dialog.handle_key_event(key_event) {
                 Ok(status) => match status {
                     ComponentStatus::Active => {},
                     ComponentStatus::Closed => {
-                        if let Some(path) = open_file_dialog.dialog.selected.as_ref() {
+                        if let Some(path) = open_file_dialog.get_selected() {
                             match load_key(path) {
                                 Ok(key) => {
                                     self.key = Some(key);
@@ -90,15 +98,11 @@ impl EditorComponent for PublicKeyEditor {
                 match key_event.code {
                     KeyCode::Esc => EditorEventResult::Escaped,
                     KeyCode::Enter => {
-                        match OpenFileDialog::new() {
-                            Ok(open_file_dialog) => {
-                                let modal_window = ModalWindow::new("Open public key");
-                                self.open_file_dialog = Some(ModalOpenFileDialog {
-                                    modal: modal_window,
-                                    dialog: open_file_dialog,
-                                });
-                            },
-                            Err(err) => self.error_message = Some(ModalMessage::new("Error opening file dialog", err.to_string())),
+                        match ModalOpenFileDialog::new(format!("Open {} key", self.key_type)) {
+                            Ok(open_file_dialog) =>
+                                self.open_file_dialog = Some(open_file_dialog),
+                            Err(err) =>
+                                self.error_message = Some(ModalMessage::new("Error opening file dialog", err.to_string())),
                         }
                         EditorEventResult::KeepActive
                     }
@@ -127,7 +131,7 @@ impl EditorComponent for PublicKeyEditor {
             Some(key) => &key.filename,
             None => "Not loaded",
         };
-        writeln!(text, "Public key: {}", key_string).unwrap();
+        writeln!(text, "{} key: {}", self.key_type, key_string).unwrap();
     }
 
     fn get_highlight_prefix(&self) -> Option<usize> {
@@ -139,8 +143,7 @@ impl EditorComponent for PublicKeyEditor {
         if let Some(open_file_dialog) = self.open_file_dialog.as_mut() {
             let height = area.height.saturating_sub(6);
             let width = (area.width * 8) / 10;
-            let inner_area = open_file_dialog.modal.render(area, buf, height, width);
-            cursor = open_file_dialog.dialog.render(inner_area, buf)
+            cursor = open_file_dialog.render(area, buf, height, width);
         }
         if let Some(error_message) = self.error_message.as_mut() {
             cursor = error_message.render(area, buf)
