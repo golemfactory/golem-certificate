@@ -2,8 +2,9 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
-use golem_certificate::{SignedCertificate, schemas::{certificate::Certificate, signature, SIGNED_CERTIFICATE_SCHEMA_ID}, sign_json, Signature, validate_certificate};
-use serde::Serialize;
+use golem_certificate::{self as gcert, SignedCertificate, schemas::{certificate::Certificate, SIGNED_CERTIFICATE_SCHEMA_ID}, sign_json, Signature, validate_certificate};
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 use tui::{layout::Rect, widgets::{StatefulWidget, Block, BorderType, Borders, Widget}};
 
 use super::{
@@ -97,6 +98,26 @@ impl SizedComponent for SignedCertificateDetails {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CertificateTemplate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    key_usage: Option<gcert::schemas::certificate::key_usage::KeyUsage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    permissions: Option<gcert::schemas::permissions::Permissions>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    public_key: Option<gcert::Key>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    subject: Option<gcert::schemas::subject::Subject>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    validity_period: Option<gcert::schemas::validity_period::ValidityPeriod>,
+}
+
 #[derive(Default)]
 struct CertificateDocumentEditor {
     key_usage_editor: KeyUsageEditor,
@@ -120,6 +141,17 @@ impl CertificateDocumentEditor {
         } else {
             anyhow::bail!("No public key")
         }
+    }
+
+    fn get_template_json(&self) -> Value {
+        let certificate = CertificateTemplate {
+            key_usage: Some(self.key_usage_editor.get_key_usage()),
+            permissions: Some(self.permissions_editor.get_permissions()),
+            public_key: self.public_key_editor.get_key(),
+            subject: Some(self.subject_editor.get_subject()),
+            validity_period: Some(self.validity_period_editor.get_validity_period()),
+        };
+        json!({ "certificate": certificate })
     }
 
     fn editors_mut(&mut self) -> Vec<&mut dyn EditorComponent> {
@@ -223,7 +255,7 @@ impl CertificateEditor {
                     }
                 }
             } else {
-                let value = self.document.get_document().unwrap();
+                let value = self.document.get_template_json();
                 self.save_json(&path, &value);
             }
         }
