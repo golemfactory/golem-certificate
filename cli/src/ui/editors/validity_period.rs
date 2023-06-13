@@ -1,6 +1,6 @@
 use super::*;
 
-use chrono::{DateTime, Utc, Timelike};
+use chrono::{DateTime, Utc, Timelike, Months};
 use golem_certificate::schemas::validity_period::ValidityPeriod;
 
 pub struct ValidityPeriodEditor {
@@ -13,13 +13,19 @@ pub struct ValidityPeriodEditor {
 
 impl ValidityPeriodEditor {
     pub fn new(validity_period: Option<ValidityPeriod>) -> Self {
-        let now = Utc::now().with_nanosecond(0).unwrap();
-        let (not_before, not_after) = match &validity_period {
+        let (not_before, not_after) = match validity_period {
             Some(ValidityPeriod { not_before, not_after }) => (not_before, not_after),
             None => {
-                (&now, &now)
+                let not_before = Utc::now()
+                        .with_hour(0).unwrap()
+                        .with_minute(0).unwrap()
+                        .with_second(0).unwrap()
+                        .with_nanosecond(0).unwrap();
+                let not_after = not_before.checked_add_months(Months::new(1)).unwrap();
+                (not_before, not_after)
             }
         };
+
         Self {
             not_before: not_before.to_string(),
             not_after: not_after.to_string(),

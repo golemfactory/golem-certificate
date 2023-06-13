@@ -25,3 +25,4 @@ pub use validator::validate_node_descriptor;
 pub use validator::validate_node_descriptor_str;
 
 pub use error::Error;
+pub use error::Result;

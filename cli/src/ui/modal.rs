@@ -172,8 +172,7 @@ impl Component for ModalWithSizedComponent {
     fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
         let (height, width) = self.component.get_render_size(area);
         let inner_area = self.modal.render(area, buf, height, width);
-        self.component.render(inner_area, buf);
-        None
+        self.component.render(inner_area, buf)
     }
 }
 
@@ -208,8 +207,7 @@ impl <C: Component> Component for ModalWithComponent<C> {
         let height = (self.calculate_height)(area.height);
         let width = (self.calculate_width)(area.width);
         let inner_area = self.modal.render(area, buf, height, width);
-        self.component.render(inner_area, buf);
-        None
+        self.component.render(inner_area, buf)
     }
 }
 

@@ -6,7 +6,7 @@ use anyhow::Result;
 use chrono::Utc;
 use golem_certificate::{SignedCertificate, validate_certificate_str, Signer, Key};
 
-use crate::ui::{multiple_choice::{MultipleChoice, SIGN_OR_CANCEL}, certificate::SignedCertificateDetails, modal::{ModalMultipleChoice, ModalOpenFileDialog, ModalWithComponent, ModalWithSizedComponent}, util::reduce_area_fixed};
+use crate::ui::{multiple_choice::{MultipleChoice, SIGN_OR_CANCEL}, certificate::SignedCertificateDetails, modal::{ModalMultipleChoice, ModalOpenFileDialog, ModalWithSizedComponent}, util::reduce_area_fixed};
 
 pub struct SignatureEditor {
     active_editor_idx: usize,

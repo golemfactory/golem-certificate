@@ -40,3 +40,5 @@ pub enum Error {
         structure_name: String,
     },
 }
+
+pub type Result<T> = std::result::Result<T, Error>;

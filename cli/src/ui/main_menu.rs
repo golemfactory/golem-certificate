@@ -10,7 +10,7 @@ use super::{
     component::*,
     keypair::CreateKeyPairDialog,
     util::{default_style, get_middle_rectangle, highlight_style},
-    verify_document::VerifyDocument, certificate::CertificateEditor, node_descriptor::NodeDescriptorEditor,
+    verify_document::VerifyDocument, certificate::CertificateDocumentEditor, node_descriptor::NodeDescriptorEditor, document_editor::SignedDocumentEditor,
 };
 
 const MENU_ITEMS: [&str; 8] = [
@@ -60,7 +60,9 @@ impl MainMenu {
             }
             KeyCode::Enter => match self.selected_item {
                 0 => self.child = Some(Box::new(VerifyDocument::new()?)),
-                2 => self.child = Some(Box::new(CertificateEditor::new())),
+                2 => self.child = Some(Box::new(
+                    SignedDocumentEditor::new(Box::new(CertificateDocumentEditor::default()))
+                )),
                 3 => self.child = Some(Box::new(NodeDescriptorEditor::new())),
                 5 => self.child = Some(Box::new(CreateKeyPairDialog::new()?)),
                 7 => return Ok(ComponentStatus::Closed),
