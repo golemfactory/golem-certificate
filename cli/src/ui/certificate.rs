@@ -16,7 +16,7 @@ use super::{
     editors::*,
     scrollable_text::{ScrollableText, ScrollableTextState},
     util::{
-        default_style, AreaCalculators, CalculateHeight, CalculateWidth, identity_area,
+        default_style, AreaCalculators, CalculateHeight, CalculateWidth,
     },
 };
 
@@ -39,20 +39,6 @@ impl SignedCertificateDetails {
             calculate_height,
             calculate_width,
         }
-    }
-
-    pub fn new_with_defaults(cert: &SignedCertificate) -> Self {
-        let text = certificate_to_string(cert, 2, false);
-        let (calculate_height, calculate_width) = identity_area();
-        Self {
-            render_state: ScrollableTextState::new(text),
-            calculate_height,
-            calculate_width,
-        }
-    }
-
-    pub fn get_text_height(&self) -> usize {
-        self.render_state.get_text_height()
     }
 
     fn scrolling_key_event(&mut self, key_event: KeyEvent) {

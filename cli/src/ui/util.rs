@@ -18,14 +18,6 @@ pub fn reduce_area_fixed(height: u16, width: u16) -> AreaCalculators {
     (Box::new(move |h| h - height), Box::new(move |w| w - width))
 }
 
-pub fn reduce_area_percent(height: u16, width: u16) -> AreaCalculators {
-    (Box::new(move |h| (h * height) / 100), Box::new(move |w| (w * width) / 100))
-}
-
-pub fn identity_area() -> AreaCalculators {
-    (Box::new(|n: u16| n), Box::new(|n: u16| n))
-}
-
 pub fn default_style() -> Style {
     Style::default().fg(Color::Cyan).bg(Color::Black)
 }
