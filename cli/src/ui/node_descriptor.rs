@@ -2,21 +2,20 @@ use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use golem_certificate::{
     self as gcert,
-    SignedNodeDescriptor, Signature, Signer, validate_node_descriptor,
     schemas::{node_descriptor::NodeDescriptor, SIGNED_NODE_DESCRIPTOR_SCHEMA_ID},
+    validate_node_descriptor, Signature, SignedNodeDescriptor, Signer,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use tui::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use super::{
     component::*,
     display_details::node_descriptor_to_string,
+    document_editor::DocumentEditor,
     editors::*,
     scrollable_text::{ScrollableText, ScrollableTextState},
-    util::{
-        default_style, AreaCalculators, CalculateHeight, CalculateWidth,
-    }, document_editor::DocumentEditor,
+    util::{default_style, AreaCalculators, CalculateHeight, CalculateWidth},
 };
 
 pub struct SignedNodeDescriptorDetails {
@@ -98,7 +97,6 @@ struct NodeDescriptorTemplate {
     validity_period: Option<gcert::schemas::validity_period::ValidityPeriod>,
 }
 
-
 #[derive(Default)]
 pub struct NodeDescriptorEditor {
     node_id: NodeIdEditor,
@@ -151,7 +149,12 @@ impl DocumentEditor for NodeDescriptorEditor {
         json!({ "nodeDescriptor": template })
     }
 
-    fn create_signed_document(&self, algorithm: gcert::SignatureAlgorithm, signature_value: Vec<u8>, signer: Signer) -> serde_json::Result<Value> {
+    fn create_signed_document(
+        &self,
+        algorithm: gcert::SignatureAlgorithm,
+        signature_value: Vec<u8>,
+        signer: Signer,
+    ) -> serde_json::Result<Value> {
         let node_descriptor = self.get_document().unwrap();
         match signer {
             Signer::SelfSigned => unreachable!("Self-signed node descriptors are not allowed"),
@@ -159,10 +162,14 @@ impl DocumentEditor for NodeDescriptorEditor {
                 let signed_node_descriptor = SignedNodeDescriptor {
                     schema: SIGNED_NODE_DESCRIPTOR_SCHEMA_ID.into(),
                     node_descriptor,
-                    signature: Signature { algorithm, value: signature_value, signer: signed_cert },
+                    signature: Signature {
+                        algorithm,
+                        value: signature_value,
+                        signer: signed_cert,
+                    },
                 };
                 serde_json::to_value(signed_node_descriptor)
-            },
+            }
         }
     }
 

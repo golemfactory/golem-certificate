@@ -75,7 +75,8 @@ pub fn validate_node_descriptor(
     validate_schema(&value, SIGNED_NODE_DESCRIPTOR_SCHEMA_ID, "node descriptor")?;
     let signed_node_descriptor: SignedNodeDescriptor = serde_json::from_value(value)
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
-    let mut validated_node_descriptor = validate_signed_node_descriptor(signed_node_descriptor, timestamp)?;
+    let mut validated_node_descriptor =
+        validate_signed_node_descriptor(signed_node_descriptor, timestamp)?;
     validated_node_descriptor
         .certificate_chain_fingerprints
         .reverse();
@@ -116,8 +117,7 @@ fn validate_signed_node_descriptor(
             .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
 
     let signing_certificate = signed_node_descriptor.signature.signer;
-    let validated_certificate =
-        validate_signed_certificate(&signing_certificate, None)?;
+    let validated_certificate = validate_signed_certificate(&signing_certificate, None)?;
 
     let leaf_certificate: Certificate = serde_json::from_value(signing_certificate.certificate)
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
@@ -148,9 +148,7 @@ fn validate_signed_node_descriptor(
     })
 }
 
-fn create_certificate_fingerprint(
-    signed_certificate: &SignedCertificate,
-) -> Result<Fingerprint> {
+fn create_certificate_fingerprint(signed_certificate: &SignedCertificate) -> Result<Fingerprint> {
     create_fingerprint_for_value(&signed_certificate.certificate)
 }
 

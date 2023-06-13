@@ -6,11 +6,7 @@ use tui::{
     widgets::{Block, BorderType, Borders, Padding, StatefulWidget, Widget},
 };
 
-use super::{
-    component::*,
-    main_menu::MainMenu,
-    util::default_style,
-};
+use super::{component::*, main_menu::MainMenu, util::default_style};
 
 #[derive(Default)]
 pub struct App {
@@ -35,7 +31,7 @@ impl App {
             _ => match self.main_menu.handle_key_event(key_event)? {
                 ComponentStatus::Active => Ok(AppStatus::Running),
                 _ => Ok(AppStatus::Exiting),
-            }
+            },
         }
     }
 

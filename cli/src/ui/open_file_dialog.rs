@@ -153,7 +153,7 @@ impl OpenFileDialog {
             KeyCode::Esc => {
                 return Ok(ComponentStatus::Escaped);
             }
-            _ => ()
+            _ => (),
         }
         Ok(ComponentStatus::Active)
     }
@@ -183,11 +183,7 @@ impl Component for OpenFileDialog {
 
         let list_parts = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Max(1),
-                Constraint::Min(1),
-                Constraint::Max(1),
-            ])
+            .constraints([Constraint::Max(1), Constraint::Min(1), Constraint::Max(1)])
             .split(list_area);
 
         let list_items = self

@@ -2,9 +2,12 @@ use super::*;
 
 use std::collections::HashMap;
 
-use golem_certificate::schemas::subject::{Subject, Contact};
+use golem_certificate::schemas::subject::{Contact, Subject};
 
-use crate::ui::{modal::ModalWindow, multiple_choice::{MultipleChoice, DONE_CANCEL}};
+use crate::ui::{
+    modal::ModalWindow,
+    multiple_choice::{MultipleChoice, DONE_CANCEL},
+};
 
 const FIXED_SUBJECT_PROPERTY_NAMES: [&str; 2] = ["displayName", "contact"];
 const FIXED_CONTACT_PROPERTY_NAMES: [&str; 1] = ["email"];
@@ -30,12 +33,17 @@ impl SubjectEditor {
     pub fn new(subject: Option<Subject>) -> Self {
         let subject = subject.unwrap_or(Subject {
             display_name: "Certificate Holder".into(),
-            contact: Contact { email: "certificate.holder@example.com".into(), additional_properties: Default::default() },
+            contact: Contact {
+                email: "certificate.holder@example.com".into(),
+                additional_properties: Default::default(),
+            },
             additional_properties: Default::default(),
         });
         Self {
             additional_subject_properties: filter_string_values(&subject.additional_properties),
-            additional_contact_properties: filter_string_values(&subject.contact.additional_properties),
+            additional_contact_properties: filter_string_values(
+                &subject.contact.additional_properties,
+            ),
             subject,
             highlight: None,
             property_editor: None,
@@ -46,10 +54,17 @@ impl SubjectEditor {
 
     pub fn get_subject(&self) -> Subject {
         let mut subject = self.subject.clone();
-        let additional_subject_properties = map_string_values_to_value(&self.additional_subject_properties);
-        subject.additional_properties.extend(additional_subject_properties);
-        let additional_contact_properties = map_string_values_to_value(&self.additional_contact_properties);
-        subject.contact.additional_properties.extend(additional_contact_properties);
+        let additional_subject_properties =
+            map_string_values_to_value(&self.additional_subject_properties);
+        subject
+            .additional_properties
+            .extend(additional_subject_properties);
+        let additional_contact_properties =
+            map_string_values_to_value(&self.additional_contact_properties);
+        subject
+            .contact
+            .additional_properties
+            .extend(additional_contact_properties);
         subject
     }
 
@@ -59,20 +74,33 @@ impl SubjectEditor {
 
     fn set_error(&mut self, error_type: SubjectEditorError) {
         self.error_message = match error_type {
-            SubjectEditorError::EmptyName => Some(ModalMessage::new("Empty name", "Name must not be empty")),
-            SubjectEditorError::EmptyValue => Some(ModalMessage::new("Empty value", "Value must not be empty")),
-            SubjectEditorError::DuplicateName => Some(ModalMessage::new("Duplicate name", "The property already exists")),
-            SubjectEditorError::LockedName => Some(ModalMessage::new("Locked name", "The property exists in the template but\ncannot be edited as it is not a string")),
+            SubjectEditorError::EmptyName => {
+                Some(ModalMessage::new("Empty name", "Name must not be empty"))
+            }
+            SubjectEditorError::EmptyValue => {
+                Some(ModalMessage::new("Empty value", "Value must not be empty"))
+            }
+            SubjectEditorError::DuplicateName => Some(ModalMessage::new(
+                "Duplicate name",
+                "The property already exists",
+            )),
+            SubjectEditorError::LockedName => Some(ModalMessage::new(
+                "Locked name",
+                "The property exists in the template but\ncannot be edited as it is not a string",
+            )),
         }
     }
 
     fn insert_subject_property(&mut self, idx: usize, key: String, value: String) {
         if idx == self.additional_subject_properties.len() {
-            self.additional_subject_properties.push((key.clone(), value.clone()));
+            self.additional_subject_properties
+                .push((key.clone(), value.clone()));
         } else {
             self.additional_subject_properties[idx] = (key.clone(), value.clone());
         }
-        self.subject.additional_properties.insert(key, serde_json::Value::String(value));
+        self.subject
+            .additional_properties
+            .insert(key, serde_json::Value::String(value));
     }
 
     fn remove_subject_property(&mut self, idx: usize) {
@@ -82,11 +110,15 @@ impl SubjectEditor {
 
     fn insert_contact_property(&mut self, idx: usize, key: String, value: String) {
         if idx == self.additional_contact_properties.len() {
-            self.additional_contact_properties.push((key.clone(), value.clone()));
+            self.additional_contact_properties
+                .push((key.clone(), value.clone()));
         } else {
             self.additional_contact_properties[idx] = (key.clone(), value.clone());
         }
-        self.subject.contact.additional_properties.insert(key, serde_json::Value::String(value));
+        self.subject
+            .contact
+            .additional_properties
+            .insert(key, serde_json::Value::String(value));
     }
 
     fn remove_contact_property(&mut self, idx: usize) {
@@ -96,17 +128,21 @@ impl SubjectEditor {
 }
 
 fn filter_string_values(map: &HashMap<String, serde_json::Value>) -> Vec<(String, String)> {
-    map.iter().filter_map(|(k, v)| {
-        if v.is_string() {
-            Some((k.to_owned(), v.as_str().unwrap().to_owned()))
-        } else {
-            None
-        }
-    }).collect()
+    map.iter()
+        .filter_map(|(k, v)| {
+            if v.is_string() {
+                Some((k.to_owned(), v.as_str().unwrap().to_owned()))
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 fn map_string_values_to_value(map: &[(String, String)]) -> Vec<(String, serde_json::Value)> {
-    map.iter().map(|(k, v)| (k.to_owned(), serde_json::Value::String(v.to_owned()))).collect()
+    map.iter()
+        .map(|(k, v)| (k.to_owned(), serde_json::Value::String(v.to_owned())))
+        .collect()
 }
 
 fn contains_key(vec: &[(String, String)], key: &String) -> bool {
@@ -148,7 +184,8 @@ impl EditorComponent for SubjectEditor {
                     ComponentStatus::Closed => {
                         let text = value_editor.get_text().to_owned();
                         if text.is_empty() {
-                            self.error_message = Some(ModalMessage::new("Empty value", "Value must not be empty"));
+                            self.error_message =
+                                Some(ModalMessage::new("Empty value", "Value must not be empty"));
                         } else {
                             let highlight = self.highlight.unwrap();
                             if highlight == 1 {
@@ -158,7 +195,7 @@ impl EditorComponent for SubjectEditor {
                             }
                             self.value_editor = None;
                         }
-                    },
+                    }
                     ComponentStatus::Escaped => self.value_editor = None,
                 }
             }
@@ -176,7 +213,9 @@ impl EditorComponent for SubjectEditor {
                         } else {
                             let highlight = self.highlight.unwrap();
                             if highlight < self.calculate_contact_start_line() {
-                                if self.subject.additional_properties.contains_key(&name) && !contains_key(&self.additional_subject_properties, &name) {
+                                if self.subject.additional_properties.contains_key(&name)
+                                    && !contains_key(&self.additional_subject_properties, &name)
+                                {
                                     self.set_error(SubjectEditorError::LockedName);
                                 }
                                 let idx = highlight - 2;
@@ -191,7 +230,9 @@ impl EditorComponent for SubjectEditor {
                                     }
                                 } else {
                                     let key = &self.additional_subject_properties[idx].0;
-                                    if *key != name && contains_key(&self.additional_subject_properties, &name) {
+                                    if *key != name
+                                        && contains_key(&self.additional_subject_properties, &name)
+                                    {
                                         self.set_error(SubjectEditorError::DuplicateName);
                                     } else {
                                         self.insert_subject_property(idx, name, value);
@@ -199,7 +240,13 @@ impl EditorComponent for SubjectEditor {
                                     }
                                 }
                             } else {
-                                if self.subject.contact.additional_properties.contains_key(&name) && !contains_key(&self.additional_contact_properties, &name) {
+                                if self
+                                    .subject
+                                    .contact
+                                    .additional_properties
+                                    .contains_key(&name)
+                                    && !contains_key(&self.additional_contact_properties, &name)
+                                {
                                     self.set_error(SubjectEditorError::LockedName);
                                 }
                                 let idx = highlight - self.calculate_contact_start_line() - 2;
@@ -214,7 +261,9 @@ impl EditorComponent for SubjectEditor {
                                     }
                                 } else {
                                     let key = &self.additional_contact_properties[idx].0;
-                                    if *key != name && contains_key(&self.additional_contact_properties, &name) {
+                                    if *key != name
+                                        && contains_key(&self.additional_contact_properties, &name)
+                                    {
                                         self.set_error(SubjectEditorError::DuplicateName);
                                     } else {
                                         self.insert_contact_property(idx, name, value);
@@ -223,7 +272,7 @@ impl EditorComponent for SubjectEditor {
                                 }
                             }
                         }
-                    },
+                    }
                     ComponentStatus::Escaped => self.property_editor = None,
                 }
             }
@@ -261,7 +310,9 @@ impl EditorComponent for SubjectEditor {
                     if highlight > 1 && highlight < self.calculate_contact_start_line() - 1 {
                         let idx = highlight - 2;
                         self.remove_subject_property(idx);
-                    } else if highlight > self.calculate_contact_start_line() + 1 && highlight < self.calculate_render_height() - 2 {
+                    } else if highlight > self.calculate_contact_start_line() + 1
+                        && highlight < self.calculate_render_height() - 2
+                    {
                         let idx = highlight - self.calculate_contact_start_line() - 2;
                         self.remove_contact_property(idx);
                     }
@@ -281,12 +332,16 @@ impl EditorComponent for SubjectEditor {
                         let (name, value) = &self.additional_subject_properties[idx];
                         let property_editor = PropertyEditor::new(name, value);
                         self.property_editor = Some(property_editor);
-                    } else if highlight > self.calculate_contact_start_line() + 1 && highlight < self.calculate_render_height() - 1 {
+                    } else if highlight > self.calculate_contact_start_line() + 1
+                        && highlight < self.calculate_render_height() - 1
+                    {
                         let idx = highlight - self.calculate_contact_start_line() - 2;
                         let (name, value) = &self.additional_contact_properties[idx];
                         let property_editor = PropertyEditor::new(name, value);
                         self.property_editor = Some(property_editor);
-                    } else if highlight == self.calculate_contact_start_line() - 1 || highlight == self.calculate_render_height() - 1 {
+                    } else if highlight == self.calculate_contact_start_line() - 1
+                        || highlight == self.calculate_render_height() - 1
+                    {
                         self.property_editor = Some(Default::default());
                     }
                     EditorEventResult::KeepActive
@@ -386,7 +441,10 @@ impl PropertyEditor {
     }
 
     pub fn get_property(&self) -> (String, String) {
-        (self.name_editor.get_text().to_owned(), self.value_editor.get_text().to_owned())
+        (
+            self.name_editor.get_text().to_owned(),
+            self.value_editor.get_text().to_owned(),
+        )
     }
 }
 
@@ -398,55 +456,55 @@ impl Default for PropertyEditor {
 
 impl Component for PropertyEditor {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        let status =
-            if self.name_editor.active {
-                match EditorComponent::handle_key_event(&mut self.name_editor, key_event) {
-                    EditorEventResult::Escaped => ComponentStatus::Escaped,
-                    EditorEventResult::ExitTop => {
-                        self.name_editor.enter_from_top();
-                        ComponentStatus::Active
-                    }
-                    EditorEventResult::Closed | EditorEventResult::ExitBottom => {
-                        self.name_editor.active = false;
-                        self.value_editor.enter_from_top();
-                        ComponentStatus::Active
-                    }
-                    _ => ComponentStatus::Active,
+        let status = if self.name_editor.active {
+            match EditorComponent::handle_key_event(&mut self.name_editor, key_event) {
+                EditorEventResult::Escaped => ComponentStatus::Escaped,
+                EditorEventResult::ExitTop => {
+                    self.name_editor.enter_from_top();
+                    ComponentStatus::Active
                 }
-            } else if self.value_editor.active {
-                match EditorComponent::handle_key_event(&mut self.value_editor, key_event) {
-                    EditorEventResult::Escaped => ComponentStatus::Escaped,
-                    EditorEventResult::ExitTop => {
-                        self.name_editor.enter_from_below();
-                        ComponentStatus::Active
-                    }
-                    EditorEventResult::Closed | EditorEventResult::ExitBottom => {
-                        self.value_editor.active = false;
-                        self.multiple_choice.enter_from_top();
-                        ComponentStatus::Active
-                    },
-                    _ => ComponentStatus::Active,
+                EditorEventResult::Closed | EditorEventResult::ExitBottom => {
+                    self.name_editor.active = false;
+                    self.value_editor.enter_from_top();
+                    ComponentStatus::Active
                 }
-            } else {
-                match EditorComponent::handle_key_event(&mut self.multiple_choice, key_event) {
-                    EditorEventResult::Escaped => ComponentStatus::Escaped,
-                    EditorEventResult::Closed =>
-                        if self.multiple_choice.get_selected() == DONE_CANCEL[0] {
-                            ComponentStatus::Closed
-                        } else {
-                            ComponentStatus::Escaped
-                        }
-                    EditorEventResult::ExitTop => {
-                        self.value_editor.enter_from_below();
-                        ComponentStatus::Active
-                    }
-                    EditorEventResult::ExitBottom => {
-                        self.multiple_choice.active = true;
-                        ComponentStatus::Active
-                    }
-                    _ => ComponentStatus::Active,
+                _ => ComponentStatus::Active,
+            }
+        } else if self.value_editor.active {
+            match EditorComponent::handle_key_event(&mut self.value_editor, key_event) {
+                EditorEventResult::Escaped => ComponentStatus::Escaped,
+                EditorEventResult::ExitTop => {
+                    self.name_editor.enter_from_below();
+                    ComponentStatus::Active
                 }
-            };
+                EditorEventResult::Closed | EditorEventResult::ExitBottom => {
+                    self.value_editor.active = false;
+                    self.multiple_choice.enter_from_top();
+                    ComponentStatus::Active
+                }
+                _ => ComponentStatus::Active,
+            }
+        } else {
+            match EditorComponent::handle_key_event(&mut self.multiple_choice, key_event) {
+                EditorEventResult::Escaped => ComponentStatus::Escaped,
+                EditorEventResult::Closed => {
+                    if self.multiple_choice.get_selected() == DONE_CANCEL[0] {
+                        ComponentStatus::Closed
+                    } else {
+                        ComponentStatus::Escaped
+                    }
+                }
+                EditorEventResult::ExitTop => {
+                    self.value_editor.enter_from_below();
+                    ComponentStatus::Active
+                }
+                EditorEventResult::ExitBottom => {
+                    self.multiple_choice.active = true;
+                    ComponentStatus::Active
+                }
+                _ => ComponentStatus::Active,
+            }
+        };
         Ok(status)
     }
 
@@ -456,18 +514,11 @@ impl Component for PropertyEditor {
         let area = self.modal_window.render(area, buf, height, width);
         let panels = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Max(3),
-                Constraint::Max(1),
-                Constraint::Min(0),
-            ])
+            .constraints([Constraint::Max(3), Constraint::Max(1), Constraint::Min(0)])
             .split(area);
         let columns = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Max(7),
-                Constraint::Min(0),
-            ])
+            .constraints([Constraint::Max(7), Constraint::Min(0)])
             .split(panels[0]);
         let row_layout = Layout::default()
             .direction(Direction::Vertical)
@@ -480,12 +531,9 @@ impl Component for PropertyEditor {
             .style(default_style())
             .render(rows[1], buf);
         let rows = row_layout.split(columns[1]);
-        let name_cursor =
-            Component::render(&mut self.name_editor, rows[0], buf);
-        let value_cursor =
-            Component::render(&mut self.value_editor, rows[1], buf);
-        let multiple_choice_cursor =
-            Component::render(&mut self.multiple_choice, panels[1], buf);
+        let name_cursor = Component::render(&mut self.name_editor, rows[0], buf);
+        let value_cursor = Component::render(&mut self.value_editor, rows[1], buf);
+        let multiple_choice_cursor = Component::render(&mut self.multiple_choice, panels[1], buf);
         name_cursor.or(value_cursor).or(multiple_choice_cursor)
     }
 }

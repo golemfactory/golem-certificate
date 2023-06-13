@@ -17,11 +17,17 @@ mod ui;
 
 #[derive(Parser)]
 enum GolemCertificateCli {
-    CreateKeyPair { key_pair_path: PathBuf },
-    Fingerprint { input_file_path: PathBuf },
+    CreateKeyPair {
+        key_pair_path: PathBuf,
+    },
+    Fingerprint {
+        input_file_path: PathBuf,
+    },
     SelfSignCertificate(SelfSignArguments),
     Sign(SignArguments),
-    Verify { signed_file_path: PathBuf },
+    Verify {
+        signed_file_path: PathBuf,
+    },
     #[cfg(feature = "tui")]
     Ui,
 }

@@ -12,8 +12,9 @@ use tui::{
 use super::{
     component::*,
     modal::{ModalMessage, ModalMultipleChoice},
+    multiple_choice::OVERWRITE_CHOICES,
     save_file_dialog::SaveFileDialog,
-    util::{default_style, save_json_to_file}, multiple_choice::OVERWRITE_CHOICES,
+    util::{default_style, save_json_to_file},
 };
 
 pub struct CreateKeyPairDialog {
@@ -55,12 +56,8 @@ impl CreateKeyPairDialog {
         let public_key_path = create_key_path("pub.json");
         let private_key_path = create_key_path("key.json");
         if !file_exists_message.is_empty() {
-            let dialog = ModalMultipleChoice::new(
-                "File exists",
-                file_exists_message,
-                OVERWRITE_CHOICES,
-                1,
-            );
+            let dialog =
+                ModalMultipleChoice::new("File exists", file_exists_message, OVERWRITE_CHOICES, 1);
             self.overwrite_dialog = Some(dialog);
         } else {
             let result = save_json_to_file(&private_key_path, &self.keypair.private_key)

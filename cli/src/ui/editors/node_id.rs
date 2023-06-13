@@ -14,7 +14,9 @@ pub struct NodeIdEditor {
 impl NodeIdEditor {
     pub fn new(node_id: Option<NodeId>) -> Self {
         Self {
-            node_id: node_id.map(|id| id.to_string()).unwrap_or(String::from("0x0000000000000000000000000000000000000000")),
+            node_id: node_id
+                .map(|id| id.to_string())
+                .unwrap_or(String::from("0x0000000000000000000000000000000000000000")),
             highlight: false,
             editor: None,
             parse_error: None,
@@ -76,11 +78,12 @@ impl EditorComponent for NodeIdEditor {
                                 self.editor = None;
                             }
                             Err(err) => {
-                                let parse_error = ModalMessage::new("NodeId parse error", err.to_string());
+                                let parse_error =
+                                    ModalMessage::new("NodeId parse error", err.to_string());
                                 self.parse_error = Some(parse_error);
-                            },
+                            }
                         }
-                    },
+                    }
                     ComponentStatus::Escaped => self.editor = None,
                 }
             }

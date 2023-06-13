@@ -2,11 +2,11 @@ use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use golem_certificate::{
     self as gcert,
-    Signature, SignedCertificate, validate_certificate,
     schemas::{certificate::Certificate, SIGNED_CERTIFICATE_SCHEMA_ID},
+    validate_certificate, Signature, SignedCertificate,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use tui::{layout::Rect, widgets::StatefulWidget};
 
 use super::{
@@ -15,9 +15,7 @@ use super::{
     document_editor::DocumentEditor,
     editors::*,
     scrollable_text::{ScrollableText, ScrollableTextState},
-    util::{
-        default_style, AreaCalculators, CalculateHeight, CalculateWidth,
-    },
+    util::{default_style, AreaCalculators, CalculateHeight, CalculateWidth},
 };
 
 pub struct SignedCertificateDetails {
@@ -171,18 +169,26 @@ impl DocumentEditor for CertificateEditor {
         json!({ "certificate": certificate })
     }
 
-    fn create_signed_document(&self, algorithm: gcert::SignatureAlgorithm, signature_value: Vec<u8>, signer: gcert::Signer) -> serde_json::Result<Value> {
+    fn create_signed_document(
+        &self,
+        algorithm: gcert::SignatureAlgorithm,
+        signature_value: Vec<u8>,
+        signer: gcert::Signer,
+    ) -> serde_json::Result<Value> {
         let certificate = self.get_document().unwrap();
         let signed_certificate = SignedCertificate {
             schema: SIGNED_CERTIFICATE_SCHEMA_ID.to_string(),
             certificate,
-            signature: Box::new(Signature { algorithm, value: signature_value, signer }),
+            signature: Box::new(Signature {
+                algorithm,
+                value: signature_value,
+                signer,
+            }),
         };
         serde_json::to_value(signed_certificate)
     }
 
     fn validate_signed_document(&self, signed_document: Value) -> gcert::Result<Value> {
-        validate_certificate(signed_document.clone(), None)
-            .map(|_| signed_document)
+        validate_certificate(signed_document.clone(), None).map(|_| signed_document)
     }
 }

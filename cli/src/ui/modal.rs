@@ -20,10 +20,18 @@ pub struct ModalWindow {
 
 impl ModalWindow {
     pub fn new<S: Into<String>>(title: S) -> Self {
-        Self { title: title.into() }
+        Self {
+            title: title.into(),
+        }
     }
 
-    pub fn render(&self, area: Rect, buf: &mut Buffer, inner_height: u16, inner_width: u16) -> Rect {
+    pub fn render(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        inner_height: u16,
+        inner_width: u16,
+    ) -> Rect {
         let window = get_middle_rectangle(area, inner_height + 4, inner_width + 4);
         Clear.render(window, buf);
         let border = Block::default()
@@ -131,11 +139,7 @@ impl Component for ModalMultipleChoice {
         let message_area = self.modal_window.render(area, buf, self.height, self.width);
         let rows = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Min(0),
-                Constraint::Max(1),
-                Constraint::Max(1),
-            ])
+            .constraints([Constraint::Min(0), Constraint::Max(1), Constraint::Max(1)])
             .split(message_area);
 
         Paragraph::new(self.message.clone())
@@ -184,14 +188,19 @@ pub struct ModalWithComponent<C: Component> {
     calculate_width: CalculateWidth,
 }
 
-impl <C: Component> ModalWithComponent<C> {
+impl<C: Component> ModalWithComponent<C> {
     pub fn new<S: Into<String>>(
         title: S,
         component: C,
         (calculate_height, calculate_width): AreaCalculators,
     ) -> Self {
         let modal = ModalWindow::new(title);
-        Self { modal, component, calculate_height, calculate_width }
+        Self {
+            modal,
+            component,
+            calculate_height,
+            calculate_width,
+        }
     }
 
     pub fn get_component(&self) -> &C {
@@ -199,7 +208,7 @@ impl <C: Component> ModalWithComponent<C> {
     }
 }
 
-impl <C: Component> Component for ModalWithComponent<C> {
+impl<C: Component> Component for ModalWithComponent<C> {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         self.component.handle_key_event(key_event)
     }

@@ -7,10 +7,13 @@ use tui::{
 };
 
 use super::{
+    certificate::CertificateEditor,
     component::*,
+    document_editor::SignedDocumentEditor,
     keypair::CreateKeyPairDialog,
+    node_descriptor::NodeDescriptorEditor,
     util::{default_style, get_middle_rectangle, highlight_style},
-    verify_document::VerifyDocument, certificate::CertificateEditor, node_descriptor::NodeDescriptorEditor, document_editor::SignedDocumentEditor,
+    verify_document::VerifyDocument,
 };
 
 const MENU_ITEMS: [&str; 8] = [
@@ -60,18 +63,23 @@ impl MainMenu {
             }
             KeyCode::Enter => match self.selected_item {
                 0 => self.child = Some(Box::new(VerifyDocument::new()?)),
-                2 => self.child = Some(Box::new(
-                    SignedDocumentEditor::new(Box::<CertificateEditor>::default())
-                )),
-                3 => self.child = Some(Box::new(
-                    SignedDocumentEditor::new(Box::<NodeDescriptorEditor>::default())
-                )),
+                2 => {
+                    self.child = Some(Box::new(SignedDocumentEditor::new(
+                        Box::<CertificateEditor>::default(),
+                    )))
+                }
+                3 => {
+                    self.child = Some(Box::new(SignedDocumentEditor::new(Box::<
+                        NodeDescriptorEditor,
+                    >::default(
+                    ))))
+                }
                 5 => self.child = Some(Box::new(CreateKeyPairDialog::new()?)),
                 7 => return Ok(ComponentStatus::Closed),
-                _ => ()
+                _ => (),
             },
             KeyCode::Esc => return Ok(ComponentStatus::Closed),
-            _ => ()
+            _ => (),
         }
         Ok(ComponentStatus::Active)
     }

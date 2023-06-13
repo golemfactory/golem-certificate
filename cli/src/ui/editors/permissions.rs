@@ -1,6 +1,8 @@
 use super::*;
 
-use golem_certificate::schemas::permissions::{Permissions, PermissionDetails, OutboundPermissions};
+use golem_certificate::schemas::permissions::{
+    OutboundPermissions, PermissionDetails, Permissions,
+};
 use url::Url;
 
 pub struct PermissionsEditor {
@@ -14,22 +16,27 @@ pub struct PermissionsEditor {
 impl PermissionsEditor {
     pub fn new(permissions: Option<Permissions>) -> Self {
         let default_url: Url = "https://golem.network".parse().unwrap();
-        let default_permissions =
-            Permissions::Object(PermissionDetails {
-                outbound: Some(OutboundPermissions::Urls([default_url.clone()].into()))
-            });
+        let default_permissions = Permissions::Object(PermissionDetails {
+            outbound: Some(OutboundPermissions::Urls([default_url.clone()].into())),
+        });
         let mut urls = vec![default_url];
         Self {
             highlight: None,
-            permissions: permissions.map(|p| match &p {
-                Permissions::Object(PermissionDetails { outbound: None }) => default_permissions.clone(),
-                Permissions::Object(PermissionDetails { outbound: Some(OutboundPermissions::Urls(url_set)) }) => {
-                    urls = url_set.iter().map(|url| url.to_owned()).collect();
-                    urls.sort();
-                    p
-                }
-                _ => p,
-            }).unwrap_or(default_permissions),
+            permissions: permissions
+                .map(|p| match &p {
+                    Permissions::Object(PermissionDetails { outbound: None }) => {
+                        default_permissions.clone()
+                    }
+                    Permissions::Object(PermissionDetails {
+                        outbound: Some(OutboundPermissions::Urls(url_set)),
+                    }) => {
+                        urls = url_set.iter().map(|url| url.to_owned()).collect();
+                        urls.sort();
+                        p
+                    }
+                    _ => p,
+                })
+                .unwrap_or(default_permissions),
             urls,
             url_editor: None,
             parse_error: None,
@@ -38,9 +45,13 @@ impl PermissionsEditor {
 
     pub fn get_permissions(&self) -> Permissions {
         match &self.permissions {
-            Permissions::Object(PermissionDetails { outbound: Some(OutboundPermissions::Urls(_)) }) => {
+            Permissions::Object(PermissionDetails {
+                outbound: Some(OutboundPermissions::Urls(_)),
+            }) => {
                 let urls = self.urls.iter().map(|url| url.to_owned()).collect();
-                Permissions::Object(PermissionDetails { outbound: Some(OutboundPermissions::Urls(urls)) })
+                Permissions::Object(PermissionDetails {
+                    outbound: Some(OutboundPermissions::Urls(urls)),
+                })
             }
             p => p.clone(),
         }
@@ -80,18 +91,19 @@ impl EditorComponent for PermissionsEditor {
             if let Ok(status) = Component::handle_key_event(editor, key_event) {
                 match status {
                     ComponentStatus::Active => (),
-                    ComponentStatus::Closed => {
-                        match Url::parse(editor.get_text()) {
-                            Ok(url) => {
-                                let idx = self.highlight.as_ref().unwrap() - 3;
-                                if idx == self.urls.len() {
-                                    self.urls.push(url);
-                                } else {
-                                    self.urls[idx] = url;
-                                }
-                                self.url_editor = None;
-                            },
-                            Err(err) => self.parse_error = Some(ModalMessage::new("Url parse error", err.to_string())),
+                    ComponentStatus::Closed => match Url::parse(editor.get_text()) {
+                        Ok(url) => {
+                            let idx = self.highlight.as_ref().unwrap() - 3;
+                            if idx == self.urls.len() {
+                                self.urls.push(url);
+                            } else {
+                                self.urls[idx] = url;
+                            }
+                            self.url_editor = None;
+                        }
+                        Err(err) => {
+                            self.parse_error =
+                                Some(ModalMessage::new("Url parse error", err.to_string()))
                         }
                     },
                     ComponentStatus::Escaped => self.url_editor = None,
@@ -124,19 +136,25 @@ impl EditorComponent for PermissionsEditor {
                 KeyCode::Enter => {
                     if highlight == 0 {
                         self.permissions = match &self.permissions {
-                            Permissions::All => Permissions::Object(PermissionDetails { outbound: Some(OutboundPermissions::Unrestricted) }),
+                            Permissions::All => Permissions::Object(PermissionDetails {
+                                outbound: Some(OutboundPermissions::Unrestricted),
+                            }),
                             Permissions::Object(_) => Permissions::All,
                         };
                     } else if highlight == 1 {
                         match &mut self.permissions {
-                            Permissions::All => unreachable!("permission editor internal state error"),
-                            Permissions::Object(PermissionDetails { outbound }) =>
+                            Permissions::All => {
+                                unreachable!("permission editor internal state error")
+                            }
+                            Permissions::Object(PermissionDetails { outbound }) => {
                                 match outbound.as_ref().unwrap() {
-                                    OutboundPermissions::Unrestricted =>
-                                        outbound.insert(OutboundPermissions::Urls(Default::default())),
-                                    OutboundPermissions::Urls(_) =>
-                                        outbound.insert(OutboundPermissions::Unrestricted),
-                                },
+                                    OutboundPermissions::Unrestricted => outbound
+                                        .insert(OutboundPermissions::Urls(Default::default())),
+                                    OutboundPermissions::Urls(_) => {
+                                        outbound.insert(OutboundPermissions::Unrestricted)
+                                    }
+                                }
+                            }
                         };
                     } else if highlight > 2 && highlight <= render_height {
                         let idx = highlight - 3;
@@ -168,14 +186,13 @@ impl EditorComponent for PermissionsEditor {
     fn calculate_render_height(&self) -> usize {
         match &self.permissions {
             Permissions::All => 1,
-            Permissions::Object(PermissionDetails { outbound }) =>
-                match outbound.as_ref() {
-                    Some(outbound_details) => match outbound_details {
-                        OutboundPermissions::Unrestricted => 2,
-                        OutboundPermissions::Urls(_) => 4 + self.urls.len(),
-                    }
-                    None => 1,
-                }
+            Permissions::Object(PermissionDetails { outbound }) => match outbound.as_ref() {
+                Some(outbound_details) => match outbound_details {
+                    OutboundPermissions::Unrestricted => 2,
+                    OutboundPermissions::Urls(_) => 4 + self.urls.len(),
+                },
+                None => 1,
+            },
         }
     }
 
@@ -183,8 +200,12 @@ impl EditorComponent for PermissionsEditor {
         write!(text, "Permissions").unwrap();
         match &self.permissions {
             Permissions::All => writeln!(text, ": All").unwrap(),
-            Permissions::Object(PermissionDetails { outbound: None }) => writeln!(text, "None").unwrap(),
-            Permissions::Object(PermissionDetails { outbound: Some(outbound_details) }) => {
+            Permissions::Object(PermissionDetails { outbound: None }) => {
+                writeln!(text, "None").unwrap()
+            }
+            Permissions::Object(PermissionDetails {
+                outbound: Some(outbound_details),
+            }) => {
                 writeln!(text).unwrap();
                 write!(text, "  Outbound").unwrap();
                 match outbound_details {
@@ -194,7 +215,8 @@ impl EditorComponent for PermissionsEditor {
                     OutboundPermissions::Urls(_) => {
                         writeln!(text).unwrap();
                         writeln!(text, "    Urls").unwrap();
-                        self.urls.iter()
+                        self.urls
+                            .iter()
                             .for_each(|url| writeln!(text, "      {}", url).unwrap());
                     }
                 }
@@ -203,12 +225,10 @@ impl EditorComponent for PermissionsEditor {
     }
 
     fn get_highlight_prefix(&self) -> Option<usize> {
-        self.highlight.map(|highlight| {
-            match highlight {
-                0 => 0,
-                1 => 2,
-                _ => 6,
-            }
+        self.highlight.map(|highlight| match highlight {
+            0 => 0,
+            1 => 2,
+            _ => 6,
         })
     }
 

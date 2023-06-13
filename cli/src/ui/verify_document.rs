@@ -14,12 +14,12 @@ use tui::{
 };
 
 use super::{
-    component::*,
     certificate::SignedCertificateDetails,
+    component::*,
     modal::{ModalMessage, ModalWithSizedComponent},
     node_descriptor::SignedNodeDescriptorDetails,
     open_file_dialog::OpenFileDialog,
-    util::{default_style, CalculateHeight, CalculateWidth, read_json_file},
+    util::{default_style, read_json_file, CalculateHeight, CalculateWidth},
 };
 
 pub enum VerifiedDocument {
@@ -92,8 +92,7 @@ impl Component for VerifyDocument {
 }
 
 fn verify_selected_file(path: &Path) -> Result<VerifiedDocument, String> {
-    read_json_file(path)
-        .and_then(verify_json)
+    read_json_file(path).and_then(verify_json)
 }
 
 fn verify_json(json: Value) -> Result<VerifiedDocument, String> {

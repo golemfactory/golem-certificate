@@ -9,10 +9,7 @@ use tui::{
 };
 
 use super::{
-    component::*,
-    open_file_dialog::OpenFileDialog,
-    text_input::TextInput,
-    util::default_style,
+    component::*, open_file_dialog::OpenFileDialog, text_input::TextInput, util::default_style,
 };
 
 #[derive(PartialEq)]
@@ -50,7 +47,7 @@ impl SaveFileDialog {
                     self.filename_input.set_text(filename);
                 }
             }
-            _ => ()
+            _ => (),
         }
         Ok(status)
     }

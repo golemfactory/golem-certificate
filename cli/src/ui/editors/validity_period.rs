@@ -1,6 +1,6 @@
 use super::*;
 
-use chrono::{DateTime, Utc, Timelike, Months};
+use chrono::{DateTime, Months, Timelike, Utc};
 use golem_certificate::schemas::validity_period::ValidityPeriod;
 
 pub struct ValidityPeriodEditor {
@@ -14,13 +14,20 @@ pub struct ValidityPeriodEditor {
 impl ValidityPeriodEditor {
     pub fn new(validity_period: Option<ValidityPeriod>) -> Self {
         let (not_before, not_after) = match validity_period {
-            Some(ValidityPeriod { not_before, not_after }) => (not_before, not_after),
+            Some(ValidityPeriod {
+                not_before,
+                not_after,
+            }) => (not_before, not_after),
             None => {
                 let not_before = Utc::now()
-                        .with_hour(0).unwrap()
-                        .with_minute(0).unwrap()
-                        .with_second(0).unwrap()
-                        .with_nanosecond(0).unwrap();
+                    .with_hour(0)
+                    .unwrap()
+                    .with_minute(0)
+                    .unwrap()
+                    .with_second(0)
+                    .unwrap()
+                    .with_nanosecond(0)
+                    .unwrap();
                 let not_after = not_before.checked_add_months(Months::new(1)).unwrap();
                 (not_before, not_after)
             }
@@ -81,14 +88,22 @@ impl EditorComponent for ValidityPeriodEditor {
                                 let datetime = date_editor.get_text().to_owned();
                                 if self.highlight.unwrap() == 1 {
                                     if utc_time > self.not_after.parse::<DateTime<Utc>>().unwrap() {
-                                        let error = ModalMessage::new("Datetime error", "Not Before must be before Not After");
+                                        let error = ModalMessage::new(
+                                            "Datetime error",
+                                            "Not Before must be before Not After",
+                                        );
                                         self.parse_error = Some(error);
                                     } else {
                                         self.not_before = datetime;
                                         self.date_editor = None;
                                     }
-                                } else if utc_time < self.not_before.parse::<DateTime<Utc>>().unwrap() {
-                                    let error = ModalMessage::new("Datetime error", "Not After must be after Not Before");
+                                } else if utc_time
+                                    < self.not_before.parse::<DateTime<Utc>>().unwrap()
+                                {
+                                    let error = ModalMessage::new(
+                                        "Datetime error",
+                                        "Not After must be after Not Before",
+                                    );
                                     self.parse_error = Some(error);
                                 } else {
                                     self.not_after = datetime;
@@ -96,7 +111,8 @@ impl EditorComponent for ValidityPeriodEditor {
                                 }
                             }
                             Err(err) => {
-                                let error = ModalMessage::new("Datetime parse error", err.to_string());
+                                let error =
+                                    ModalMessage::new("Datetime parse error", err.to_string());
                                 self.parse_error = Some(error);
                             }
                         }
@@ -108,22 +124,24 @@ impl EditorComponent for ValidityPeriodEditor {
         } else if let Some(highlight) = self.highlight {
             match key_event.code {
                 KeyCode::Esc => EditorEventResult::Escaped,
-                KeyCode::Down =>
+                KeyCode::Down => {
                     if highlight == 2 {
                         self.highlight = None;
                         EditorEventResult::ExitBottom
                     } else {
                         self.highlight = Some(2);
                         EditorEventResult::KeepActive
-                    },
-                KeyCode::Up =>
+                    }
+                }
+                KeyCode::Up => {
                     if highlight == 1 {
                         self.highlight = None;
                         EditorEventResult::ExitTop
                     } else {
                         self.highlight = Some(1);
                         EditorEventResult::KeepActive
-                    },
+                    }
+                }
                 KeyCode::Enter => {
                     // 2014-11-28T21:00:09+09:00 => 25
                     let mut editor = TextInput::new(30, false);
@@ -134,7 +152,7 @@ impl EditorComponent for ValidityPeriodEditor {
                     }
                     self.date_editor = Some(editor);
                     EditorEventResult::KeepActive
-                },
+                }
                 _ => EditorEventResult::KeepActive,
             }
         } else {
@@ -142,7 +160,7 @@ impl EditorComponent for ValidityPeriodEditor {
         }
     }
 
-    fn calculate_render_height(&self) -> usize  {
+    fn calculate_render_height(&self) -> usize {
         3
     }
 

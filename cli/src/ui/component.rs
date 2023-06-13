@@ -1,10 +1,7 @@
 use anyhow::Result;
 use crossterm::event::KeyEvent;
 
-use tui::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use tui::{buffer::Buffer, layout::Rect};
 
 #[derive(PartialEq)]
 pub enum ComponentStatus {

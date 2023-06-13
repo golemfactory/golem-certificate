@@ -10,7 +10,9 @@ use tui::{
 
 use super::{
     component::*,
-    util::default_style, editors::{EditorComponent, EditorEventResult}, modal::ModalMessage,
+    editors::{EditorComponent, EditorEventResult},
+    modal::ModalMessage,
+    util::default_style,
 };
 
 pub struct TextInput {
@@ -76,7 +78,7 @@ impl TextInput {
                     self.text.remove(self.cursor_position);
                 }
             }
-            _ => ()
+            _ => (),
         }
     }
 }
@@ -100,7 +102,10 @@ impl Component for TextInput {
             .style(default_style())
             .render(area, buf);
         if self.active && self.cursor_position < area.width as usize {
-            Some(CursorPosition { x: area.x + self.cursor_position as u16, y: area.y })
+            Some(CursorPosition {
+                x: area.x + self.cursor_position as u16,
+                y: area.y,
+            })
         } else {
             None
         }

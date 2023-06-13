@@ -1,11 +1,11 @@
 use super::{
     component::*,
     editors::*,
-    modal::{ModalMultipleChoice, ModalWindow, ModalMessage, ModalWithComponent},
-    multiple_choice::{EXIT_WITHOUT_SAVE, MultipleChoice, SIGN_OR_TEMPLATE, OVERWRITE_CHOICES},
-    util::{
-        default_style, reduce_area_fixed, save_json_to_file, read_json_file,
-    }, save_file_dialog::SaveFileDialog, open_file_dialog::OpenFileDialog,
+    modal::{ModalMessage, ModalMultipleChoice, ModalWindow, ModalWithComponent},
+    multiple_choice::{MultipleChoice, EXIT_WITHOUT_SAVE, OVERWRITE_CHOICES, SIGN_OR_TEMPLATE},
+    open_file_dialog::OpenFileDialog,
+    save_file_dialog::SaveFileDialog,
+    util::{default_style, read_json_file, reduce_area_fixed, save_json_to_file},
 };
 
 use std::path::PathBuf;
@@ -13,10 +13,13 @@ use std::path::PathBuf;
 use anyhow::Result;
 use crossterm::event::KeyEvent;
 use gcert::SignatureAlgorithm;
-use golem_certificate::{self as gcert, Signer, sign_json};
+use golem_certificate::{self as gcert, sign_json, Signer};
 use serde::Serialize;
 use serde_json::Value;
-use tui::{layout::Rect, widgets::{Block, BorderType, Borders, Widget, Padding}};
+use tui::{
+    layout::Rect,
+    widgets::{Block, BorderType, Borders, Padding, Widget},
+};
 
 const DEFAULT_OR_TEMPLATE: [&str; 2] = ["Default values", "Load template"];
 
@@ -27,7 +30,12 @@ pub trait DocumentEditor {
     fn load_template(&mut self, template: Value);
     fn get_document(&self) -> Result<Value>;
     fn get_template_json(&self) -> Value;
-    fn create_signed_document(&self, algorithm: SignatureAlgorithm, signature_value: Vec<u8>, signer: Signer) -> serde_json::Result<Value>;
+    fn create_signed_document(
+        &self,
+        algorithm: SignatureAlgorithm,
+        signature_value: Vec<u8>,
+        signer: Signer,
+    ) -> serde_json::Result<Value>;
     fn validate_signed_document(&self, signed_document: Value) -> gcert::Result<Value>;
 }
 
@@ -91,28 +99,46 @@ impl SignedDocumentEditor {
         } else {
             "Save template".into()
         };
-        self.save_file_dialog = Some(ModalWithComponent::new(title, save_file_dialog, area_calculators));
+        self.save_file_dialog = Some(ModalWithComponent::new(
+            title,
+            save_file_dialog,
+            area_calculators,
+        ));
         Ok(())
     }
 
     fn create_and_validate_signature(&mut self) -> Option<Value> {
         let value = self.document_editor.get_document().unwrap();
-        let (key, signer) = self.signature_editor.as_ref().unwrap().1.get_signing_key_and_signer().unwrap();
+        let (key, signer) = self
+            .signature_editor
+            .as_ref()
+            .unwrap()
+            .1
+            .get_signing_key_and_signer()
+            .unwrap();
         match sign_json(&value, &key) {
             Ok((algorithm, signature)) => {
-                let signed_document = self.document_editor.create_signed_document(algorithm, signature, signer);
+                let signed_document = self
+                    .document_editor
+                    .create_signed_document(algorithm, signature, signer);
                 match signed_document {
                     Ok(value) => match self.document_editor.validate_signed_document(value) {
                         Ok(validated_value) => Some(validated_value),
                         Err(err) => {
-                            let title = format!("Validation error on signed {}", self.document_editor.get_document_type());
+                            let title = format!(
+                                "Validation error on signed {}",
+                                self.document_editor.get_document_type()
+                            );
                             let error = ModalMessage::new(title, err.to_string());
                             self.error = Some(error);
                             None
                         }
-                    }
+                    },
                     Err(err) => {
-                        let title = format!("Error serializing signed {}", self.document_editor.get_document_type());
+                        let title = format!(
+                            "Error serializing signed {}",
+                            self.document_editor.get_document_type()
+                        );
                         let error = ModalMessage::new(title, err.to_string());
                         self.error = Some(error);
                         None
@@ -129,7 +155,15 @@ impl SignedDocumentEditor {
     }
 
     fn save_file(&mut self, overwrite: bool) {
-        let path = self.save_file_dialog.as_ref().unwrap().get_component().save_path.as_ref().unwrap().clone();
+        let path = self
+            .save_file_dialog
+            .as_ref()
+            .unwrap()
+            .get_component()
+            .save_path
+            .as_ref()
+            .unwrap()
+            .clone();
         if path.exists() && !overwrite {
             let multiple_choice = ModalMultipleChoice::new(
                 "File exists",
@@ -187,19 +221,28 @@ impl Component for SignedDocumentEditor {
                     ComponentStatus::Active => (),
                     ComponentStatus::Escaped => self.load_template_dialog = None,
                     ComponentStatus::Closed => {
-                        let path = load_template_dialog.get_component().selected.as_ref().unwrap();
+                        let path = load_template_dialog
+                            .get_component()
+                            .selected
+                            .as_ref()
+                            .unwrap();
                         match read_json_file(path) {
                             Ok(value) => {
                                 self.document_editor.load_template(value);
                                 self.initialize();
-                            },
+                            }
                             Err(err) => {
                                 self.error = Some(ModalMessage::new("Error loading template", err));
                             }
                         }
-                    },
+                    }
                 },
-                Err(err) => self.error = Some(ModalMessage::new("Cannot perform operation", err.to_string())),
+                Err(err) => {
+                    self.error = Some(ModalMessage::new(
+                        "Cannot perform operation",
+                        err.to_string(),
+                    ))
+                }
             }
             Ok(ComponentStatus::Active)
         } else if let Some(popup) = self.popup.as_mut() {
@@ -228,12 +271,19 @@ impl Component for SignedDocumentEditor {
                         Ok(ComponentStatus::Active)
                     } else if selected == DEFAULT_OR_TEMPLATE[1] {
                         match OpenFileDialog::new() {
-                            Ok(dialog) => self.load_template_dialog = Some(ModalWithComponent::new(
-                                "Load template",
-                                dialog,
-                                reduce_area_fixed(4, 4),
-                            )),
-                            Err(err) => self.error = Some(ModalMessage::new("Error creating open file dialog", err.to_string())),
+                            Ok(dialog) => {
+                                self.load_template_dialog = Some(ModalWithComponent::new(
+                                    "Load template",
+                                    dialog,
+                                    reduce_area_fixed(4, 4),
+                                ))
+                            }
+                            Err(err) => {
+                                self.error = Some(ModalMessage::new(
+                                    "Error creating open file dialog",
+                                    err.to_string(),
+                                ))
+                            }
                         }
                         Ok(ComponentStatus::Active)
                     } else {
@@ -259,13 +309,17 @@ impl Component for SignedDocumentEditor {
                 }
                 ComponentStatus::Closed => {
                     match signature_editor.get_signing_key_and_signer() {
-                        Some(_) => if self.create_and_validate_signature().is_some() {
-                            self.open_save_dialog()?;
-                        },
-                        None => self.error = Some(ModalMessage::new(
-                            "Error",
-                            "Missing signing key or certificate.",
-                        )),
+                        Some(_) => {
+                            if self.create_and_validate_signature().is_some() {
+                                self.open_save_dialog()?;
+                            }
+                        }
+                        None => {
+                            self.error = Some(ModalMessage::new(
+                                "Error",
+                                "Missing signing key or certificate.",
+                            ))
+                        }
                     }
                     Ok(ComponentStatus::Active)
                 }
@@ -289,7 +343,10 @@ impl Component for SignedDocumentEditor {
                                 self.add_signature_editor();
                             }
                             Err(err) => {
-                                let title = format!("Incomplete {}", self.document_editor.get_document_type());
+                                let title = format!(
+                                    "Incomplete {}",
+                                    self.document_editor.get_document_type()
+                                );
                                 self.error = Some(ModalMessage::new(title, err.to_string()));
                             }
                         }
@@ -317,7 +374,12 @@ impl Component for SignedDocumentEditor {
         let editor_group: &mut dyn EditorGroup = self;
         let mut cursor = editor_group.render(editor_area, buf);
         if let Some((modal_window, signature_editor)) = self.signature_editor.as_mut() {
-            let inner_area = modal_window.render(editor_area, buf, area.height.saturating_sub(4), area.width.saturating_sub(4));
+            let inner_area = modal_window.render(
+                editor_area,
+                buf,
+                area.height.saturating_sub(4),
+                area.width.saturating_sub(4),
+            );
             let editor: &mut dyn EditorGroup = signature_editor;
             cursor = editor.render(inner_area, buf);
         }

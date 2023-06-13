@@ -5,7 +5,9 @@ use std::{fs, path::PathBuf};
 use anyhow::Result;
 use golem_certificate::Key;
 
-use crate::ui::{modal::ModalWithComponent, open_file_dialog::OpenFileDialog, util::reduce_area_fixed};
+use crate::ui::{
+    modal::ModalWithComponent, open_file_dialog::OpenFileDialog, util::reduce_area_fixed,
+};
 
 struct KeyFile {
     filename: String,
@@ -84,11 +86,15 @@ impl EditorComponent for KeyEditor {
                                     self.key = Some(key);
                                     self.open_file_dialog = None;
                                 }
-                                Err(err) =>
-                                    self.error_message = Some(ModalMessage::new("Error loading key", err.to_string())),
+                                Err(err) => {
+                                    self.error_message = Some(ModalMessage::new(
+                                        "Error loading key",
+                                        err.to_string(),
+                                    ))
+                                }
                             }
                         }
-                    },
+                    }
                     ComponentStatus::Escaped => self.open_file_dialog = None,
                 }
             }
@@ -100,11 +106,19 @@ impl EditorComponent for KeyEditor {
                     match OpenFileDialog::new() {
                         Ok(open_file_dialog) => {
                             let title = format!("Open {} key", self.key_type);
-                            let dialog = ModalWithComponent::new(title, open_file_dialog, reduce_area_fixed(4, 4));
+                            let dialog = ModalWithComponent::new(
+                                title,
+                                open_file_dialog,
+                                reduce_area_fixed(4, 4),
+                            );
                             self.open_file_dialog = Some(dialog);
                         }
-                        Err(err) =>
-                            self.error_message = Some(ModalMessage::new("Error opening file dialog", err.to_string())),
+                        Err(err) => {
+                            self.error_message = Some(ModalMessage::new(
+                                "Error opening file dialog",
+                                err.to_string(),
+                            ))
+                        }
                     }
                     EditorEventResult::KeepActive
                 }
@@ -154,7 +168,8 @@ impl EditorComponent for KeyEditor {
 fn load_key(path: &PathBuf) -> Result<KeyFile> {
     let key_string = fs::read_to_string(path)?;
     let key: Key = serde_json::from_str(&key_string)?;
-    let filename: String = path.file_name()
+    let filename: String = path
+        .file_name()
         .map(|filename| filename.to_string_lossy().into())
         .unwrap_or("Unknown filename".into());
     Ok(KeyFile { filename, key })

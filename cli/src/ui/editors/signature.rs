@@ -4,9 +4,15 @@ use std::{fs, path::PathBuf};
 
 use anyhow::Result;
 use chrono::Utc;
-use golem_certificate::{SignedCertificate, validate_certificate_str, Signer, Key};
+use golem_certificate::{validate_certificate_str, Key, SignedCertificate, Signer};
 
-use crate::ui::{multiple_choice::{MultipleChoice, SIGN_OR_CANCEL}, certificate::SignedCertificateDetails, modal::{ModalMultipleChoice, ModalWithSizedComponent, ModalWithComponent}, util::reduce_area_fixed, open_file_dialog::OpenFileDialog};
+use crate::ui::{
+    certificate::SignedCertificateDetails,
+    modal::{ModalMultipleChoice, ModalWithComponent, ModalWithSizedComponent},
+    multiple_choice::{MultipleChoice, SIGN_OR_CANCEL},
+    open_file_dialog::OpenFileDialog,
+    util::reduce_area_fixed,
+};
 
 pub struct SignatureEditor {
     active_editor_idx: usize,
@@ -32,7 +38,12 @@ impl SignatureEditor {
         let signer = match self.signing_certificate_editor.signature_type {
             SignatureType::None => None,
             SignatureType::SelfSigned => Some(Signer::SelfSigned),
-            SignatureType::Certificate => Some(Signer::Certificate(self.signing_certificate_editor.get_cert().unwrap().to_owned())),
+            SignatureType::Certificate => Some(Signer::Certificate(
+                self.signing_certificate_editor
+                    .get_cert()
+                    .unwrap()
+                    .to_owned(),
+            )),
         };
         match (key, signer) {
             (Some(key), Some(signer)) => Some((key, signer)),
@@ -51,7 +62,6 @@ impl EditorGroup for SignatureEditor {
         (&mut self.active_editor_idx, editors)
     }
 }
-
 
 #[derive(Default, PartialEq)]
 enum SignatureType {
@@ -88,20 +98,37 @@ impl SigningCertificateEditor {
     }
 
     fn select_signature_type(&mut self) {
-        self.signature_type_question = Some(ModalMultipleChoice::new("Signature type", "", SELFSIGNED_OR_CERTIFICATE, 0));
+        self.signature_type_question = Some(ModalMultipleChoice::new(
+            "Signature type",
+            "",
+            SELFSIGNED_OR_CERTIFICATE,
+            0,
+        ));
     }
 
     fn open_certificate_dialog(&mut self) {
         match OpenFileDialog::new() {
-            Ok(dialog) => self.open_file_dialog = Some(ModalWithComponent::new("Open signing certificate", dialog, reduce_area_fixed(4, 4))),
-            Err(err) => self.error = Some(ModalMessage::new("Error opening 'Open certificate' dialog", err.to_string())),
+            Ok(dialog) => {
+                self.open_file_dialog = Some(ModalWithComponent::new(
+                    "Open signing certificate",
+                    dialog,
+                    reduce_area_fixed(4, 4),
+                ))
+            }
+            Err(err) => {
+                self.error = Some(ModalMessage::new(
+                    "Error opening 'Open certificate' dialog",
+                    err.to_string(),
+                ))
+            }
         }
     }
 
     fn open_certificate_details(&mut self) {
         if let Some(cert) = self.get_cert() {
             let details = SignedCertificateDetails::new(cert, 2, false, reduce_area_fixed(2, 4));
-            let modal = ModalWithSizedComponent::new("Signing certificate details", Box::new(details));
+            let modal =
+                ModalWithSizedComponent::new("Signing certificate details", Box::new(details));
             self.signed_certificate_details = Some(modal);
         }
     }
@@ -110,14 +137,19 @@ impl SigningCertificateEditor {
 fn read_certificate(path: &PathBuf) -> Result<(SignedCertificate, String), String> {
     fs::read_to_string(path)
         .map_err(|err| format!("Cannot read file\n{}\n{}", path.to_string_lossy(), err))
-        .and_then(|text| {
-            match validate_certificate_str(&text, Some(Utc::now())) {
-                Ok(validated_certificate) => {
-                    Ok((serde_json::from_str::<SignedCertificate>(&text).unwrap(), validated_certificate.subject.display_name))
-                },
-                Err(err) => Err(format!("File contents is not valid certificate\n{}\n{}", path.to_string_lossy(), err))
-            }
-        })
+        .and_then(
+            |text| match validate_certificate_str(&text, Some(Utc::now())) {
+                Ok(validated_certificate) => Ok((
+                    serde_json::from_str::<SignedCertificate>(&text).unwrap(),
+                    validated_certificate.subject.display_name,
+                )),
+                Err(err) => Err(format!(
+                    "File contents is not valid certificate\n{}\n{}",
+                    path.to_string_lossy(),
+                    err
+                )),
+            },
+        )
 }
 
 impl EditorComponent for SigningCertificateEditor {
@@ -148,23 +180,27 @@ impl EditorComponent for SigningCertificateEditor {
                 Ok(status) => match status {
                     ComponentStatus::Active => (),
                     ComponentStatus::Escaped => self.open_file_dialog = None,
-                    ComponentStatus::Closed => {
-                        match dialog.get_component().selected.as_ref() {
-                            Some(path) => {
-                                match read_certificate(path) {
-                                    Ok(signed_certificate) => {
-                                        self.signed_certificate = Some(signed_certificate);
-                                        self.signature_type = SignatureType::Certificate;
-                                        self.open_file_dialog = None;
-                                    },
-                                    Err(err) => self.error = Some(ModalMessage::new("Error loading certificate", err)),
-                                }
-                            },
-                            None => self.open_file_dialog = None,
-                        }
+                    ComponentStatus::Closed => match dialog.get_component().selected.as_ref() {
+                        Some(path) => match read_certificate(path) {
+                            Ok(signed_certificate) => {
+                                self.signed_certificate = Some(signed_certificate);
+                                self.signature_type = SignatureType::Certificate;
+                                self.open_file_dialog = None;
+                            }
+                            Err(err) => {
+                                self.error =
+                                    Some(ModalMessage::new("Error loading certificate", err))
+                            }
+                        },
+                        None => self.open_file_dialog = None,
                     },
+                },
+                Err(err) => {
+                    self.error = Some(ModalMessage::new(
+                        "Error opening certificate",
+                        err.to_string(),
+                    ))
                 }
-                Err(err) => self.error = Some(ModalMessage::new("Error opening certificate", err.to_string())),
             }
             EditorEventResult::KeepActive
         } else if let Some(type_choice) = self.signature_type_question.as_mut() {
@@ -179,7 +215,7 @@ impl EditorComponent for SigningCertificateEditor {
                             self.open_certificate_dialog();
                         }
                         self.signature_type_question = None;
-                    },
+                    }
                 }
             }
             EditorEventResult::KeepActive
@@ -194,7 +230,7 @@ impl EditorComponent for SigningCertificateEditor {
         } else if let Some(highlight) = self.highlight {
             match key_event.code {
                 KeyCode::Esc => EditorEventResult::Escaped,
-                KeyCode::Down =>
+                KeyCode::Down => {
                     if highlight > 0 || self.signature_type != SignatureType::Certificate {
                         self.highlight = None;
                         EditorEventResult::ExitBottom
@@ -202,7 +238,8 @@ impl EditorComponent for SigningCertificateEditor {
                         self.highlight = Some(1);
                         EditorEventResult::KeepActive
                     }
-                KeyCode::Up =>
+                }
+                KeyCode::Up => {
                     if highlight == 0 {
                         self.highlight = None;
                         EditorEventResult::ExitTop
@@ -210,6 +247,7 @@ impl EditorComponent for SigningCertificateEditor {
                         self.highlight = Some(0);
                         EditorEventResult::KeepActive
                     }
+                }
                 KeyCode::Enter => {
                     if highlight == 0 {
                         match self.signature_type {
@@ -225,7 +263,7 @@ impl EditorComponent for SigningCertificateEditor {
                             SignatureType::SelfSigned => {
                                 self.open_certificate_dialog();
                                 EditorEventResult::KeepActive
-                            },
+                            }
                             SignatureType::Certificate => {
                                 if self.allow_self_sign {
                                     self.select_signature_type();
@@ -234,7 +272,7 @@ impl EditorComponent for SigningCertificateEditor {
                                     self.open_certificate_dialog();
                                     EditorEventResult::KeepActive
                                 }
-                            },
+                            }
                         }
                     } else {
                         self.open_certificate_details();
@@ -257,7 +295,9 @@ impl EditorComponent for SigningCertificateEditor {
         match self.signature_type {
             SignatureType::None => writeln!(text, "None\n").unwrap(),
             SignatureType::SelfSigned => writeln!(text, "Self-signed\n").unwrap(),
-            SignatureType::Certificate => writeln!(text, "{}", self.signed_certificate.as_ref().unwrap().1).unwrap(),
+            SignatureType::Certificate => {
+                writeln!(text, "{}", self.signed_certificate.as_ref().unwrap().1).unwrap()
+            }
         }
     }
 

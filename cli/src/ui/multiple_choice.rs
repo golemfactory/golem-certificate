@@ -5,12 +5,14 @@ use crossterm::event::{KeyCode, KeyEvent};
 use tui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    widgets::{Paragraph, Widget}, text::{Line, Span},
+    text::{Line, Span},
+    widgets::{Paragraph, Widget},
 };
 
 use super::{
     component::*,
-    util::{default_style, highlight_style}, editors::{EditorComponent, EditorEventResult},
+    editors::{EditorComponent, EditorEventResult},
+    util::{default_style, highlight_style},
 };
 
 pub const DONE_CANCEL: [&str; 2] = ["Done", "Cancel"];
@@ -94,17 +96,16 @@ impl Component for MultipleChoice {
             .zip(choice_areas.iter())
             .zip(styles.into_iter())
             .for_each(|((choice, &area), style)| {
-                let line =
-                    if area.width  > choice.len() as u16  + 2 {
-                        let padding = (area.width - choice.len() as u16) / 2;
-                        Line::from(vec![
-                            Span::styled(" ".repeat(padding as usize), default_style()),
-                            Span::styled(choice.clone(), style),
-                            Span::styled(" ".repeat(padding as usize), default_style()),
-                        ])
-                    } else {
-                        Line::from(Span::styled(choice.clone(), style))
-                    };
+                let line = if area.width > choice.len() as u16 + 2 {
+                    let padding = (area.width - choice.len() as u16) / 2;
+                    Line::from(vec![
+                        Span::styled(" ".repeat(padding as usize), default_style()),
+                        Span::styled(choice.clone(), style),
+                        Span::styled(" ".repeat(padding as usize), default_style()),
+                    ])
+                } else {
+                    Line::from(Span::styled(choice.clone(), style))
+                };
                 Paragraph::new(line)
                     .alignment(Alignment::Center)
                     .render(area, buf);
@@ -123,7 +124,7 @@ impl EditorComponent for MultipleChoice {
     }
 
     fn get_highlight(&self) -> Option<usize> {
-            None
+        None
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) -> EditorEventResult {

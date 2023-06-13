@@ -1,8 +1,13 @@
 use std::fmt::Write;
 
 use anyhow::Result;
-use crossterm::event::{KeyEvent, KeyCode};
-use tui::{layout::{Alignment, Constraint, Direction, Layout, Rect}, buffer::Buffer, widgets::{Clear, Paragraph, Widget}, text::Span};
+use crossterm::event::{KeyCode, KeyEvent};
+use tui::{
+    buffer::Buffer,
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    text::Span,
+    widgets::{Clear, Paragraph, Widget},
+};
 
 use super::{
     component::*,
@@ -52,8 +57,7 @@ pub trait EditorGroup {
 
 impl Component for dyn EditorGroup {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        let (active_editor_idx, mut editors) =
-            self.editor_group_state_mut();
+        let (active_editor_idx, mut editors) = self.editor_group_state_mut();
         match editors[*active_editor_idx].handle_key_event(key_event) {
             EditorEventResult::ExitTop => {
                 if *active_editor_idx > 0 {
@@ -80,7 +84,8 @@ impl Component for dyn EditorGroup {
 
     fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
         let (active, mut editors) = self.editor_group_state_mut();
-        let mut constraints = editors.iter()
+        let mut constraints = editors
+            .iter()
             .map(|editor| Constraint::Max(editor.calculate_render_height() as u16 + 1))
             .collect::<Vec<_>>();
         constraints.push(Constraint::Min(0));
@@ -88,7 +93,8 @@ impl Component for dyn EditorGroup {
             .direction(Direction::Vertical)
             .constraints(constraints)
             .split(area);
-        let editor_cursor = editors.iter_mut()
+        let editor_cursor = editors
+            .iter_mut()
             .enumerate()
             .map(|(idx, editor)| editor.render(chunks[idx], buf))
             .fold(None, |acc, cursor| acc.or(cursor));
@@ -133,10 +139,15 @@ pub trait EditorComponent {
             let highlight = self.get_highlight();
             let highlight_prefix = self.get_highlight_prefix();
             if let Some(editor) = self.get_editor() {
-                let prefix = highlight_prefix.expect("Cannot have text input active without highlight in the component") as u16;
+                let prefix = highlight_prefix
+                    .expect("Cannot have text input active without highlight in the component")
+                    as u16;
                 let editor_area = Rect {
                     x: area.x + prefix,
-                    y: area.y + highlight.expect("Cannot have text input active without highlight in the component") as u16,
+                    y: area.y
+                        + highlight.expect(
+                            "Cannot have text input active without highlight in the component",
+                        ) as u16,
                     width: area.width.saturating_sub(prefix),
                     height: 1.min(area.height),
                 };
@@ -160,16 +171,33 @@ pub trait EditorComponent {
     }
 
     fn render_with_highlight(&self, text: &str, area: Rect, buf: &mut Buffer) {
-        let highlight = self.get_highlight().expect("Cannot render with highlight without highlight in the component");
-        let prefix = self.get_highlight_prefix().expect("Cannot render with highlight without highlight in the component");
+        let highlight = self
+            .get_highlight()
+            .expect("Cannot render with highlight without highlight in the component");
+        let prefix = self
+            .get_highlight_prefix()
+            .expect("Cannot render with highlight without highlight in the component");
         let skip = if area.height < highlight as u16 + 1 {
             1 + highlight - area.height as usize
         } else {
             0
         };
-        let pre = text.lines().skip(skip).take(highlight).collect::<Vec<_>>().join("\n");
-        let highlighted = text.lines().skip(highlight + skip).take(1).collect::<String>();
-        let post = text.lines().skip(highlight + skip + 1).collect::<Vec<_>>().join("\n");
+        let pre = text
+            .lines()
+            .skip(skip)
+            .take(highlight)
+            .collect::<Vec<_>>()
+            .join("\n");
+        let highlighted = text
+            .lines()
+            .skip(highlight + skip)
+            .take(1)
+            .collect::<String>();
+        let post = text
+            .lines()
+            .skip(highlight + skip + 1)
+            .collect::<Vec<_>>()
+            .join("\n");
         let highlight_area = adjust_render_area(&area, &pre);
         Paragraph::new(pre)
             .alignment(Alignment::Left)
