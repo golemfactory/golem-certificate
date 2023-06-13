@@ -90,7 +90,7 @@ impl Component for CreateKeyPairDialog {
             modal.handle_key_event(key_event)
         } else if let Some(modal) = self.save_error.as_mut() {
             match modal.handle_key_event(key_event)? {
-                ComponentStatus::Active => {}
+                ComponentStatus::Active => (),
                 _ => {
                     self.save_error = None;
                 }
@@ -98,7 +98,7 @@ impl Component for CreateKeyPairDialog {
             Ok(ComponentStatus::Active)
         } else if let Some(multiple_choice) = self.overwrite_dialog.as_mut() {
             match multiple_choice.handle_key_event(key_event)? {
-                ComponentStatus::Active => {}
+                ComponentStatus::Active => (),
                 ComponentStatus::Closed => {
                     if multiple_choice.get_selected() == OVERWRITE_CHOICES[0] {
                         self.save_keypair(true);

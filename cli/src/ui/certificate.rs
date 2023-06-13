@@ -119,6 +119,36 @@ impl DocumentEditor for CertificateEditor {
         true
     }
 
+    fn get_document_type(&self) -> &'static str {
+        "Certificate"
+    }
+
+    fn editors_mut(&mut self) -> Vec<&mut dyn EditorComponent> {
+        vec![
+            &mut self.subject_editor,
+            &mut self.permissions_editor,
+            &mut self.validity_period_editor,
+            &mut self.public_key_editor,
+            &mut self.key_usage_editor,
+        ]
+    }
+
+    fn load_template(&mut self, template: Value) {
+        template.get("certificate").map(|value| {
+            match serde_json::from_value::<CertificateTemplate>(value.clone()) {
+                Ok(template) => {
+                    self.key_usage_editor = KeyUsageEditor::new(template.key_usage);
+                    self.permissions_editor = PermissionsEditor::new(template.permissions);
+                    self.public_key_editor = KeyEditor::new("Public", template.public_key);
+                    self.subject_editor = SubjectEditor::new(template.subject);
+                    self.validity_period_editor = ValidityPeriodEditor::new(template.validity_period);
+                }
+
+                Err(_) => (),
+            }
+        });
+    }
+
     fn get_document(&self) -> Result<Value> {
         if let Some(key) = self.public_key_editor.get_key() {
             let cert = Certificate {
@@ -143,20 +173,6 @@ impl DocumentEditor for CertificateEditor {
             validity_period: Some(self.validity_period_editor.get_validity_period()),
         };
         json!({ "certificate": certificate })
-    }
-
-    fn editors_mut(&mut self) -> Vec<&mut dyn EditorComponent> {
-        vec![
-            &mut self.subject_editor,
-            &mut self.permissions_editor,
-            &mut self.validity_period_editor,
-            &mut self.public_key_editor,
-            &mut self.key_usage_editor,
-        ]
-    }
-
-    fn get_document_type(&self) -> &'static str {
-        "Certificate"
     }
 
     fn create_signed_document(&self, algorithm: gcert::SignatureAlgorithm, signature_value: Vec<u8>, signer: gcert::Signer) -> serde_json::Result<Value> {

@@ -66,16 +66,16 @@ impl EditorComponent for ValidityPeriodEditor {
         if let Some(parse_error) = self.parse_error.as_mut() {
             match parse_error.handle_key_event(key_event) {
                 Ok(status) => match status {
-                    ComponentStatus::Active => {},
+                    ComponentStatus::Active => (),
                     _ => self.parse_error = None,
                 }
-                Err(_) => {},
+                Err(_) => (),
             };
             EditorEventResult::KeepActive
         } else if let Some(date_editor) = self.date_editor.as_mut() {
             match Component::handle_key_event(date_editor, key_event) {
                 Ok(status) => match status {
-                    ComponentStatus::Active => {},
+                    ComponentStatus::Active => (),
                     ComponentStatus::Closed => {
                         match date_editor.get_text().parse::<DateTime<Utc>>() {
                             Ok(utc_time) => {
@@ -106,7 +106,7 @@ impl EditorComponent for ValidityPeriodEditor {
                     }
                     ComponentStatus::Escaped => self.date_editor = None,
                 }
-                Err(_) => {},
+                Err(_) => (),
             };
             EditorEventResult::KeepActive
         } else if let Some(highlight) = self.highlight {

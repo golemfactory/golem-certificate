@@ -111,6 +111,31 @@ impl DocumentEditor for NodeDescriptorEditor {
         false
     }
 
+    fn get_document_type(&self) -> &'static str {
+        "Node descriptor"
+    }
+
+    fn editors_mut(&mut self) -> Vec<&mut dyn EditorComponent> {
+        vec![
+            &mut self.node_id,
+            &mut self.permissions,
+            &mut self.validity_period,
+        ]
+    }
+
+    fn load_template(&mut self, template: Value) {
+        template.get("nodeDescriptor").map(|value| {
+            match serde_json::from_value::<NodeDescriptorTemplate>(value.clone()) {
+                Ok(template) => {
+                    self.node_id = NodeIdEditor::new(template.node_id);
+                    self.permissions = PermissionsEditor::new(template.permissions);
+                    self.validity_period = ValidityPeriodEditor::new(template.validity_period);
+                },
+                Err(_) => (),
+            }
+        });
+    }
+
     fn get_document(&self) -> Result<Value> {
         let node_descriptor = NodeDescriptor {
             node_id: self.node_id.get_node_id(),
@@ -127,18 +152,6 @@ impl DocumentEditor for NodeDescriptorEditor {
             validity_period: Some(self.validity_period.get_validity_period()),
         };
         json!({ "nodeDescriptor": template })
-    }
-
-    fn editors_mut(&mut self) -> Vec<&mut dyn EditorComponent> {
-        vec![
-            &mut self.node_id,
-            &mut self.permissions,
-            &mut self.validity_period,
-        ]
-    }
-
-    fn get_document_type(&self) -> &'static str {
-        "Node descriptor"
     }
 
     fn create_signed_document(&self, algorithm: gcert::SignatureAlgorithm, signature_value: Vec<u8>, signer: Signer) -> serde_json::Result<Value> {

@@ -50,7 +50,7 @@ impl SaveFileDialog {
                     self.filename_input.set_text(filename);
                 }
             }
-            _ => {}
+            _ => ()
         }
         Ok(status)
     }

@@ -136,16 +136,16 @@ impl EditorComponent for SubjectEditor {
         if let Some(error_message) = self.error_message.as_mut() {
             match error_message.handle_key_event(key_event) {
                 Ok(status) => match status {
-                    ComponentStatus::Active => {},
+                    ComponentStatus::Active => (),
                     _ => self.error_message = None,
                 }
-                Err(_) => {},
+                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(value_editor) = self.value_editor.as_mut() {
             match Component::handle_key_event(value_editor, key_event) {
                 Ok(status) => match status {
-                    ComponentStatus::Active => {},
+                    ComponentStatus::Active => (),
                     ComponentStatus::Closed => {
                         let text = value_editor.get_text().to_owned();
                         if text.is_empty() {
@@ -162,13 +162,13 @@ impl EditorComponent for SubjectEditor {
                     },
                     ComponentStatus::Escaped => self.value_editor = None,
                 }
-                Err(_) => {},
+                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(property_editor) = self.property_editor.as_mut() {
             match property_editor.handle_key_event(key_event) {
                 Ok(status) => match status {
-                    ComponentStatus::Active => {},
+                    ComponentStatus::Active => (),
                     ComponentStatus::Closed => {
                         let (name, value) = property_editor.get_property();
                         if name.is_empty() {
@@ -228,7 +228,7 @@ impl EditorComponent for SubjectEditor {
                     },
                     ComponentStatus::Escaped => self.property_editor = None,
                 },
-                Err(_) => {},
+                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else {

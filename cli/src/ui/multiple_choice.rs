@@ -55,7 +55,7 @@ impl MultipleChoice {
                     self.selected += 1;
                 }
             }
-            _ => {},
+            _ => (),
         }
     }
 }

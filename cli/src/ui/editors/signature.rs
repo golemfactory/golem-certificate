@@ -104,7 +104,7 @@ impl SigningCertificateEditor {
                 let modal = ModalWithSizedComponent::new("Signing certificate details", Box::new(details));
                 self.signed_certificate_details = Some(modal);
             },
-            None => {},
+            None => (),
         }
     }
 }
@@ -141,14 +141,14 @@ impl EditorComponent for SigningCertificateEditor {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> EditorEventResult {
         if let Some(modal) = self.error.as_mut() {
             match modal.handle_key_event(key_event) {
-                Ok(ComponentStatus::Active) => {},
+                Ok(ComponentStatus::Active) => (),
                 _ => self.error = None,
             }
             EditorEventResult::KeepActive
         } else if let Some(dialog) = self.open_file_dialog.as_mut() {
             match dialog.handle_key_event(key_event) {
                 Ok(status) => match status {
-                    ComponentStatus::Active => {},
+                    ComponentStatus::Active => (),
                     ComponentStatus::Escaped => self.open_file_dialog = None,
                     ComponentStatus::Closed => {
                         match dialog.get_component().selected.as_ref() {
@@ -172,7 +172,7 @@ impl EditorComponent for SigningCertificateEditor {
         } else if let Some(type_choice) = self.signature_type_question.as_mut() {
             match type_choice.handle_key_event(key_event) {
                 Ok(status) => match status {
-                    ComponentStatus::Active => {},
+                    ComponentStatus::Active => (),
                     ComponentStatus::Escaped => self.signature_type_question = None,
                     ComponentStatus::Closed => {
                         if type_choice.get_selected() == SELFSIGNED_OR_CERTIFICATE[0] {
@@ -183,16 +183,16 @@ impl EditorComponent for SigningCertificateEditor {
                         self.signature_type_question = None;
                     },
                 }
-                Err(_) => {},
+                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(certificate_details) = self.signed_certificate_details.as_mut() {
             match certificate_details.handle_key_event(key_event) {
                 Ok(status) => match status {
-                    ComponentStatus::Active => {},
+                    ComponentStatus::Active => (),
                     _ => self.signed_certificate_details = None,
                 }
-                Err(_) => {},
+                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(highlight) = self.highlight {

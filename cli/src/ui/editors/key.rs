@@ -68,14 +68,14 @@ impl EditorComponent for KeyEditor {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> EditorEventResult {
         if let Some(error_message) = self.error_message.as_mut() {
             match error_message.handle_key_event(key_event) {
-                Ok(ComponentStatus::Active) => {},
+                Ok(ComponentStatus::Active) => (),
                 _ => self.error_message = None,
             }
             EditorEventResult::KeepActive
         } else if let Some(open_file_dialog) = self.open_file_dialog.as_mut() {
             match open_file_dialog.handle_key_event(key_event) {
                 Ok(status) => match status {
-                    ComponentStatus::Active => {},
+                    ComponentStatus::Active => (),
                     ComponentStatus::Closed => {
                         if let Some(path) = open_file_dialog.get_component().selected.as_ref() {
                             match load_key(path) {
@@ -90,7 +90,7 @@ impl EditorComponent for KeyEditor {
                     },
                     ComponentStatus::Escaped => self.open_file_dialog = None,
                 }
-                Err(_) => {},
+                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else {

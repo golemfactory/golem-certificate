@@ -76,7 +76,7 @@ impl TextInput {
                     self.text.remove(self.cursor_position);
                 }
             }
-            _ => {}
+            _ => ()
         }
     }
 }

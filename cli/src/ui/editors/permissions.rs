@@ -71,16 +71,16 @@ impl EditorComponent for PermissionsEditor {
         if let Some(parse_error) = self.parse_error.as_mut() {
             match parse_error.handle_key_event(key_event) {
                 Ok(status) => match status {
-                    ComponentStatus::Active => {},
+                    ComponentStatus::Active => (),
                     _ => self.parse_error = None,
                 }
-                Err(_) => {},
+                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(editor) = self.url_editor.as_mut() {
             match Component::handle_key_event(editor, key_event) {
                 Ok(status) => match status {
-                    ComponentStatus::Active => {},
+                    ComponentStatus::Active => (),
                     ComponentStatus::Closed => {
                         match Url::parse(editor.get_text()) {
                             Ok(url) => {
@@ -97,7 +97,7 @@ impl EditorComponent for PermissionsEditor {
                     },
                     ComponentStatus::Escaped => self.url_editor = None,
                 }
-                Err(_) => {},
+                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(highlight) = self.highlight {

@@ -153,7 +153,7 @@ impl OpenFileDialog {
             KeyCode::Esc => {
                 return Ok(ComponentStatus::Escaped);
             }
-            _ => {}
+            _ => ()
         }
         Ok(ComponentStatus::Active)
     }
@@ -163,7 +163,7 @@ impl Component for OpenFileDialog {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         if let Some(component) = &mut self.error_message {
             match component.handle_key_event(key_event)? {
-                ComponentStatus::Active => {},
+                ComponentStatus::Active => (),
                 _ => self.error_message = None,
             }
             Ok(ComponentStatus::Active)

@@ -73,7 +73,7 @@ impl Component for dyn EditorGroup {
             }
             EditorEventResult::Escaped => return Ok(ComponentStatus::Escaped),
             EditorEventResult::Closed => return Ok(ComponentStatus::Closed),
-            _ => {},
+            _ => (),
         }
         Ok(ComponentStatus::Active)
     }

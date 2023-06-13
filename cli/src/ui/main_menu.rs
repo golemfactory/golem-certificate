@@ -68,10 +68,10 @@ impl MainMenu {
                 )),
                 5 => self.child = Some(Box::new(CreateKeyPairDialog::new()?)),
                 7 => return Ok(ComponentStatus::Closed),
-                _ => {}
+                _ => ()
             },
             KeyCode::Esc => return Ok(ComponentStatus::Closed),
-            _ => {}
+            _ => ()
         }
         Ok(ComponentStatus::Active)
     }
@@ -118,7 +118,7 @@ impl Component for MainMenu {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         if let Some(component) = &mut self.child {
             match component.handle_key_event(key_event)? {
-                ComponentStatus::Active => {},
+                ComponentStatus::Active => (),
                 _ => self.child = None,
             };
             Ok(ComponentStatus::Active)
