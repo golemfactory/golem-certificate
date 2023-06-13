@@ -120,7 +120,7 @@ struct CertificateTemplate {
 }
 
 #[derive(Default)]
-pub struct CertificateDocumentEditor {
+pub struct CertificateEditor {
     key_usage_editor: KeyUsageEditor,
     permissions_editor: PermissionsEditor,
     public_key_editor: KeyEditor,
@@ -128,9 +128,7 @@ pub struct CertificateDocumentEditor {
     validity_period_editor: ValidityPeriodEditor,
 }
 
-impl CertificateDocumentEditor {}
-
-impl DocumentEditor for CertificateDocumentEditor {
+impl DocumentEditor for CertificateEditor {
     fn allow_self_sign(&self) -> bool {
         true
     }
@@ -144,7 +142,7 @@ impl DocumentEditor for CertificateDocumentEditor {
                 subject: self.subject_editor.get_subject(),
                 validity_period: self.validity_period_editor.get_validity_period(),
             };
-            Ok(serde_json::to_value(cert)?)
+            serde_json::to_value(cert).map_err(Into::into)
         } else {
             anyhow::bail!("No public key")
         }

@@ -219,7 +219,7 @@ impl EditorComponent for SigningCertificateEditor {
                                     self.select_signature_type();
                                     EditorEventResult::KeepActive
                                 } else {
-                                    self.signature_type = SignatureType::Certificate;
+                                    self.open_certificate_dialog();
                                     EditorEventResult::KeepActive
                                 }
                             }

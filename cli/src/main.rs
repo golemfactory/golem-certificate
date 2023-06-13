@@ -162,7 +162,7 @@ fn verify_signature(signed_file: &PathBuf, timestamp: Option<DateTime<Utc>>) -> 
         FileType::Certificate => gcert::validate_certificate(signed_json, timestamp)
             .map(|result| println!("{:?}", result))
             .map_err(Into::into),
-        FileType::NodeDescriptor => gcert::validate_node_descriptor(signed_json)
+        FileType::NodeDescriptor => gcert::validate_node_descriptor(signed_json, timestamp)
             .map(|result| println!("{:?}", result))
             .map_err(Into::into),
     }

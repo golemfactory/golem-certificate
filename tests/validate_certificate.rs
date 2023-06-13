@@ -34,8 +34,8 @@ fn happy_path() {
                  not_after: DateTime::parse_from_rfc3339("2025-01-01T00:00:00Z").unwrap().with_timezone(&Utc)
             },
             certificate_chain_fingerprints: vec![
-                "181eece864b9a8cd4ad661a967453db42ad01c0cb0e46bd2370ecec8f059797f3f369275e4a41a626907c9ea67641003a4b04e3506c65ee9e012232ea783c5d3".into(), 
-                "4f0c5b10741a8746141badf3b21325176a0e4e84dfe39747cb857b1c58dc65380ce85eb76a9986303f228a97a17012e77cc9e30ca595c077553309ade6cd2eb6".into(), 
+                "181eece864b9a8cd4ad661a967453db42ad01c0cb0e46bd2370ecec8f059797f3f369275e4a41a626907c9ea67641003a4b04e3506c65ee9e012232ea783c5d3".into(),
+                "4f0c5b10741a8746141badf3b21325176a0e4e84dfe39747cb857b1c58dc65380ce85eb76a9986303f228a97a17012e77cc9e30ca595c077553309ade6cd2eb6".into(),
                 "80c84b2701126669966f46c1159cae89c58fb088e8bf94b318358fa4ca33ee56d8948511a397e5aba6aa5b88fff36f2541a91b133cde0fb816e8592b695c04c3".into()
                 ],
             permissions: Permissions::Object(PermissionDetails { outbound: Some(OutboundPermissions::Unrestricted) }),

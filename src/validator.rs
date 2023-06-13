@@ -52,16 +52,30 @@ pub fn validate_certificate(
     Ok(validated_certificate)
 }
 
-pub fn validate_node_descriptor_str(data: &str) -> Result<ValidatedNodeDescriptor> {
+/// Deserializes and validates node descriptor.
+/// # Arguments
+/// * `data` serialized node descriptor
+/// * `timestamp` optional timestamp to verify validity
+pub fn validate_node_descriptor_str(
+    data: &str,
+    timestamp: Option<DateTime<Utc>>,
+) -> Result<ValidatedNodeDescriptor> {
     let value: Value = serde_json::from_str(data).map_err(|e| Error::InvalidJson(e.to_string()))?;
-    validate_node_descriptor(value)
+    validate_node_descriptor(value, timestamp)
 }
 
-pub fn validate_node_descriptor(value: Value) -> Result<ValidatedNodeDescriptor> {
+/// Validates node descriptor.
+/// # Arguments
+/// * `value` node descriptor
+/// * `timestamp` optional timestamp to verify validity
+pub fn validate_node_descriptor(
+    value: Value,
+    timestamp: Option<DateTime<Utc>>,
+) -> Result<ValidatedNodeDescriptor> {
     validate_schema(&value, SIGNED_NODE_DESCRIPTOR_SCHEMA_ID, "node descriptor")?;
     let signed_node_descriptor: SignedNodeDescriptor = serde_json::from_value(value)
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
-    let mut validated_node_descriptor = validate_signed_node_descriptor(signed_node_descriptor)?;
+    let mut validated_node_descriptor = validate_signed_node_descriptor(signed_node_descriptor, timestamp)?;
     validated_node_descriptor
         .certificate_chain_fingerprints
         .reverse();
@@ -88,8 +102,14 @@ fn validate_schema(value: &Value, schema_id: &str, structure_name: &str) -> Resu
         })
 }
 
+/// Validates signed node descriptor.
+/// # Arguments
+/// * `signed_node_descriptor`
+/// * `timestamp` optional timestamp to verify validity of the leaf certificate (last certificate in the chain).
+///    Validity periods of parent (issuer) certificates from the chain must fully include validity period of a child.
 fn validate_signed_node_descriptor(
     signed_node_descriptor: SignedNodeDescriptor,
+    timestamp: Option<DateTime<Utc>>,
 ) -> Result<ValidatedNodeDescriptor> {
     let node_descriptor: NodeDescriptor =
         serde_json::from_value(signed_node_descriptor.node_descriptor.clone())
@@ -97,7 +117,7 @@ fn validate_signed_node_descriptor(
 
     let signing_certificate = signed_node_descriptor.signature.signer;
     let validated_certificate =
-        validate_signed_certificate(&signing_certificate, Some(Utc::now()))?;
+        validate_signed_certificate(&signing_certificate, None)?;
 
     let leaf_certificate: Certificate = serde_json::from_value(signing_certificate.certificate)
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
@@ -117,7 +137,9 @@ fn validate_signed_node_descriptor(
         &node_descriptor.validity_period,
     )?;
 
-    validate_timestamp(&node_descriptor.validity_period, Utc::now())?;
+    timestamp
+        .map(|ts| validate_timestamp(&node_descriptor.validity_period, ts))
+        .unwrap_or(Ok(()))?;
 
     Ok(ValidatedNodeDescriptor {
         certificate_chain_fingerprints: validated_certificate.certificate_chain_fingerprints,

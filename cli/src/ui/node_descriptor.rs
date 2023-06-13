@@ -1,6 +1,12 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
-use golem_certificate::SignedNodeDescriptor;
+use golem_certificate::{
+    self as gcert,
+    SignedNodeDescriptor, Signature, Signer, validate_node_descriptor,
+    schemas::{node_descriptor::NodeDescriptor, SIGNED_NODE_DESCRIPTOR_SCHEMA_ID},
+};
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 use tui::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use super::{
@@ -10,7 +16,7 @@ use super::{
     scrollable_text::{ScrollableText, ScrollableTextState},
     util::{
         default_style, AreaCalculators, CalculateHeight, CalculateWidth,
-    },
+    }, document_editor::DocumentEditor,
 };
 
 pub struct SignedNodeDescriptorDetails {
@@ -78,41 +84,79 @@ impl SizedComponent for SignedNodeDescriptorDetails {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct NodeDescriptorTemplate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    node_id: Option<ya_client_model::NodeId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    permissions: Option<gcert::schemas::permissions::Permissions>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    validity_period: Option<gcert::schemas::validity_period::ValidityPeriod>,
+}
+
+
 #[derive(Default)]
 pub struct NodeDescriptorEditor {
-    active_editor_idx: usize,
     node_id: NodeIdEditor,
     permissions: PermissionsEditor,
     validity_period: ValidityPeriodEditor,
 }
 
-impl NodeDescriptorEditor {
-    pub fn new() -> Self {
-        let mut node_descriptor_editor = Self::default();
-        node_descriptor_editor.init();
-        node_descriptor_editor
+impl DocumentEditor for NodeDescriptorEditor {
+    fn allow_self_sign(&self) -> bool {
+        false
     }
-}
 
-impl EditorGroup for NodeDescriptorEditor {
-    fn editor_group_state_mut(&mut self) -> (&mut usize, Vec<&mut dyn EditorComponent>) {
-        let editors: Vec<&mut dyn EditorComponent> = vec![
+    fn get_document(&self) -> Result<Value> {
+        let node_descriptor = NodeDescriptor {
+            node_id: self.node_id.get_node_id(),
+            permissions: self.permissions.get_permissions(),
+            validity_period: self.validity_period.get_validity_period(),
+        };
+        serde_json::to_value(node_descriptor).map_err(Into::into)
+    }
+
+    fn get_template_json(&self) -> Value {
+        let template = NodeDescriptorTemplate {
+            node_id: Some(self.node_id.get_node_id()),
+            permissions: Some(self.permissions.get_permissions()),
+            validity_period: Some(self.validity_period.get_validity_period()),
+        };
+        json!({ "nodeDescriptor": template })
+    }
+
+    fn editors_mut(&mut self) -> Vec<&mut dyn EditorComponent> {
+        vec![
             &mut self.node_id,
             &mut self.permissions,
             &mut self.validity_period,
-        ];
-        (&mut self.active_editor_idx, editors)
-    }
-}
-
-impl Component for NodeDescriptorEditor {
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        let editor_group: &mut dyn EditorGroup = self;
-        editor_group.handle_key_event(key_event)
+        ]
     }
 
-    fn render(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
-        let editor_group: &mut dyn EditorGroup = self;
-        editor_group.render(area, buf)
+    fn get_document_type(&self) -> &'static str {
+        "Node descriptor"
+    }
+
+    fn create_signed_document(&self, algorithm: gcert::SignatureAlgorithm, signature_value: Vec<u8>, signer: Signer) -> serde_json::Result<Value> {
+        let node_descriptor = self.get_document().unwrap();
+        match signer {
+            Signer::SelfSigned => unreachable!("Self-signed node descriptors are not allowed"),
+            Signer::Certificate(signed_cert) => {
+                let signed_node_descriptor = SignedNodeDescriptor {
+                    schema: SIGNED_NODE_DESCRIPTOR_SCHEMA_ID.into(),
+                    node_descriptor,
+                    signature: Signature { algorithm, value: signature_value, signer: signed_cert },
+                };
+                serde_json::to_value(signed_node_descriptor)
+            },
+        }
+    }
+
+    fn validate_signed_document(&self, signed_document: Value) -> gcert::Result<Value> {
+        validate_node_descriptor(signed_document.clone(), None).map(|_| signed_document)
     }
 }

@@ -106,7 +106,7 @@ fn verify_json(json: Value) -> Result<VerifiedDocument, String> {
             let signed_cert = serde_json::from_value(json.clone()).unwrap();
             Ok(VerifiedDocument::Certificate(signed_cert))
         }
-        Err(UnsupportedSchema { .. }) => validate_node_descriptor(json.clone()).map(|_| {
+        Err(UnsupportedSchema { .. }) => validate_node_descriptor(json.clone(), None).map(|_| {
             let signed_node_descriptor = serde_json::from_value(json).unwrap();
             VerifiedDocument::NodeDescriptor(signed_node_descriptor)
         }),

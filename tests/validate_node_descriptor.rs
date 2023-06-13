@@ -1,3 +1,4 @@
+use chrono::Utc;
 use golem_certificate::{
     schemas::permissions::{OutboundPermissions, PermissionDetails, Permissions},
     validator::{validate_node_descriptor_str, validated_data::ValidatedNodeDescriptor},
@@ -12,7 +13,7 @@ fn happy_path() {
     let node_descriptor =
         std::fs::read_to_string("tests/resources/node_descriptor/happy_path.signed.json").unwrap();
 
-    let result = validate_node_descriptor_str(&node_descriptor).unwrap();
+    let result = validate_node_descriptor_str(&node_descriptor, Some(Utc::now())).unwrap();
 
     assert_eq!(
         result,
@@ -45,7 +46,7 @@ fn should_return_err(filename: &str, expected_err: Error) {
     let node_descriptor =
         std::fs::read_to_string(format!("tests/resources/node_descriptor/{filename}")).unwrap();
 
-    let result = validate_node_descriptor_str(&node_descriptor);
+    let result = validate_node_descriptor_str(&node_descriptor, Some(Utc::now()));
 
     assert_eq!(result.unwrap_err(), expected_err);
 }

@@ -16,7 +16,7 @@ use gcert::SignatureAlgorithm;
 use golem_certificate::{self as gcert, Signer, sign_json};
 use serde::Serialize;
 use serde_json::Value;
-use tui::{layout::Rect, widgets::{Block, BorderType, Borders, Widget}};
+use tui::{layout::Rect, widgets::{Block, BorderType, Borders, Widget, Padding}};
 
 pub trait DocumentEditor {
     fn allow_self_sign(&self) -> bool;
@@ -253,7 +253,8 @@ impl Component for SignedDocumentEditor {
             .title(title)
             .borders(Borders::ALL)
             .border_type(BorderType::Thick)
-            .border_style(default_style());
+            .border_style(default_style())
+            .padding(Padding::uniform(1));
 
         let editor_area = block.inner(area);
         block.render(area, buf);
