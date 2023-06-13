@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::path::Path;
 
 use anyhow::Result;
 use crossterm::event::KeyEvent;
@@ -19,7 +19,7 @@ use super::{
     modal::{ModalMessage, ModalWithSizedComponent},
     node_descriptor::SignedNodeDescriptorDetails,
     open_file_dialog::OpenFileDialog,
-    util::{default_style, CalculateHeight, CalculateWidth},
+    util::{default_style, CalculateHeight, CalculateWidth, read_json_file},
 };
 
 pub enum VerifiedDocument {
@@ -54,7 +54,7 @@ impl Component for VerifyDocument {
             match self.open_file_dialog.handle_key_event(key_event)? {
                 ComponentStatus::Closed => {
                     if let Some(path) = self.open_file_dialog.selected.as_mut() {
-                        let modal: Box<dyn Component> = match verify_selected_file(&path) {
+                        let modal: Box<dyn Component> = match verify_selected_file(path) {
                             Ok(VerifiedDocument::Certificate(cert)) => {
                                 show_cert_details(path, &cert)
                             }
@@ -91,19 +91,15 @@ impl Component for VerifyDocument {
     }
 }
 
-fn verify_selected_file(path: &PathBuf) -> Result<VerifiedDocument, String> {
-    fs::read_to_string(&path)
-        .map_err(|err| format!("Cannot read file ({})", err))
-        .and_then(|contents| {
-            serde_json::from_str::<Value>(&contents).map_err(|_| "File contents is not JSON".into())
-        })
-        .and_then(|json| verify_json(json))
+fn verify_selected_file(path: &Path) -> Result<VerifiedDocument, String> {
+    read_json_file(path)
+        .and_then(verify_json)
 }
 
 fn verify_json(json: Value) -> Result<VerifiedDocument, String> {
     match validate_certificate(json.clone(), None) {
         Ok(_) => {
-            let signed_cert = serde_json::from_value(json.clone()).unwrap();
+            let signed_cert = serde_json::from_value(json).unwrap();
             Ok(VerifiedDocument::Certificate(signed_cert))
         }
         Err(UnsupportedSchema { .. }) => validate_node_descriptor(json.clone(), None).map(|_| {
@@ -115,14 +111,14 @@ fn verify_json(json: Value) -> Result<VerifiedDocument, String> {
     .map_err(|err| err.to_string())
 }
 
-fn show_cert_details(path: &PathBuf, cert: &SignedCertificate) -> Box<dyn Component> {
+fn show_cert_details(path: &Path, cert: &SignedCertificate) -> Box<dyn Component> {
     let component = SignedCertificateDetails::new(cert, 2, true, get_area_calculators());
     let modal = ModalWithSizedComponent::new(path.to_string_lossy(), Box::new(component));
     Box::new(modal)
 }
 
 fn show_node_descriptor_details(
-    path: &PathBuf,
+    path: &Path,
     node_descriptor: &SignedNodeDescriptor,
 ) -> Box<dyn Component> {
     let component =
@@ -131,7 +127,7 @@ fn show_node_descriptor_details(
     Box::new(modal)
 }
 
-fn show_error(path: &PathBuf, err: String) -> Box<dyn Component> {
+fn show_error(path: &Path, err: String) -> Box<dyn Component> {
     let title = "Error during verification";
     let message = format!("Verifying {}\nError: {}", path.to_string_lossy(), err);
     let modal = ModalMessage::new(title, message);

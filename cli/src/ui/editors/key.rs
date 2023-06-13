@@ -22,13 +22,14 @@ pub struct KeyEditor {
 
 impl KeyEditor {
     pub fn new<S: Into<String>>(key_type: S, key: Option<Key>) -> Self {
-        let mut editor = Self::default();
-        editor.key_type = key_type.into();
-        editor.key = key.map(|key| KeyFile {
-            filename: "Loaded from template".into(),
-            key,
-        });
-        editor
+        Self {
+            key_type: key_type.into(),
+            key: key.map(|key| KeyFile {
+                filename: "Loaded from template".into(),
+                key,
+            }),
+            ..Default::default()
+        }
     }
 
     pub fn get_key(&self) -> Option<Key> {
@@ -73,8 +74,8 @@ impl EditorComponent for KeyEditor {
             }
             EditorEventResult::KeepActive
         } else if let Some(open_file_dialog) = self.open_file_dialog.as_mut() {
-            match open_file_dialog.handle_key_event(key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = open_file_dialog.handle_key_event(key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     ComponentStatus::Closed => {
                         if let Some(path) = open_file_dialog.get_component().selected.as_ref() {
@@ -90,38 +91,35 @@ impl EditorComponent for KeyEditor {
                     },
                     ComponentStatus::Escaped => self.open_file_dialog = None,
                 }
-                Err(_) => (),
             }
             EditorEventResult::KeepActive
-        } else {
-            if self.active {
-                match key_event.code {
-                    KeyCode::Esc => EditorEventResult::Escaped,
-                    KeyCode::Enter => {
-                        match OpenFileDialog::new() {
-                            Ok(open_file_dialog) => {
-                                let title = format!("Open {} key", self.key_type);
-                                let dialog = ModalWithComponent::new(title, open_file_dialog, reduce_area_fixed(4, 4));
-                                self.open_file_dialog = Some(dialog);
-                            }
-                            Err(err) =>
-                                self.error_message = Some(ModalMessage::new("Error opening file dialog", err.to_string())),
+        } else if self.active {
+            match key_event.code {
+                KeyCode::Esc => EditorEventResult::Escaped,
+                KeyCode::Enter => {
+                    match OpenFileDialog::new() {
+                        Ok(open_file_dialog) => {
+                            let title = format!("Open {} key", self.key_type);
+                            let dialog = ModalWithComponent::new(title, open_file_dialog, reduce_area_fixed(4, 4));
+                            self.open_file_dialog = Some(dialog);
                         }
-                        EditorEventResult::KeepActive
+                        Err(err) =>
+                            self.error_message = Some(ModalMessage::new("Error opening file dialog", err.to_string())),
                     }
-                    KeyCode::Down => {
-                        self.active = false;
-                        EditorEventResult::ExitBottom
-                    }
-                    KeyCode::Up => {
-                        self.active = false;
-                        EditorEventResult::ExitTop
-                    }
-                    _ => EditorEventResult::KeepActive,
+                    EditorEventResult::KeepActive
                 }
-            } else {
-                EditorEventResult::Inactive
+                KeyCode::Down => {
+                    self.active = false;
+                    EditorEventResult::ExitBottom
+                }
+                KeyCode::Up => {
+                    self.active = false;
+                    EditorEventResult::ExitTop
+                }
+                _ => EditorEventResult::KeepActive,
             }
+        } else {
+            EditorEventResult::Inactive
         }
     }
 

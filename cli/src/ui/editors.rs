@@ -159,7 +159,7 @@ pub trait EditorComponent {
         }
     }
 
-    fn render_with_highlight(&self, text: &String, area: Rect, buf: &mut Buffer) {
+    fn render_with_highlight(&self, text: &str, area: Rect, buf: &mut Buffer) {
         let highlight = self.get_highlight().expect("Cannot render with highlight without highlight in the component");
         let prefix = self.get_highlight_prefix().expect("Cannot render with highlight without highlight in the component");
         let skip = if area.height < highlight as u16 + 1 {
@@ -213,7 +213,7 @@ pub trait EditorComponent {
     }
 }
 
-fn adjust_render_area(area: &Rect, text: &String) -> Option<Rect> {
+fn adjust_render_area(area: &Rect, text: &str) -> Option<Rect> {
     let text_height = text.lines().count() as u16;
     let adjusted_area = Rect {
         x: area.x,

@@ -63,23 +63,22 @@ impl EditorComponent for PermissionsEditor {
     }
 
     fn get_highlight(&self) -> Option<usize> {
-        self.highlight.clone()
+        self.highlight
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) -> EditorEventResult {
         let render_height = self.calculate_render_height();
         if let Some(parse_error) = self.parse_error.as_mut() {
-            match parse_error.handle_key_event(key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = parse_error.handle_key_event(key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     _ => self.parse_error = None,
                 }
-                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(editor) = self.url_editor.as_mut() {
-            match Component::handle_key_event(editor, key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = Component::handle_key_event(editor, key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     ComponentStatus::Closed => {
                         match Url::parse(editor.get_text()) {
@@ -97,7 +96,6 @@ impl EditorComponent for PermissionsEditor {
                     },
                     ComponentStatus::Escaped => self.url_editor = None,
                 }
-                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(highlight) = self.highlight {
@@ -187,14 +185,14 @@ impl EditorComponent for PermissionsEditor {
             Permissions::All => writeln!(text, ": All").unwrap(),
             Permissions::Object(PermissionDetails { outbound: None }) => writeln!(text, "None").unwrap(),
             Permissions::Object(PermissionDetails { outbound: Some(outbound_details) }) => {
-                writeln!(text, "").unwrap();
+                writeln!(text).unwrap();
                 write!(text, "  Outbound").unwrap();
                 match outbound_details {
                     OutboundPermissions::Unrestricted => {
                         writeln!(text, ": Unrestricted").unwrap();
                     }
                     OutboundPermissions::Urls(_) => {
-                        writeln!(text, "").unwrap();
+                        writeln!(text).unwrap();
                         writeln!(text, "    Urls").unwrap();
                         self.urls.iter()
                             .for_each(|url| writeln!(text, "      {}", url).unwrap());

@@ -64,17 +64,16 @@ impl EditorComponent for ValidityPeriodEditor {
 
     fn handle_key_event(&mut self, key_event: KeyEvent) -> EditorEventResult {
         if let Some(parse_error) = self.parse_error.as_mut() {
-            match parse_error.handle_key_event(key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = parse_error.handle_key_event(key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     _ => self.parse_error = None,
                 }
-                Err(_) => (),
             };
             EditorEventResult::KeepActive
         } else if let Some(date_editor) = self.date_editor.as_mut() {
-            match Component::handle_key_event(date_editor, key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = Component::handle_key_event(date_editor, key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     ComponentStatus::Closed => {
                         match date_editor.get_text().parse::<DateTime<Utc>>() {
@@ -88,14 +87,12 @@ impl EditorComponent for ValidityPeriodEditor {
                                         self.not_before = datetime;
                                         self.date_editor = None;
                                     }
+                                } else if utc_time < self.not_before.parse::<DateTime<Utc>>().unwrap() {
+                                    let error = ModalMessage::new("Datetime error", "Not After must be after Not Before");
+                                    self.parse_error = Some(error);
                                 } else {
-                                    if utc_time < self.not_before.parse::<DateTime<Utc>>().unwrap() {
-                                        let error = ModalMessage::new("Datetime error", "Not After must be after Not Before");
-                                        self.parse_error = Some(error);
-                                    } else {
-                                        self.not_after = datetime;
-                                        self.date_editor = None;
-                                    }
+                                    self.not_after = datetime;
+                                    self.date_editor = None;
                                 }
                             }
                             Err(err) => {
@@ -106,7 +103,6 @@ impl EditorComponent for ValidityPeriodEditor {
                     }
                     ComponentStatus::Escaped => self.date_editor = None,
                 }
-                Err(_) => (),
             };
             EditorEventResult::KeepActive
         } else if let Some(highlight) = self.highlight {

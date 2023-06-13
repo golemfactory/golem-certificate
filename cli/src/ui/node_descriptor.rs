@@ -124,16 +124,13 @@ impl DocumentEditor for NodeDescriptorEditor {
     }
 
     fn load_template(&mut self, template: Value) {
-        template.get("nodeDescriptor").map(|value| {
-            match serde_json::from_value::<NodeDescriptorTemplate>(value.clone()) {
-                Ok(template) => {
-                    self.node_id = NodeIdEditor::new(template.node_id);
-                    self.permissions = PermissionsEditor::new(template.permissions);
-                    self.validity_period = ValidityPeriodEditor::new(template.validity_period);
-                },
-                Err(_) => (),
+        if let Some(value) = template.get("nodeDescriptor") {
+            if let Ok(template) = serde_json::from_value::<NodeDescriptorTemplate>(value.clone()) {
+                self.node_id = NodeIdEditor::new(template.node_id);
+                self.permissions = PermissionsEditor::new(template.permissions);
+                self.validity_period = ValidityPeriodEditor::new(template.validity_period);
             }
-        });
+        }
     }
 
     fn get_document(&self) -> Result<Value> {

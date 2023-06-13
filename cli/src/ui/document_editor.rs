@@ -4,11 +4,11 @@ use super::{
     modal::{ModalMultipleChoice, ModalWindow, ModalMessage, ModalWithComponent},
     multiple_choice::{EXIT_WITHOUT_SAVE, MultipleChoice, SIGN_OR_TEMPLATE, OVERWRITE_CHOICES},
     util::{
-        default_style, reduce_area_fixed, save_json_to_file,
+        default_style, reduce_area_fixed, save_json_to_file, read_json_file,
     }, save_file_dialog::SaveFileDialog, open_file_dialog::OpenFileDialog,
 };
 
-use std::{path::PathBuf, fs};
+use std::path::PathBuf;
 
 use anyhow::Result;
 use crossterm::event::KeyEvent;
@@ -51,7 +51,7 @@ impl SignedDocumentEditor {
         let start_from_template = ModalMultipleChoice::new(
             format!("{} editor", document_editor.get_document_type()),
             "Start with default value?",
-            &DEFAULT_OR_TEMPLATE,
+            DEFAULT_OR_TEMPLATE,
             0,
         );
 
@@ -134,20 +134,17 @@ impl SignedDocumentEditor {
             let multiple_choice = ModalMultipleChoice::new(
                 "File exists",
                 format!("{}", path.to_string_lossy()),
-                &OVERWRITE_CHOICES,
+                OVERWRITE_CHOICES,
                 1,
             );
             self.popup = Some(multiple_choice);
-        } else {
-            if self.sign_or_template.get_selected() == SIGN_OR_TEMPLATE[0] {
-                match self.create_and_validate_signature() {
-                    Some(value) => self.save_json(&path, &value),
-                    None => (),
-                }
-            } else {
-                let value = self.document_editor.get_template_json();
+        } else if self.sign_or_template.get_selected() == SIGN_OR_TEMPLATE[0] {
+            if let Some(value) = self.create_and_validate_signature() {
                 self.save_json(&path, &value);
             }
+        } else {
+            let value = self.document_editor.get_template_json();
+            self.save_json(&path, &value);
         }
     }
 
@@ -191,14 +188,13 @@ impl Component for SignedDocumentEditor {
                     ComponentStatus::Escaped => self.load_template_dialog = None,
                     ComponentStatus::Closed => {
                         let path = load_template_dialog.get_component().selected.as_ref().unwrap();
-                        match read_json(path) {
+                        match read_json_file(path) {
                             Ok(value) => {
                                 self.document_editor.load_template(value);
                                 self.initialize();
                             },
                             Err(err) => {
-                                let title = format!("Error loading template");
-                                self.error = Some(ModalMessage::new(title, err.to_string()));
+                                self.error = Some(ModalMessage::new("Error loading template", err));
                             }
                         }
                     },
@@ -263,9 +259,8 @@ impl Component for SignedDocumentEditor {
                 }
                 ComponentStatus::Closed => {
                     match signature_editor.get_signing_key_and_signer() {
-                        Some(_) => match self.create_and_validate_signature() {
-                            Some(_) => self.open_save_dialog()?,
-                            None => (),
+                        Some(_) => if self.create_and_validate_signature().is_some() {
+                            self.open_save_dialog()?;
                         },
                         None => self.error = Some(ModalMessage::new(
                             "Error",
@@ -343,12 +338,4 @@ impl Component for SignedDocumentEditor {
         }
         cursor
     }
-}
-
-fn read_json(path: &PathBuf) -> Result<Value, String> {
-    fs::read_to_string(path)
-        .map_err(|err| format!("Cannot read file ({})", err))
-        .and_then(|contents| {
-            serde_json::from_str::<Value>(&contents).map_err(|_| "File contents is not JSON".into())
-        })
 }

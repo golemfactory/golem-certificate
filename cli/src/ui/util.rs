@@ -5,6 +5,7 @@ use std::{
 };
 
 use serde::Serialize;
+use serde_json::Value;
 use tui::{
     layout::{self, Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -37,15 +38,14 @@ pub fn get_middle_rectangle(area: Rect, height: u16, width: u16) -> Rect {
             Constraint::Max(horizontal_border),
         ])
         .split(area)[1];
-    let message_box = Layout::default()
+    Layout::default()
         .direction(layout::Direction::Horizontal)
         .constraints([
             Constraint::Max(vertical_border),
             Constraint::Min(width),
             Constraint::Max(vertical_border),
         ])
-        .split(row)[1];
-    message_box
+        .split(row)[1]
 }
 
 pub fn save_json_to_file<C: Serialize>(
@@ -59,3 +59,10 @@ pub fn save_json_to_file<C: Serialize>(
     Ok(())
 }
 
+pub fn read_json_file(path: &Path) -> Result<Value, String> {
+    fs::read_to_string(path)
+        .map_err(|err| format!("Cannot read file ({})", err))
+        .and_then(|contents| {
+            serde_json::from_str::<Value>(&contents).map_err(|_| "File contents is not JSON".into())
+        })
+}

@@ -51,17 +51,16 @@ impl EditorComponent for NodeIdEditor {
 
     fn handle_key_event(&mut self, key_event: KeyEvent) -> EditorEventResult {
         if let Some(parse_error) = self.parse_error.as_mut() {
-            match parse_error.handle_key_event(key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = parse_error.handle_key_event(key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     _ => self.parse_error = None,
                 }
-                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(editor) = self.editor.as_mut() {
-            match Component::handle_key_event(editor, key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = Component::handle_key_event(editor, key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     ComponentStatus::Closed => {
                         let node_id_string = {
@@ -84,7 +83,6 @@ impl EditorComponent for NodeIdEditor {
                     },
                     ComponentStatus::Escaped => self.editor = None,
                 }
-                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if self.highlight {

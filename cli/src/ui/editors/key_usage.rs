@@ -113,7 +113,7 @@ impl EditorComponent for KeyUsageEditor {
         match self.key_usage {
             KeyUsage::All => write!(text, ": All").unwrap(),
             KeyUsage::Limited(_) => {
-                writeln!(text, "").unwrap();
+                writeln!(text).unwrap();
                 KEY_USAGE_ORDER.iter().for_each(|(usage, usage_str)| {
                     writeln!(text, "  [{}] {}", if self.usage.contains(usage) { "*" } else { " " }, usage_str).unwrap();
                 });

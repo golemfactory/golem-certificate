@@ -91,7 +91,7 @@ impl Component for MultipleChoice {
 
         self.choices
             .iter()
-            .zip(choice_areas.into_iter())
+            .zip(choice_areas.iter())
             .zip(styles.into_iter())
             .for_each(|((choice, &area), style)| {
                 let line =

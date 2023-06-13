@@ -61,10 +61,10 @@ impl MainMenu {
             KeyCode::Enter => match self.selected_item {
                 0 => self.child = Some(Box::new(VerifyDocument::new()?)),
                 2 => self.child = Some(Box::new(
-                    SignedDocumentEditor::new(Box::new(CertificateEditor::default()))
+                    SignedDocumentEditor::new(Box::<CertificateEditor>::default())
                 )),
                 3 => self.child = Some(Box::new(
-                    SignedDocumentEditor::new(Box::new(NodeDescriptorEditor::default()))
+                    SignedDocumentEditor::new(Box::<NodeDescriptorEditor>::default())
                 )),
                 5 => self.child = Some(Box::new(CreateKeyPairDialog::new()?)),
                 7 => return Ok(ComponentStatus::Closed),
@@ -93,7 +93,7 @@ impl MainMenu {
             .split(menu_area);
 
         self.items.iter().enumerate().for_each(|(idx, &item)| {
-            if item.len() > 0 {
+            if !item.is_empty() {
                 let style = if self.selected_item == idx {
                     highlight_style()
                 } else {

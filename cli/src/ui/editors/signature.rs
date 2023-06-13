@@ -77,9 +77,10 @@ struct SigningCertificateEditor {
 
 impl SigningCertificateEditor {
     fn new(allow_self_sign: bool) -> Self {
-        let mut editor = Self::default();
-        editor.allow_self_sign = allow_self_sign;
-        editor
+        Self {
+            allow_self_sign,
+            ..Default::default()
+        }
     }
 
     fn get_cert(&self) -> Option<&SignedCertificate> {
@@ -93,31 +94,28 @@ impl SigningCertificateEditor {
     fn open_certificate_dialog(&mut self) {
         match OpenFileDialog::new() {
             Ok(dialog) => self.open_file_dialog = Some(ModalWithComponent::new("Open signing certificate", dialog, reduce_area_fixed(4, 4))),
-            Err(err) => self.error = Some(ModalMessage::new("Error opening 'Open certificate' dialog", &err.to_string())),
+            Err(err) => self.error = Some(ModalMessage::new("Error opening 'Open certificate' dialog", err.to_string())),
         }
     }
 
     fn open_certificate_details(&mut self) {
-        match self.get_cert() {
-            Some(cert) => {
-                let details = SignedCertificateDetails::new(cert, 2, false, reduce_area_fixed(2, 4));
-                let modal = ModalWithSizedComponent::new("Signing certificate details", Box::new(details));
-                self.signed_certificate_details = Some(modal);
-            },
-            None => (),
+        if let Some(cert) = self.get_cert() {
+            let details = SignedCertificateDetails::new(cert, 2, false, reduce_area_fixed(2, 4));
+            let modal = ModalWithSizedComponent::new("Signing certificate details", Box::new(details));
+            self.signed_certificate_details = Some(modal);
         }
     }
 }
 
 fn read_certificate(path: &PathBuf) -> Result<(SignedCertificate, String), String> {
     fs::read_to_string(path)
-        .map_err(|err| format!("Cannot read file\n{}\n{}", path.to_string_lossy(), err.to_string()))
+        .map_err(|err| format!("Cannot read file\n{}\n{}", path.to_string_lossy(), err))
         .and_then(|text| {
             match validate_certificate_str(&text, Some(Utc::now())) {
                 Ok(validated_certificate) => {
                     Ok((serde_json::from_str::<SignedCertificate>(&text).unwrap(), validated_certificate.subject.display_name))
                 },
-                Err(err) => Err(format!("File contents is not valid certificate\n{}\n{}", path.to_string_lossy(), err.to_string()))
+                Err(err) => Err(format!("File contents is not valid certificate\n{}\n{}", path.to_string_lossy(), err))
             }
         })
 }
@@ -166,12 +164,12 @@ impl EditorComponent for SigningCertificateEditor {
                         }
                     },
                 }
-                Err(err) => self.error = Some(ModalMessage::new("Error opening certificate", &err.to_string())),
+                Err(err) => self.error = Some(ModalMessage::new("Error opening certificate", err.to_string())),
             }
             EditorEventResult::KeepActive
         } else if let Some(type_choice) = self.signature_type_question.as_mut() {
-            match type_choice.handle_key_event(key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = type_choice.handle_key_event(key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     ComponentStatus::Escaped => self.signature_type_question = None,
                     ComponentStatus::Closed => {
@@ -183,16 +181,14 @@ impl EditorComponent for SigningCertificateEditor {
                         self.signature_type_question = None;
                     },
                 }
-                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(certificate_details) = self.signed_certificate_details.as_mut() {
-            match certificate_details.handle_key_event(key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = certificate_details.handle_key_event(key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     _ => self.signed_certificate_details = None,
                 }
-                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(highlight) = self.highlight {

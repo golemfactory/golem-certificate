@@ -58,7 +58,7 @@ impl CreateKeyPairDialog {
             let dialog = ModalMultipleChoice::new(
                 "File exists",
                 file_exists_message,
-                &OVERWRITE_CHOICES,
+                OVERWRITE_CHOICES,
                 1,
             );
             self.overwrite_dialog = Some(dialog);

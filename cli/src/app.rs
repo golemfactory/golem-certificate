@@ -27,10 +27,7 @@ pub fn start() -> Result<()> {
             Ok(app_status) => app_running = app_status == AppStatus::Running,
             Err(err) => {
                 app_running = false;
-                error_message = Some(format!(
-                    "Some unrecoverable error occurred: {}",
-                    err.to_string()
-                ));
+                error_message = Some(format!("Some unrecoverable error occurred: {}", err));
             }
         }
     }

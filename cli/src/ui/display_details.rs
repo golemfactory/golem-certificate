@@ -84,7 +84,7 @@ impl StringBuffer {
     }
 
     fn add_empty_line(&mut self) {
-        writeln!(&mut self.buf, "").unwrap();
+        writeln!(&mut self.buf).unwrap();
     }
 
     fn into_inner(self) -> String {
@@ -128,7 +128,7 @@ fn write_subject(buf: &mut StringBuffer, subject: &Subject) {
             write!(buf.buf_mut(), ": ").unwrap();
             write_value_as_array(buf, value, Direction::Horizontal);
         } else if value.is_object() {
-            writeln!(buf.buf_mut(), "").unwrap();
+            writeln!(buf.buf_mut()).unwrap();
             buf.increase_indent_level();
             write_object(value.as_object().unwrap(), buf);
             buf.decrease_indent_level();
@@ -145,7 +145,7 @@ fn write_subject(buf: &mut StringBuffer, subject: &Subject) {
             write!(buf.buf_mut(), ": ").unwrap();
             write_value_as_array(buf, value, Direction::Horizontal);
         } else if value.is_object() {
-            writeln!(buf.buf_mut(), "").unwrap();
+            writeln!(buf.buf_mut()).unwrap();
             buf.increase_indent_level();
             write_object(value.as_object().unwrap(), buf);
             buf.decrease_indent_level();
@@ -182,7 +182,7 @@ fn write_permissions(buf: &mut StringBuffer, permissions: &Permissions) {
         Permissions::All => writeln!(buf.buf_mut(), ": All").unwrap(),
         Permissions::Object(details) => {
             if let Some(outbound) = &details.outbound {
-                writeln!(buf.buf_mut(), "").unwrap();
+                writeln!(buf.buf_mut()).unwrap();
                 buf.increase_indent_level();
                 write!(buf.buf_mut_with_indent(), "Outbound").unwrap();
                 match outbound {
@@ -193,7 +193,7 @@ fn write_permissions(buf: &mut StringBuffer, permissions: &Permissions) {
                             .map(|url| url.clone().into())
                             .collect::<Vec<String>>();
                         array.sort();
-                        writeln!(buf.buf_mut(), "").unwrap();
+                        writeln!(buf.buf_mut()).unwrap();
                         buf.increase_indent_level();
                         write_array(buf, &array, Direction::Vertical);
                         buf.decrease_indent_level();
@@ -245,6 +245,7 @@ fn write_signing_certificate(
         cert.certificate["subject"]["displayName"].as_str().unwrap()
     )
     .unwrap();
+
     if detailed_signer {
         buf.increase_indent_level();
         write_certificate(buf, cert, detailed_signer);
@@ -253,12 +254,7 @@ fn write_signing_certificate(
 }
 
 fn write_node_id(buf: &mut StringBuffer, node_id: &NodeId) {
-    writeln!(
-        buf.buf_mut_with_indent(),
-        "Node ID: {}",
-        node_id.to_string()
-    )
-    .unwrap();
+    writeln!(buf.buf_mut_with_indent(), "Node ID: {}", node_id).unwrap();
 }
 
 fn write_object(object: &Map<String, Value>, buf: &mut StringBuffer) {
@@ -268,7 +264,7 @@ fn write_object(object: &Map<String, Value>, buf: &mut StringBuffer) {
             write!(buf.buf_mut(), ":").unwrap();
             write_value_as_array(buf, value, Direction::Horizontal);
         } else if value.is_object() {
-            writeln!(buf.buf_mut(), "").unwrap();
+            writeln!(buf.buf_mut()).unwrap();
             buf.increase_indent_level();
             write_object(value.as_object().unwrap(), buf);
             buf.decrease_indent_level();
@@ -298,11 +294,11 @@ fn write_value_as_array(buf: &mut StringBuffer, value: &Value, direction: Direct
     write_array(buf, &values, direction)
 }
 
-fn write_array(buf: &mut StringBuffer, array: &Vec<String>, direction: Direction) {
+fn write_array(buf: &mut StringBuffer, array: &[String], direction: Direction) {
     array.iter().for_each(|element| match direction {
         Direction::Horizontal => write!(buf.buf_mut(), " {},", element).unwrap(),
         Direction::Vertical => writeln!(buf.buf_mut_with_indent(), "{}", element).unwrap(),
     });
     buf.buf_mut().pop();
-    writeln!(buf.buf_mut(), "").unwrap();
+    writeln!(buf.buf_mut()).unwrap();
 }

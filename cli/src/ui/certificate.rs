@@ -134,19 +134,15 @@ impl DocumentEditor for CertificateEditor {
     }
 
     fn load_template(&mut self, template: Value) {
-        template.get("certificate").map(|value| {
-            match serde_json::from_value::<CertificateTemplate>(value.clone()) {
-                Ok(template) => {
-                    self.key_usage_editor = KeyUsageEditor::new(template.key_usage);
-                    self.permissions_editor = PermissionsEditor::new(template.permissions);
-                    self.public_key_editor = KeyEditor::new("Public", template.public_key);
-                    self.subject_editor = SubjectEditor::new(template.subject);
-                    self.validity_period_editor = ValidityPeriodEditor::new(template.validity_period);
-                }
-
-                Err(_) => (),
+        if let Some(value) = template.get("certificate") {
+            if let Ok(template) = serde_json::from_value::<CertificateTemplate>(value.clone()) {
+                self.key_usage_editor = KeyUsageEditor::new(template.key_usage);
+                self.permissions_editor = PermissionsEditor::new(template.permissions);
+                self.public_key_editor = KeyEditor::new("Public", template.public_key);
+                self.subject_editor = SubjectEditor::new(template.subject);
+                self.validity_period_editor = ValidityPeriodEditor::new(template.validity_period);
             }
-        });
+        }
     }
 
     fn get_document(&self) -> Result<Value> {

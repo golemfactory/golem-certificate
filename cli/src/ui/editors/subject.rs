@@ -36,7 +36,7 @@ impl SubjectEditor {
         Self {
             additional_subject_properties: filter_string_values(&subject.additional_properties),
             additional_contact_properties: filter_string_values(&subject.contact.additional_properties),
-            subject: subject,
+            subject,
             highlight: None,
             property_editor: None,
             value_editor: None,
@@ -105,11 +105,11 @@ fn filter_string_values(map: &HashMap<String, serde_json::Value>) -> Vec<(String
     }).collect()
 }
 
-fn map_string_values_to_value(map: &Vec<(String, String)>) -> Vec<(String, serde_json::Value)> {
+fn map_string_values_to_value(map: &[(String, String)]) -> Vec<(String, serde_json::Value)> {
     map.iter().map(|(k, v)| (k.to_owned(), serde_json::Value::String(v.to_owned()))).collect()
 }
 
-fn contains_key(vec: &Vec<(String, String)>, key: &String) -> bool {
+fn contains_key(vec: &[(String, String)], key: &String) -> bool {
     vec.iter().any(|(k, _)| k == key)
 }
 
@@ -134,17 +134,16 @@ impl EditorComponent for SubjectEditor {
 
     fn handle_key_event(&mut self, key_event: KeyEvent) -> EditorEventResult {
         if let Some(error_message) = self.error_message.as_mut() {
-            match error_message.handle_key_event(key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = error_message.handle_key_event(key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     _ => self.error_message = None,
                 }
-                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(value_editor) = self.value_editor.as_mut() {
-            match Component::handle_key_event(value_editor, key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = Component::handle_key_event(value_editor, key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     ComponentStatus::Closed => {
                         let text = value_editor.get_text().to_owned();
@@ -162,12 +161,11 @@ impl EditorComponent for SubjectEditor {
                     },
                     ComponentStatus::Escaped => self.value_editor = None,
                 }
-                Err(_) => (),
             }
             EditorEventResult::KeepActive
         } else if let Some(property_editor) = self.property_editor.as_mut() {
-            match property_editor.handle_key_event(key_event) {
-                Ok(status) => match status {
+            if let Ok(status) = property_editor.handle_key_event(key_event) {
+                match status {
                     ComponentStatus::Active => (),
                     ComponentStatus::Closed => {
                         let (name, value) = property_editor.get_property();
@@ -227,81 +225,76 @@ impl EditorComponent for SubjectEditor {
                         }
                     },
                     ComponentStatus::Escaped => self.property_editor = None,
-                },
-                Err(_) => (),
+                }
             }
             EditorEventResult::KeepActive
-        } else {
-            if let Some(highlight) = self.highlight {
-                match key_event.code {
-                    KeyCode::Esc => EditorEventResult::Escaped,
-                    KeyCode::Down => {
-                        if highlight < self.calculate_render_height() - 1 {
-                            let mut new_highlight = highlight + 1;
-                            if new_highlight == self.calculate_contact_start_line() {
-                                new_highlight += 1;
-                            };
-                            self.highlight = Some(new_highlight);
-                            EditorEventResult::KeepActive
-                        } else {
-                            self.highlight = None;
-                            EditorEventResult::ExitBottom
-                        }
-                    }
-                    KeyCode::Up => {
-                        if highlight > 1 {
-                            let mut new_highlight = highlight - 1;
-                            if new_highlight == self.calculate_contact_start_line() {
-                                new_highlight -= 1;
-                            };
-                            self.highlight = Some(new_highlight);
-                            EditorEventResult::KeepActive
-                        } else {
-                            self.highlight = None;
-                            EditorEventResult::ExitTop
-                        }
-                    }
-                    KeyCode::Delete | KeyCode::Backspace => {
-                        if highlight > 1 && highlight < self.calculate_contact_start_line() - 1 {
-                            let idx = highlight - 2;
-                            self.remove_subject_property(idx);
-                        } else if highlight > self.calculate_contact_start_line() + 1 && highlight < self.calculate_render_height() - 2 {
-                            let idx = highlight - self.calculate_contact_start_line() - 2;
-                            self.remove_contact_property(idx);
-                        }
+        } else if let Some(highlight) = self.highlight {
+            match key_event.code {
+                KeyCode::Esc => EditorEventResult::Escaped,
+                KeyCode::Down => {
+                    if highlight < self.calculate_render_height() - 1 {
+                        let mut new_highlight = highlight + 1;
+                        if new_highlight == self.calculate_contact_start_line() {
+                            new_highlight += 1;
+                        };
+                        self.highlight = Some(new_highlight);
                         EditorEventResult::KeepActive
+                    } else {
+                        self.highlight = None;
+                        EditorEventResult::ExitBottom
                     }
-                    KeyCode::Enter => {
-                        if highlight == 1 {
-                            let mut editor = TextInput::new(255, false);
-                            editor.set_text(self.subject.display_name.clone());
-                            self.value_editor = Some(editor);
-                        } else if highlight == self.calculate_contact_start_line() + 1 {
-                            let mut editor = TextInput::new(255, false);
-                            editor.set_text(self.subject.contact.email.clone());
-                            self.value_editor = Some(editor);
-                        } else if highlight > 1 && highlight < self.calculate_contact_start_line() - 1 {
-                            let idx = highlight - 2;
-                            let (name, value) = &self.additional_subject_properties[idx];
-                            let property_editor = PropertyEditor::new(name, value);
-                            self.property_editor = Some(property_editor);
-                        } else if highlight > self.calculate_contact_start_line() + 1 && highlight < self.calculate_render_height() - 1 {
-                            let idx = highlight - self.calculate_contact_start_line() - 2;
-                            let (name, value) = &self.additional_contact_properties[idx];
-                            let property_editor = PropertyEditor::new(name, value);
-                            self.property_editor = Some(property_editor);
-                        } else if highlight == self.calculate_contact_start_line() - 1 {
-                            self.property_editor = Some(Default::default());
-                        } else if highlight == self.calculate_render_height() - 1 {
-                            self.property_editor = Some(Default::default());
-                        }
-                        EditorEventResult::KeepActive
-                    }
-                    _ => EditorEventResult::KeepActive,
                 }
-            } else {
-                EditorEventResult::Inactive
+                KeyCode::Up => {
+                    if highlight > 1 {
+                        let mut new_highlight = highlight - 1;
+                        if new_highlight == self.calculate_contact_start_line() {
+                            new_highlight -= 1;
+                        };
+                        self.highlight = Some(new_highlight);
+                        EditorEventResult::KeepActive
+                    } else {
+                        self.highlight = None;
+                        EditorEventResult::ExitTop
+                    }
+                }
+                KeyCode::Delete | KeyCode::Backspace => {
+                    if highlight > 1 && highlight < self.calculate_contact_start_line() - 1 {
+                        let idx = highlight - 2;
+                        self.remove_subject_property(idx);
+                    } else if highlight > self.calculate_contact_start_line() + 1 && highlight < self.calculate_render_height() - 2 {
+                        let idx = highlight - self.calculate_contact_start_line() - 2;
+                        self.remove_contact_property(idx);
+                    }
+                    EditorEventResult::KeepActive
+                }
+                KeyCode::Enter => {
+                    if highlight == 1 {
+                        let mut editor = TextInput::new(255, false);
+                        editor.set_text(self.subject.display_name.clone());
+                        self.value_editor = Some(editor);
+                    } else if highlight == self.calculate_contact_start_line() + 1 {
+                        let mut editor = TextInput::new(255, false);
+                        editor.set_text(self.subject.contact.email.clone());
+                        self.value_editor = Some(editor);
+                    } else if highlight > 1 && highlight < self.calculate_contact_start_line() - 1 {
+                        let idx = highlight - 2;
+                        let (name, value) = &self.additional_subject_properties[idx];
+                        let property_editor = PropertyEditor::new(name, value);
+                        self.property_editor = Some(property_editor);
+                    } else if highlight > self.calculate_contact_start_line() + 1 && highlight < self.calculate_render_height() - 1 {
+                        let idx = highlight - self.calculate_contact_start_line() - 2;
+                        let (name, value) = &self.additional_contact_properties[idx];
+                        let property_editor = PropertyEditor::new(name, value);
+                        self.property_editor = Some(property_editor);
+                    } else if highlight == self.calculate_contact_start_line() - 1 || highlight == self.calculate_render_height() - 1 {
+                        self.property_editor = Some(Default::default());
+                    }
+                    EditorEventResult::KeepActive
+                }
+                _ => EditorEventResult::KeepActive,
             }
+        } else {
+            EditorEventResult::Inactive
         }
     }
 
@@ -315,13 +308,13 @@ impl EditorComponent for SubjectEditor {
         for (key, value) in &self.additional_subject_properties {
             writeln!(text, "  {}: {}", key, value).unwrap();
         }
-        writeln!(text, "").unwrap();
+        writeln!(text).unwrap();
         writeln!(text, "  Contact").unwrap();
         writeln!(text, "    Email: {}", self.subject.contact.email).unwrap();
         for (key, value) in &self.additional_contact_properties {
             writeln!(text, "    {}: {}", key, value).unwrap();
         }
-        writeln!(text, "").unwrap();
+        writeln!(text).unwrap();
     }
 
     fn get_highlight_prefix(&self) -> Option<usize> {
@@ -382,7 +375,7 @@ impl PropertyEditor {
         let mut value_editor = TextInput::new(255, false);
         value_editor.set_text(value.to_owned());
         value_editor.active = false;
-        let mut multiple_choice = MultipleChoice::new(&DONE_CANCEL, 0);
+        let mut multiple_choice = MultipleChoice::new(DONE_CANCEL, 0);
         multiple_choice.active = false;
         Self {
             modal_window,
