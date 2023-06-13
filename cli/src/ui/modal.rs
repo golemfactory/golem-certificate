@@ -1,4 +1,4 @@
-use std::{fmt::Display, path::PathBuf};
+use std::fmt::Display;
 
 use anyhow::Result;
 use crossterm::event::KeyEvent;
@@ -10,7 +10,8 @@ use tui::{
 
 use super::{
     component::*,
-    util::{default_style, get_middle_rectangle, AreaCalculators, CalculateHeight, CalculateWidth}, multiple_choice::MultipleChoice, open_file_dialog::OpenFileDialog,
+    multiple_choice::MultipleChoice,
+    util::{default_style, get_middle_rectangle, AreaCalculators, CalculateHeight, CalculateWidth},
 };
 
 pub struct ModalWindow {
@@ -210,32 +211,3 @@ impl <C: Component> Component for ModalWithComponent<C> {
         self.component.render(inner_area, buf)
     }
 }
-
-pub struct ModalOpenFileDialog {
-    modal: ModalWindow,
-    dialog: OpenFileDialog,
-}
-
-impl ModalOpenFileDialog {
-    pub fn new<S: Into<String>>(title: S) -> Result<Self> {
-        let modal = ModalWindow::new(title);
-        let dialog = OpenFileDialog::new()?;
-        Ok(Self { modal, dialog })
-    }
-
-    pub fn get_selected(&self) -> Option<&PathBuf> {
-        self.dialog.selected.as_ref()
-    }
-}
-
-impl ModalOpenFileDialog {
-    pub fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
-        self.dialog.handle_key_event(key_event)
-    }
-
-    pub fn render(&mut self, area: Rect, buf: &mut Buffer, height: u16, width: u16) -> Cursor {
-        let inner_area = self.modal.render(area, buf, height, width);
-        self.dialog.render(inner_area, buf)
-    }
-}
-

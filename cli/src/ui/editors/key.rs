@@ -5,7 +5,7 @@ use std::{fs, path::PathBuf};
 use anyhow::Result;
 use golem_certificate::Key;
 
-use crate::ui::modal::ModalOpenFileDialog;
+use crate::ui::{modal::ModalWithComponent, open_file_dialog::OpenFileDialog, util::reduce_area_fixed};
 
 struct KeyFile {
     filename: String,
@@ -15,7 +15,7 @@ struct KeyFile {
 pub struct KeyEditor {
     key_type: String,
     key: Option<KeyFile>,
-    open_file_dialog: Option<ModalOpenFileDialog>,
+    open_file_dialog: Option<ModalWithComponent<OpenFileDialog>>,
     error_message: Option<ModalMessage>,
     active: bool,
 }
@@ -77,7 +77,7 @@ impl EditorComponent for KeyEditor {
                 Ok(status) => match status {
                     ComponentStatus::Active => {},
                     ComponentStatus::Closed => {
-                        if let Some(path) = open_file_dialog.get_selected() {
+                        if let Some(path) = open_file_dialog.get_component().selected.as_ref() {
                             match load_key(path) {
                                 Ok(key) => {
                                     self.key = Some(key);
@@ -98,9 +98,12 @@ impl EditorComponent for KeyEditor {
                 match key_event.code {
                     KeyCode::Esc => EditorEventResult::Escaped,
                     KeyCode::Enter => {
-                        match ModalOpenFileDialog::new(format!("Open {} key", self.key_type)) {
-                            Ok(open_file_dialog) =>
-                                self.open_file_dialog = Some(open_file_dialog),
+                        match OpenFileDialog::new() {
+                            Ok(open_file_dialog) => {
+                                let title = format!("Open {} key", self.key_type);
+                                let dialog = ModalWithComponent::new(title, open_file_dialog, reduce_area_fixed(4, 4));
+                                self.open_file_dialog = Some(dialog);
+                            }
                             Err(err) =>
                                 self.error_message = Some(ModalMessage::new("Error opening file dialog", err.to_string())),
                         }
@@ -141,9 +144,7 @@ impl EditorComponent for KeyEditor {
     fn render_modal(&mut self, area: Rect, buf: &mut Buffer) -> Cursor {
         let mut cursor = None;
         if let Some(open_file_dialog) = self.open_file_dialog.as_mut() {
-            let height = area.height.saturating_sub(6);
-            let width = (area.width * 8) / 10;
-            cursor = open_file_dialog.render(area, buf, height, width);
+            cursor = open_file_dialog.render(area, buf);
         }
         if let Some(error_message) = self.error_message.as_mut() {
             cursor = error_message.render(area, buf)

@@ -6,7 +6,7 @@ use anyhow::Result;
 use chrono::Utc;
 use golem_certificate::{SignedCertificate, validate_certificate_str, Signer, Key};
 
-use crate::ui::{multiple_choice::{MultipleChoice, SIGN_OR_CANCEL}, certificate::SignedCertificateDetails, modal::{ModalMultipleChoice, ModalOpenFileDialog, ModalWithSizedComponent}, util::reduce_area_fixed};
+use crate::ui::{multiple_choice::{MultipleChoice, SIGN_OR_CANCEL}, certificate::SignedCertificateDetails, modal::{ModalMultipleChoice, ModalWithSizedComponent, ModalWithComponent}, util::reduce_area_fixed, open_file_dialog::OpenFileDialog};
 
 pub struct SignatureEditor {
     active_editor_idx: usize,
@@ -71,7 +71,7 @@ struct SigningCertificateEditor {
     signed_certificate: Option<(SignedCertificate, String)>,
     signed_certificate_details: Option<ModalWithSizedComponent>,
     signature_type_question: Option<ModalMultipleChoice>,
-    open_file_dialog: Option<ModalOpenFileDialog>,
+    open_file_dialog: Option<ModalWithComponent<OpenFileDialog>>,
     error: Option<ModalMessage>,
 }
 
@@ -91,8 +91,8 @@ impl SigningCertificateEditor {
     }
 
     fn open_certificate_dialog(&mut self) {
-        match ModalOpenFileDialog::new("Open signing certificate") {
-            Ok(dialog) => self.open_file_dialog = Some(dialog),
+        match OpenFileDialog::new() {
+            Ok(dialog) => self.open_file_dialog = Some(ModalWithComponent::new("Open signing certificate", dialog, reduce_area_fixed(4, 4))),
             Err(err) => self.error = Some(ModalMessage::new("Error opening 'Open certificate' dialog", &err.to_string())),
         }
     }
@@ -124,7 +124,10 @@ fn read_certificate(path: &PathBuf) -> Result<(SignedCertificate, String), Strin
 
 impl EditorComponent for SigningCertificateEditor {
     fn enter_from_below(&mut self) {
-        self.highlight = Some(self.calculate_render_height() - 1);
+        self.highlight = match self.signature_type {
+            SignatureType::Certificate => Some(1),
+            _ => Some(0),
+        };
     }
 
     fn enter_from_top(&mut self) {
@@ -148,7 +151,7 @@ impl EditorComponent for SigningCertificateEditor {
                     ComponentStatus::Active => {},
                     ComponentStatus::Escaped => self.open_file_dialog = None,
                     ComponentStatus::Closed => {
-                        match dialog.get_selected() {
+                        match dialog.get_component().selected.as_ref() {
                             Some(path) => {
                                 match read_certificate(path) {
                                     Ok(signed_certificate) => {
@@ -279,7 +282,7 @@ impl EditorComponent for SigningCertificateEditor {
             cursor = component.render(area, buf);
         }
         if let Some(component) = self.open_file_dialog.as_mut() {
-            cursor = component.render(area, buf, area.height.saturating_sub(4), area.width.saturating_sub(4));
+            cursor = component.render(area, buf);
         }
         if let Some(component) = self.error.as_mut() {
             cursor = component.render(area, buf);
