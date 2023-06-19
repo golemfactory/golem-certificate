@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 use crate::cryptography::{EncryptionAlgorithm, HashAlgorithm};
 use crate::serde_utils::{bytes_to_hex, hex_to_bytes};
 
+pub const SIGNED_NODE_DESCRIPTOR_SCHEMA_ID: &str =
+    "https://golem.network/schemas/v1/node-descriptor.schema.json";
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SignedNodeDescriptor {
@@ -12,7 +15,7 @@ pub struct SignedNodeDescriptor {
     pub signature: Signature<SignedCertificate>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Signature<T> {
     pub algorithm: SignatureAlgorithm,
@@ -45,7 +48,10 @@ impl Signature<SignedCertificate> {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+pub const SIGNED_CERTIFICATE_SCHEMA_ID: &str =
+    "https://golem.network/schemas/v1/certificate.schema.json";
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SignedCertificate {
     #[serde(rename = "$schema")]
@@ -54,13 +60,13 @@ pub struct SignedCertificate {
     pub signature: Box<Signature<Signer>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SignatureAlgorithm {
     pub hash: HashAlgorithm,
     pub encryption: EncryptionAlgorithm,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
 pub enum Signer {

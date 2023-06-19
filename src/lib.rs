@@ -11,10 +11,12 @@ pub use cryptography::sign_json;
 pub use cryptography::verify_signature_json;
 
 pub use cryptography::Key;
+pub use cryptography::KeyPair;
 
 pub use schemas::signature::Signature;
 pub use schemas::signature::SignatureAlgorithm;
 pub use schemas::signature::SignedCertificate;
+pub use schemas::signature::SignedNodeDescriptor;
 pub use schemas::signature::Signer;
 
 pub use validator::validate_certificate;
@@ -23,3 +25,4 @@ pub use validator::validate_node_descriptor;
 pub use validator::validate_node_descriptor_str;
 
 pub use error::Error;
+pub use error::Result;
