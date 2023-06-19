@@ -1,5 +1,5 @@
 {
-  "$schema": "https://golem.network/schemas/v1/node-descriptor.schema.json",
+  "$schema": "https://schemas.golem.network/v1/node-descriptor.schema.json",
   "nodeDescriptor": {
     "nodeId": "0x338e02f29b63155beec8253af7ad367dd44b40c6",
     "validityPeriod": {
@@ -21,7 +21,7 @@
     },
     "value": "54e75991c843de45f1b662a94a13c867912e758356c450e995c9f942222a54b5eabde6f881281d91c423b5b8fbd51d299a7b3d65fdd521bb1f9ff0d092c54606",
     "signer": {
-      "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+      "$schema": "https://schemas.golem.network/v1/certificate.schema.json",
       "certificate": {
         "validityPeriod": {
           "notBefore": "2023-01-01T00:00:00Z",
@@ -54,7 +54,7 @@
         },
         "value": "3d0783074bd4fdce1cc03c734fe7a3244d8e284b8426c9bdad97de19efdb59b9835ac9b3089dbbcf70b0678b1e5038a643b28929aa5069de46956d311572cb00",
         "signer": {
-          "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+          "$schema": "https://schemas.golem.network/v1/certificate.schema.json",
           "certificate": {
             "validityPeriod": {
               "notBefore": "2000-01-01T00:00:00Z",

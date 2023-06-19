@@ -1,5 +1,5 @@
 {
-  "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+  "$schema": "https://schemas.golem.network/v1/certificate.schema.json",
   "certificate": {
     "validityPeriod": {
       "notBefore": "2023-01-01T00:00:00Z",
@@ -32,7 +32,7 @@
     },
     "value": "ad72d9e893de074c30f5ce81afd91316222dc9878a93961b8ac9752b48b9b4ac31b41ffd7d096d61f6a0c8d90a0aa644a4bfad6592ddd87ab9193f244af98a07",
     "signer": {
-      "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+      "$schema": "https://schemas.golem.network/v1/certificate.schema.json",
       "certificate": {
         "validityPeriod": {
           "notBefore": "2023-01-01T00:00:00Z",
@@ -66,7 +66,7 @@
         },
         "value": "89a8743ae5f3bc6223f231cb5c9376f9cf97495bc354f370844191d3666765bcc7f5322ac4d995d4570dbdbafcd82933043137fa5821056b8d58a97287933605",
         "signer": {
-          "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+          "$schema": "https://schemas.golem.network/v1/certificate.schema.json",
           "certificate": {
             "validityPeriod": {
               "notBefore": "2000-01-01T00:00:00Z",
