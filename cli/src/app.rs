@@ -1,7 +1,7 @@
 use std::io;
 
 use anyhow::Result;
-use crossterm::event::{self, Event};
+use crossterm::event::{self, Event, KeyEventKind};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use tui::backend::{Backend, CrosstermBackend};
 use tui::Terminal;
@@ -48,7 +48,7 @@ fn app_loop<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<App
         }
     })?;
     match event::read()? {
-        Event::Key(e) => app.handle_key_event(e),
+        Event::Key(e) if e.kind != KeyEventKind::Release => app.handle_key_event(e),
         _ => Ok(AppStatus::Running),
     }
 }
