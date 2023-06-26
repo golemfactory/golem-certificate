@@ -10,6 +10,7 @@ pub use cryptography::create_key_pair;
 pub use cryptography::sign_json;
 pub use cryptography::verify_signature_json;
 
+pub use cryptography::EncryptionAlgorithm;
 pub use cryptography::Key;
 pub use cryptography::KeyPair;
 

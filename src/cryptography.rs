@@ -33,6 +33,7 @@ pub enum HashAlgorithm {
 pub enum EncryptionAlgorithm {
     #[default]
     EdDSA,
+    EdDSAOpenPGP,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -131,6 +132,7 @@ fn sign_bytes(bytes: impl AsRef<[u8]>, secret_key: &SecretKey) -> Vec<u8> {
 
 pub fn verify_signature_json(
     value: &Value,
+    signature_algorithm: &EncryptionAlgorithm,
     signature_value: impl AsRef<[u8]>,
     public_key: &Key,
 ) -> Result<(), Error> {
@@ -139,7 +141,24 @@ pub fn verify_signature_json(
     let eddsa_signature = EdDSASignature::from_bytes(signature_value.as_ref())
         .map_err(|_| Error::InvalidSignatureValue)?;
     let public_key = PublicKey::from_bytes(&public_key.key).map_err(|_| Error::InvalidPublicKey)?;
-    verify_bytes(canonical_json, &eddsa_signature, &public_key)
+    match signature_algorithm {
+        EncryptionAlgorithm::EdDSA =>
+            verify_bytes(canonical_json, &eddsa_signature, &public_key),
+        EncryptionAlgorithm::EdDSAOpenPGP =>
+            verify_bytes_openpgp(canonical_json, &eddsa_signature, &public_key),
+    }
+}
+
+// OpenPGP uses the hash of the message as input to the signature algorithm
+// https://datatracker.ietf.org/doc/html/rfc4880#section-5.2.4
+// This is used when signing with OpenPGP application on smartcards
+fn verify_bytes_openpgp(
+    bytes: impl AsRef<[u8]>,
+    signature: &EdDSASignature,
+    public_key: &PublicKey,
+) -> Result<(), Error> {
+    let bytes_hash = create_digest(bytes, &HashAlgorithm::Sha512);
+    verify_bytes(bytes_hash, signature, public_key)
 }
 
 fn verify_bytes(
