@@ -123,6 +123,7 @@ fn validate_signed_node_descriptor(
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
     verify_signature_json(
         &signed_node_descriptor.node_descriptor,
+        &signed_node_descriptor.signature.algorithm.encryption,
         &signed_node_descriptor.signature.value,
         &leaf_certificate.public_key,
     )?;
@@ -172,6 +173,7 @@ fn validate_signed_certificate(
                     .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
             verify_signature_json(
                 &signed_certificate.certificate,
+                &signed_certificate.signature.algorithm.encryption,
                 &signed_certificate.signature.value,
                 &certificate.public_key,
             )?;
@@ -188,6 +190,7 @@ fn validate_signed_certificate(
                 .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
             verify_signature_json(
                 &signed_certificate.certificate,
+                &signed_certificate.signature.algorithm.encryption,
                 &signed_certificate.signature.value,
                 &parent.public_key,
             )?;

@@ -19,6 +19,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 openpgp-card = "0.3.5"
 openpgp-card-pcsc = "0.3.1"
+rpassword = "7.2.0"
 
 crossterm = { version = "0.26.1", optional = true }
 tui = { package = "ratatui", version = "0.21.0", optional = true }
