@@ -60,7 +60,7 @@ pub struct SignedCertificate {
     pub signature: Box<Signature<Signer>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct SignatureAlgorithm {
     pub hash: HashAlgorithm,
     pub encryption: EncryptionAlgorithm,
