@@ -11,10 +11,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use golem_certificate as gcert;
+
+mod smartcard;
+use smartcard::{smartcard, SmartcardCommand};
 #[cfg(feature = "tui")]
 mod app;
 #[cfg(feature = "tui")]
 mod ui;
+
 
 #[derive(Parser)]
 enum GolemCertificateCli {
@@ -46,6 +50,11 @@ enum GolemCertificateCli {
         )]
         timestamp: Option<DateTime<Utc>>,
     },
+    #[command(about = "Signature operations using a smartcard")]
+    Smartcard {
+        #[command(subcommand)]
+        cmd: SmartcardCommand,
+    },
     #[cfg(feature = "tui")]
     #[command(about = "Starts Golem Certificate Manager")]
     Ui,
@@ -57,7 +66,7 @@ struct SelfSignArguments {
         help = "Path to the certificate to be self-signed. Signed certificate is the same path with extension set to .signed.json"
     )]
     certificate_path: PathBuf,
-    #[arg(help = "Path to the signing key associated with the public key in the certificate.")]
+    #[arg(help = "Path to the signing key associated with the public key in the certificate")]
     signing_key_path: PathBuf,
 }
 
@@ -70,7 +79,7 @@ struct SignArguments {
     #[arg(help = "Path to the signing certificate")]
     certificate_path: PathBuf,
     #[arg(
-        help = "Path to the signing key associated with the public key in the signing certificate."
+        help = "Path to the signing key associated with the public key in the signing certificate"
     )]
     signing_key_path: PathBuf,
 }
@@ -222,6 +231,7 @@ fn main() -> Result<()> {
             signed_file_path,
             timestamp,
         } => verify_signature(&signed_file_path, timestamp),
+        GolemCertificateCli::Smartcard { cmd } => smartcard(cmd).map_err(Into::into),
         #[cfg(feature = "tui")]
         GolemCertificateCli::Ui => app::start(),
     }
