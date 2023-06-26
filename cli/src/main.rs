@@ -1,12 +1,10 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
-use gcert::schemas::{SIGNED_CERTIFICATE_SCHEMA_ID, SIGNED_NODE_DESCRIPTOR_SCHEMA_ID};
 use hex::ToHex;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
 
 use golem_certificate as gcert;
@@ -14,6 +12,11 @@ use golem_certificate as gcert;
 mod smartcard;
 use smartcard::{smartcard, SmartcardCommand};
 mod utils;
+use utils::{
+    deserialize_from_file, determine_file_type,
+    save_json_with_extension, save_signed_json, FileType,
+};
+
 #[cfg(feature = "tui")]
 mod app;
 #[cfg(feature = "tui")]
@@ -63,7 +66,7 @@ enum GolemCertificateCli {
 #[derive(Args)]
 struct SelfSignArguments {
     #[arg(
-        help = "Path to the certificate to be self-signed. Signed certificate is the same path with extension set to .signed.json"
+        help = "Path to the certificate to be self-signed. Signed certificate is saved to the same path with extension set to .signed.json"
     )]
     certificate_path: PathBuf,
     #[arg(help = "Path to the signing key associated with the public key in the certificate")]
@@ -92,42 +95,6 @@ fn parse_timestamp(timestamp: &str) -> Result<DateTime<Utc>> {
     }
 }
 
-enum FileType {
-    Certificate,
-    NodeDescriptor,
-}
-
-impl FileType {
-    fn signed_property(&self) -> String {
-        match self {
-            FileType::Certificate => "certificate",
-            FileType::NodeDescriptor => "nodeDescriptor",
-        }
-        .to_string()
-    }
-}
-
-fn determine_file_type(json_data: &Value) -> Result<FileType> {
-    json_data["$schema"]
-        .as_str()
-        .map(|schema| match schema {
-            SIGNED_CERTIFICATE_SCHEMA_ID => Ok(FileType::Certificate),
-            SIGNED_NODE_DESCRIPTOR_SCHEMA_ID => Ok(FileType::NodeDescriptor),
-            _ => Err(anyhow!("Unknown json structure {schema}")),
-        })
-        .unwrap_or_else(|| Err(anyhow!("Unknown json structure, missing $schema property")))
-}
-
-fn save_json_with_extension<C: ?Sized + Serialize>(
-    path: &Path,
-    content: &C,
-    extension: &str,
-) -> Result<()> {
-    let mut modified_path = path.to_path_buf();
-    modified_path.set_extension(extension);
-    utils::save_json_to_file(modified_path, content)
-}
-
 fn create_key_pair(key_pair_path: &Path) -> Result<()> {
     let key_pair = gcert::create_key_pair();
     save_json_with_extension(key_pair_path, &key_pair.public_key, "pub")?;
@@ -141,15 +108,6 @@ fn print_fingerprint(input_file_path: &PathBuf) -> Result<()> {
     let fingerprint = gcert::create_default_hash(signed_data)?;
     println!("{}", fingerprint.encode_hex::<String>());
     Ok(())
-}
-
-fn save_signed_json<C: ?Sized + Serialize>(path: &Path, content: &C) -> Result<()> {
-    save_json_with_extension(path, content, "signed.json")
-}
-
-fn deserialize_from_file<T: for<'de> Deserialize<'de>>(path: &PathBuf) -> Result<T> {
-    let json_string = fs::read_to_string(path)?;
-    serde_json::from_str(&json_string).map_err(Into::into)
 }
 
 fn sign_json_value(
