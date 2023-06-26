@@ -28,6 +28,10 @@ pub enum Error {
     NodeSignNotPermitted,
     #[error("Invalid signature")]
     InvalidSignature,
+    #[error("Invalid signature value (cannot deserialize)")]
+    InvalidSignatureValue,
+    #[error("Invalid public key")]
+    InvalidPublicKey,
     #[error("Invalid json: {0}")]
     InvalidJson(String),
     #[error("JCS serialization error: {0}")]
