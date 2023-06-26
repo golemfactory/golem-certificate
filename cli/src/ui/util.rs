@@ -1,10 +1,8 @@
 use std::{
     fs,
-    io::{self, BufWriter, Write},
     path::Path,
 };
 
-use serde::Serialize;
 use serde_json::Value;
 use tui::{
     layout::{self, Constraint, Layout, Rect},
@@ -46,14 +44,6 @@ pub fn get_middle_rectangle(area: Rect, height: u16, width: u16) -> Rect {
             Constraint::Max(vertical_border),
         ])
         .split(row)[1]
-}
-
-pub fn save_json_to_file<C: Serialize>(path: impl AsRef<Path>, content: &C) -> io::Result<()> {
-    let mut writer = BufWriter::new(fs::File::create(path)?);
-    serde_json::to_writer_pretty(&mut writer, content)?;
-    let _ = writer.write(b"\n")?;
-    writer.flush()?;
-    Ok(())
 }
 
 pub fn read_json_file(path: &Path) -> Result<Value, String> {

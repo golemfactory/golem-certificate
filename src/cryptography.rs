@@ -43,6 +43,38 @@ pub struct Key {
     parameters: Option<Value>,
 }
 
+impl Key {
+    fn from_bytes(bytes: [u8; 32]) -> Self {
+        Self::from_bytes_vec(bytes.into()).unwrap()
+    }
+
+    fn from_bytes_vec(bytes: Vec<u8>) -> Result<Self, String> {
+        if bytes.len() != 32 {
+           Err(format!("Invalid key length: {} expected 32 bytes.", bytes.len()))
+        } else {
+            Ok(Self {
+                algorithm: EncryptionAlgorithm::EdDSA,
+                parameters: Some(json!({ "scheme": "Ed25519" })),
+                key: bytes,
+            })
+        }
+    }
+}
+
+impl From<[u8; 32]> for Key {
+    fn from(value: [u8; 32]) -> Self {
+        Self::from_bytes(value)
+    }
+}
+
+impl TryFrom<Vec<u8>> for Key {
+    type Error = String;
+
+    fn try_from(value: Vec<u8>) -> std::result::Result<Self, Self::Error> {
+        Self::from_bytes_vec(value)
+    }
+}
+
 pub struct KeyPair {
     pub public_key: Key,
     pub private_key: Key,
@@ -51,19 +83,9 @@ pub struct KeyPair {
 pub fn create_key_pair() -> KeyPair {
     let mut csprng = OsRng {};
     let keypair = Keypair::generate(&mut csprng);
-    let public_key = Key {
-        algorithm: EncryptionAlgorithm::EdDSA,
-        parameters: Some(json!({ "scheme": "Ed25519" })),
-        key: keypair.public.to_bytes().into(),
-    };
-    let private_key = Key {
-        algorithm: EncryptionAlgorithm::EdDSA,
-        parameters: Some(json!({ "scheme": "Ed25519" })),
-        key: keypair.secret.to_bytes().into(),
-    };
     KeyPair {
-        public_key,
-        private_key,
+        public_key: keypair.public.to_bytes().into(),
+        private_key: keypair.secret.to_bytes().into(),
     }
 }
 

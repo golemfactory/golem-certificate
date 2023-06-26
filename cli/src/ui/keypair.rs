@@ -9,12 +9,14 @@ use tui::{
     widgets::{Block, BorderType, Borders, Padding, Widget},
 };
 
+use crate::utils::save_json_to_file;
+
 use super::{
     component::*,
     modal::{ModalMessage, ModalMultipleChoice},
     multiple_choice::OVERWRITE_CHOICES,
     save_file_dialog::SaveFileDialog,
-    util::{default_style, save_json_to_file},
+    util::default_style,
 };
 
 pub struct CreateKeyPairDialog {

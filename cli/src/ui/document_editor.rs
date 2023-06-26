@@ -1,13 +1,3 @@
-use super::{
-    component::*,
-    editors::*,
-    modal::{ModalMessage, ModalMultipleChoice, ModalWindow, ModalWithComponent},
-    multiple_choice::{MultipleChoice, EXIT_WITHOUT_SAVE, OVERWRITE_CHOICES, SIGN_OR_TEMPLATE},
-    open_file_dialog::OpenFileDialog,
-    save_file_dialog::SaveFileDialog,
-    util::{default_style, read_json_file, reduce_area_fixed, save_json_to_file},
-};
-
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -19,6 +9,18 @@ use serde_json::Value;
 use tui::{
     layout::Rect,
     widgets::{Block, BorderType, Borders, Padding, Widget},
+};
+
+use crate::utils::save_json_to_file;
+
+use super::{
+    component::*,
+    editors::*,
+    modal::{ModalMessage, ModalMultipleChoice, ModalWindow, ModalWithComponent},
+    multiple_choice::{MultipleChoice, EXIT_WITHOUT_SAVE, OVERWRITE_CHOICES, SIGN_OR_TEMPLATE},
+    open_file_dialog::OpenFileDialog,
+    save_file_dialog::SaveFileDialog,
+    util::{default_style, read_json_file, reduce_area_fixed},
 };
 
 const DEFAULT_OR_TEMPLATE: [&str; 2] = ["Default values", "Load template"];

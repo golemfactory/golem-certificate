@@ -1,5 +1,4 @@
 use std::fs;
-use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Result};
@@ -14,6 +13,7 @@ use golem_certificate as gcert;
 
 mod smartcard;
 use smartcard::{smartcard, SmartcardCommand};
+mod utils;
 #[cfg(feature = "tui")]
 mod app;
 #[cfg(feature = "tui")]
@@ -118,14 +118,6 @@ fn determine_file_type(json_data: &Value) -> Result<FileType> {
         .unwrap_or_else(|| Err(anyhow!("Unknown json structure, missing $schema property")))
 }
 
-fn save_json_to_file<C: ?Sized + Serialize>(path: impl AsRef<Path>, content: &C) -> Result<()> {
-    let mut writer = BufWriter::new(fs::File::create(path)?);
-    serde_json::to_writer_pretty(&mut writer, content)?;
-    let _ = writer.write(b"\n")?;
-    writer.flush()?;
-    Ok(())
-}
-
 fn save_json_with_extension<C: ?Sized + Serialize>(
     path: &Path,
     content: &C,
@@ -133,7 +125,7 @@ fn save_json_with_extension<C: ?Sized + Serialize>(
 ) -> Result<()> {
     let mut modified_path = path.to_path_buf();
     modified_path.set_extension(extension);
-    save_json_to_file(modified_path, content)
+    utils::save_json_to_file(modified_path, content)
 }
 
 fn create_key_pair(key_pair_path: &Path) -> Result<()> {
