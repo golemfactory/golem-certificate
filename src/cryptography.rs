@@ -29,8 +29,9 @@ pub enum HashAlgorithm {
     Sha3_512,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub enum EncryptionAlgorithm {
+    #[default]
     EdDSA,
 }
 
@@ -117,10 +118,7 @@ pub fn sign_json(value: &Value, private_key: &Key) -> Result<(SignatureAlgorithm
     let canonical_json = serde_json_canonicalizer::to_vec(value)?;
     let secret_key = SecretKey::from_bytes(&private_key.key)?;
     let signature_value = sign_bytes(canonical_json, &secret_key);
-    let algorithm = SignatureAlgorithm {
-        hash: HashAlgorithm::Sha512,
-        encryption: EncryptionAlgorithm::EdDSA,
-    };
+    let algorithm = SignatureAlgorithm::default();
     Ok((algorithm, signature_value))
 }
 
