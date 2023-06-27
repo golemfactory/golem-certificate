@@ -15,7 +15,7 @@ use pretty_assertions::assert_eq;
 use test_case::test_case;
 
 #[test]
-fn happy_path() {
+fn happy_path_details() {
     let certificate =
         std::fs::read_to_string("tests/resources/certificate/happy_path.signed.json").unwrap();
 
@@ -42,6 +42,16 @@ fn happy_path() {
             key_usage: KeyUsage::Limited(HashSet::from_iter(vec![Usage::SignNode].into_iter())),
         }
     );
+}
+
+#[test_case("happy_path.signed.json")]
+#[test_case("happy_path_smartcard_root.signed.json")]
+#[test_case("happy_path_smartcard_leaf.signed.json")]
+fn happy_path(filename: &str) {
+    let certificate =
+        std::fs::read_to_string(format!("tests/resources/certificate/{filename}")).unwrap();
+
+    assert!(validate_certificate_str(&certificate, Some(Utc::now())).is_ok());
 }
 
 #[test_case("not_signed.json", Error::JsonDoesNotConformToSchema("missing field `signature`".to_string()))]
