@@ -4,13 +4,13 @@ use anyhow::{Result, anyhow};
 use clap::Subcommand;
 use golem_certificate::{
     create_default_hash, Key, EncryptionAlgorithm, Signature, SignatureAlgorithm,
-    schemas::SIGNED_CERTIFICATE_SCHEMA_ID,
+    schemas::SIGNED_CERTIFICATE_SCHEMA_ID, SignedCertificate,
 };
 use openpgp_card::{CardBackend, Error, CardTransaction};
 use openpgp_card_pcsc::PcscBackend;
 use serde_json::Value;
 
-use crate::{utils::{deserialize_from_file, save_json_to_file}, add_signature};
+use crate::{utils::{deserialize_from_file, save_json_to_file, determine_file_type}, add_signature};
 
 // Details of the commands are from
 // 'Functional Specification of the OpenPGP applicationon ISO Smart Card Operating Systems'
@@ -21,11 +21,22 @@ pub enum SmartcardCommand {
     #[command(about = "Lists all visible smartcards. If your card does not show up, try to unplug and replug it")]
     List,
     #[command(about = "Exports the public key of the OpenPGP sign key")]
-    ExportPrivateKey {
+    ExportPublicKey {
         #[arg(help = "The card identifier as printed by the list command")]
         ident: String,
-        #[arg(help = "Path to save the public keyr to")]
+        #[arg(help = "Path to save the public key to")]
         public_key_path: PathBuf,
+    },
+    #[command(about = "Signs a certificate or node descriptor")]
+    Sign {
+        #[arg(help = "The card identifier as printed by the list command")]
+        ident: String,
+        #[arg(
+            help = "Path to the certificate or node descriptor to be signed. Signed document is saved to the same path with extension set to .signed.json"
+        )]
+        input_file_path: PathBuf,
+        #[arg(help = "Path to the signing certificate")]
+        certificate_path: PathBuf,
     },
     #[command(about = "Create self-signed certificate, replacing the public key with the one from the smartcard")]
     SelfSignCertificate {
@@ -40,7 +51,8 @@ pub fn smartcard(cmd: SmartcardCommand) -> Result<()> {
     use SmartcardCommand::*;
     match cmd {
         List => list(),
-        ExportPrivateKey { ident, public_key_path } => export_private_key(ident, public_key_path),
+        ExportPublicKey { ident, public_key_path } => export_public_key(ident, public_key_path),
+        Sign { ident, input_file_path, certificate_path } => sign_json_document(ident, input_file_path, certificate_path),
         SelfSignCertificate { certificate_path, ident } => self_sign_certificate(ident, certificate_path),
     }
 }
@@ -64,12 +76,31 @@ fn list() -> Result<()> {
     Ok(())
 }
 
-fn export_private_key(ident: String, public_key_path: PathBuf) -> Result<()> {
+fn export_public_key(ident: String, public_key_path: PathBuf) -> Result<()> {
     let mut card = open_card(&ident)?;
     let mut transaction = card.transaction()?;
+    verify_key_algo(&mut transaction)?;
     let public_key = read_public_key(&mut transaction)?;
     save_json_to_file(public_key_path, &public_key)?;
     Ok(())
+}
+
+fn sign_json_document(ident: String, document_path: PathBuf, certificate_path: PathBuf) -> Result<()> {
+    let mut document = deserialize_from_file::<Value>(&document_path)?;
+    let signed_property = determine_file_type(&document)?.signed_property();
+    let signed_data = &document[signed_property];
+    let mut card = open_card(&ident)?;
+    let mut transaction = card.transaction()?;
+    let public_key = read_public_key(&mut transaction)?;
+    let certificate: SignedCertificate = deserialize_from_file(&certificate_path)?;
+    if serde_json::to_value(public_key)? != certificate.certificate["publicKey"] {
+        Err(anyhow!("Public key in the signign certificate does not match the public key from the card"))
+    } else {
+        let (algorithm, signature_value) = sign_json(&mut transaction, signed_data)?;
+        let signature = Signature::create(algorithm, signature_value, certificate);
+        add_signature(&mut document, signature)?;
+        save_json_to_file(document_path.with_extension("signed.json"), &document)
+    }
 }
 
 fn self_sign_certificate(ident: String, certificate_path: PathBuf) -> Result<()> {
@@ -80,13 +111,7 @@ fn self_sign_certificate(ident: String, certificate_path: PathBuf) -> Result<()>
     let public_key = read_public_key(&mut transaction)?;
     certificate["certificate"]["publicKey"] = serde_json::to_value(public_key)?;
     certificate["$schema"] = SIGNED_CERTIFICATE_SCHEMA_ID.into();
-    let hash = create_default_hash(&certificate["certificate"])?;
-    login(&mut transaction)?;
-    let signature_bytes = sign(&mut transaction, &hash)?;
-    let signature_algorithm = SignatureAlgorithm {
-        encryption: EncryptionAlgorithm::EdDSAOpenPGP,
-        ..Default::default()
-    };
+    let (signature_algorithm, signature_bytes) = sign_json(&mut transaction, &certificate["certificate"])?;
     let signature = Signature::create_self_signed(signature_algorithm, signature_bytes);
     add_signature(&mut certificate, signature)?;
     save_json_to_file(certificate_path.with_extension("signed.json"), &certificate)?;
@@ -94,6 +119,18 @@ fn self_sign_certificate(ident: String, certificate_path: PathBuf) -> Result<()>
 }
 
 type Transaction<'a> = Box<dyn CardTransaction + Sync + Send + 'a>;
+
+fn sign_json<'a>(transaction: &mut Transaction<'a>, signed_data: &Value, ) -> Result<(SignatureAlgorithm, Vec<u8>)> {
+    let hash = create_default_hash(signed_data)?;
+    verify_key_algo(transaction)?;
+    login(transaction)?;
+    let signature_bytes = sign_hash(transaction, &hash)?;
+    let signature_algorithm = SignatureAlgorithm {
+        encryption: EncryptionAlgorithm::EdDSAOpenPGP,
+        ..Default::default()
+    };
+    Ok((signature_algorithm, signature_bytes))
+}
 
 fn open_card(ident: &str) -> Result<PcscBackend, Error> {
     PcscBackend::open_by_ident(ident, None)
@@ -106,9 +143,9 @@ fn verify_key_algo<'a>(transaction: &mut Transaction<'a>) -> Result<()> {
         openpgp_card::algorithm::Algo::Rsa(_) => Err(anyhow!("RSA signing keys are not supported")),
         openpgp_card::algorithm::Algo::Ecc(attr) => {
             if attr.ecc_type() != openpgp_card::crypto_data::EccType::EdDSA {
-                Err(anyhow!("Only EdDSA signing keys are supported. Not supported: {:?}", attr.ecc_type()))
+                Err(anyhow!("Only EdDSA signing keys are supported. Found: {:?}", attr.ecc_type()))
             } else if attr.curve() != openpgp_card::algorithm::Curve::Ed25519 {
-                Err(anyhow!("Only ed25519 curve is supported. Not supported: {:?}", attr.ecc_type()))
+                Err(anyhow!("Only ed25519 curve is supported. Found: {:?}", attr.ecc_type()))
             } else {
                 Ok(())
             }
@@ -118,7 +155,6 @@ fn verify_key_algo<'a>(transaction: &mut Transaction<'a>) -> Result<()> {
 }
 
 fn read_public_key<'a>(transaction: &mut Transaction<'a>) -> Result<Key> {
-    verify_key_algo(transaction)?;
     // Specification section
     // 7.2.14 GENERATE ASYMMETRIC KEY PAIR
     const CMD: [u8; 11] = [0x00, 0x47, 0x81, 0x00, 0x05, 0xb6, 0x03, 0x84, 0x01, 0x01, 0x00];
@@ -144,7 +180,7 @@ fn login<'a>(transaction: &mut Transaction<'a>) -> Result<()> {
     }
 }
 
-fn sign<'a>(transaction: &mut Transaction<'a>, hash: &[u8]) -> Result<Vec<u8>> {
+fn sign_hash<'a>(transaction: &mut Transaction<'a>, hash: &[u8]) -> Result<Vec<u8>> {
     let mut cmd = vec![0x00, 0x2a, 0x9e, 0x9a];
     cmd.push(hash.len() as u8);
     cmd.extend_from_slice(hash);
