@@ -3,9 +3,7 @@ use std::io::{BufWriter, Write};
 use std::path::Path;
 
 use anyhow::{anyhow, Result};
-use golem_certificate::schemas::{
-    SIGNED_CERTIFICATE_SCHEMA_ID, SIGNED_NODE_DESCRIPTOR_SCHEMA_ID,
-};
+use golem_certificate::schemas::{SIGNED_CERTIFICATE_SCHEMA_ID, SIGNED_NODE_DESCRIPTOR_SCHEMA_ID};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 

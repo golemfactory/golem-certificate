@@ -13,15 +13,14 @@ mod smartcard;
 use smartcard::{smartcard, SmartcardCommand};
 mod utils;
 use utils::{
-    deserialize_from_file, determine_file_type,
-    save_json_with_extension, save_signed_json, FileType,
+    deserialize_from_file, determine_file_type, save_json_with_extension, save_signed_json,
+    FileType,
 };
 
 #[cfg(feature = "tui")]
 mod app;
 #[cfg(feature = "tui")]
 mod ui;
-
 
 #[derive(Parser)]
 enum GolemCertificateCli {
@@ -101,7 +100,7 @@ fn create_key_pair(key_pair_path: &Path) -> Result<()> {
     save_json_with_extension(key_pair_path, &key_pair.private_key, "key")
 }
 
-fn print_fingerprint(input_file_path: &PathBuf) -> Result<()> {
+fn print_fingerprint(input_file_path: &Path) -> Result<()> {
     let input_json = deserialize_from_file::<Value>(input_file_path)?;
     let signed_property = determine_file_type(&input_json)?.signed_property();
     let signed_data = &input_json[signed_property];
@@ -112,7 +111,7 @@ fn print_fingerprint(input_file_path: &PathBuf) -> Result<()> {
 
 fn sign_json_value(
     value: &Value,
-    signing_key_path: &PathBuf,
+    signing_key_path: &Path,
 ) -> Result<(gcert::SignatureAlgorithm, Vec<u8>)> {
     let signing_key = deserialize_from_file(signing_key_path)?;
     gcert::sign_json(value, &signing_key)
@@ -157,7 +156,7 @@ fn sign_json(sign_arguments: &SignArguments) -> Result<()> {
 /// # Arguments
 /// * `signed_file` path to signed file
 /// * `timestamp` optional timestamp to verify validity
-fn verify_signature(signed_file: &PathBuf, timestamp: Option<DateTime<Utc>>) -> Result<()> {
+fn verify_signature(signed_file: &Path, timestamp: Option<DateTime<Utc>>) -> Result<()> {
     let signed_json = deserialize_from_file::<Value>(signed_file)?;
     match determine_file_type(&signed_json)? {
         FileType::Certificate => gcert::validate_certificate(signed_json, timestamp)
