@@ -31,11 +31,27 @@ jobs:
           toolchain: ${{ env.rust_stable }}
           components: rustfmt, clippy
 
-      - name: Unit tests
+      - name: Setup build cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install smartcard libraries ( Linux only )
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt install -y libpcsclite-dev
+
+      - name: Clippy ( all-features on Linux )
+        if: runner.os == 'Linux'
         uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --workspace
+          command: clippy
+          args: --all-targets --all-features --workspace -- -D warnings
+
+      - name: Clippy ( default features on not Linux )
+        if: runner.os != 'Linux'
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all-targets --workspace -- -D warnings
 
       - name: Check formatting
         uses: actions-rs/cargo@v1
@@ -43,8 +59,15 @@ jobs:
           command: fmt
           args: --all -- --check
 
-      - name: Clippy
+      - name: Unit tests
         uses: actions-rs/cargo@v1
         with:
-          command: clippy
-          args: --all-targets --all-features --workspace -- -D warnings
+          command: test
+          args: --workspace
+
+      - name: Build cli with smartcard ( Linux only )
+        if: runner.os == 'Linux'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -p golem-certificate-cli --features smartcard
