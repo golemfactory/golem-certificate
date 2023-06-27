@@ -6,6 +6,7 @@ edition = "2021"
 [features]
 default = ["tui"]
 tui = ["dep:crossterm", "dep:tui", "dep:url", "dep:ya-client-model"]
+smartcard = ["dep:openpgp-card", "dep:openpgp-card-pcsc", "dep:rpassword"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -17,13 +18,14 @@ ed25519-dalek = "1"
 hex = "0.4.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
-openpgp-card = "0.3.5"
-openpgp-card-pcsc = "0.3.1"
-rpassword = "7.2.0"
 
 crossterm = { version = "0.26.1", optional = true }
 tui = { package = "ratatui", version = "0.21.0", optional = true }
 url = { version = "2.3", features = ["serde"], optional = true }
 ya-client-model = { version = "0.5", optional = true }
+
+openpgp-card = { version = "0.3.5", optional = true }
+openpgp-card-pcsc = { version = "0.3.1", optional = true }
+rpassword = { version = "7.2.0", optional = true }
 
 golem-certificate = { path = "../" }
