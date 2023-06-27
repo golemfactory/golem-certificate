@@ -46,3 +46,30 @@ The output is saved on the input file path with the extension set to `.signed.js
 ### verify
 
 The command allows verification of certificate or node descriptor JSON files. Apart from the document to be verified an optional timestamp in RFC 3339 format (ex: 2020-01-01T13:42:32Z) can be provided or 'now' to refer to the current time. If the timestamp is provided the document will be verified (beside all other verification) if it is valid at the point of time (the timestamp is within the validity period of the document).
+
+## Smartcard Support
+
+To CLI can utilize smartcards that support OpenPGP with ed25519 signature scheme. This capability is enabled with the `smartcard` feature.
+On Linux this requires `pkg-config`, `libpcsclite-dev` to compile and `libpcsclite` to run. You will need to use some other software to generate the appropriate signing OpenPGP key on the device or migrate a generated key to a device. If a key is uploaded to the device, make sure that the public key is also accessible on the device as some devices might not be able to calculate the public key and it is verified during sign operations. The existence of the public key can be verified via the `export-public-key` command.
+
+## Smartcard commands
+
+The smartcard enabled sub menu is accessible via the `smartcard` command. The following subcommands exists:
+
+### list
+
+Lists all the smartcards that it can find that run the OpenPGP application. If your smartcard is plugged in but not listed here, try to remove the device and plug in again as it can happen if some other program is still using the smartcard.
+All other subcommands require to specify the `ident` string of the card as listed by this command.
+
+### export-public-key
+
+In case you need the public key of the signing key from the card, this subcommand will save it in a JSON file.
+
+### sign
+
+This subcommands allows to sign golem certificates and node descriptors. The only different to the software key version is that instead of specifying the signing key file, the ident string of the smartcard is specified.
+The signature logic will verify that the signing certificate has the same public key as the one exported from the card.
+
+### self-sign-certificate
+
+This subcommands self signs a certificate. Works similarly as the software key version, except that during creating the signature the public key in the input file is replaced with the one exported from the card to match the signing key.

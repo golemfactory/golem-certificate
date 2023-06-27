@@ -9,8 +9,6 @@ use serde_json::Value;
 
 use golem_certificate as gcert;
 
-mod smartcard;
-use smartcard::{smartcard, SmartcardCommand};
 mod utils;
 use utils::{
     deserialize_from_file, determine_file_type, save_json_with_extension, save_signed_json,
@@ -21,6 +19,11 @@ use utils::{
 mod app;
 #[cfg(feature = "tui")]
 mod ui;
+
+#[cfg(feature = "smartcard")]
+mod smartcard;
+#[cfg(feature = "smartcard")]
+use smartcard::{smartcard, SmartcardCommand};
 
 #[derive(Parser)]
 enum GolemCertificateCli {
@@ -52,14 +55,15 @@ enum GolemCertificateCli {
         )]
         timestamp: Option<DateTime<Utc>>,
     },
+    #[cfg(feature = "tui")]
+    #[command(about = "Starts Golem Certificate Manager")]
+    Ui,
+    #[cfg(feature = "smartcard")]
     #[command(about = "Signature operations using a smartcard")]
     Smartcard {
         #[command(subcommand)]
         cmd: SmartcardCommand,
     },
-    #[cfg(feature = "tui")]
-    #[command(about = "Starts Golem Certificate Manager")]
-    Ui,
 }
 
 #[derive(Args)]
@@ -180,8 +184,9 @@ fn main() -> Result<()> {
             signed_file_path,
             timestamp,
         } => verify_signature(&signed_file_path, timestamp),
-        GolemCertificateCli::Smartcard { cmd } => smartcard(cmd).map_err(Into::into),
         #[cfg(feature = "tui")]
         GolemCertificateCli::Ui => app::start(),
+        #[cfg(feature = "smartcard")]
+        GolemCertificateCli::Smartcard { cmd } => smartcard(cmd).map_err(Into::into),
     }
 }
