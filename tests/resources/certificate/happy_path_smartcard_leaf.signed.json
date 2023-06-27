@@ -1,0 +1,73 @@
+{
+  "$schema": "https://schemas.golem.network/v1/certificate.schema.json",
+  "certificate": {
+    "validityPeriod": {
+      "notBefore": "2023-01-01T00:00:00Z",
+      "notAfter": "2025-01-01T00:00:00Z"
+    },
+    "keyUsage": [
+      "signCertificate",
+      "signNode"
+    ],
+    "permissions": {
+      "outbound": "unrestricted"
+    },
+    "subject": {
+      "displayName": "Example leaf cert, signed with smartcard",
+      "contact": {
+        "email": "leaf@example.com"
+      }
+    },
+    "publicKey": {
+      "algorithm": "EdDSA",
+      "key": "bd9787e4e175d589165eb6eefe170ae75e3d9096c1e2ef294f8bb2699bc66d33",
+      "parameters": {
+        "scheme": "Ed25519"
+      }
+    }
+  },
+  "signature": {
+    "algorithm": {
+      "hash": "sha512",
+      "encryption": "EdDSAOpenPGP"
+    },
+    "value": "fb68c75d7cf2e191456e8df67484fc7c8629cd5e1de4db967481125e16ad2a8e9d94b32dcc54848feb3a48f8fac415854353438ed04ad69bf2d8237f9eac020b",
+    "signer": {
+      "$schema": "https://schemas.golem.network/v1/certificate.schema.json",
+      "certificate": {
+        "validityPeriod": {
+          "notBefore": "2023-01-01T00:00:00Z",
+          "notAfter": "2025-01-01T00:00:00Z"
+        },
+        "keyUsage": [
+          "signCertificate",
+          "signNode"
+        ],
+        "permissions": {
+          "outbound": "unrestricted"
+        },
+        "subject": {
+          "displayName": "Example root cert, signed with smartcard",
+          "contact": {
+            "email": "root@example.com"
+          }
+        },
+        "publicKey": {
+          "algorithm": "EdDSA",
+          "key": "3fd35d342556bcfefdcbb1784427c017e40f7531847024cbb19c91c06bd37cf2",
+          "parameters": {
+            "scheme": "Ed25519"
+          }
+        }
+      },
+      "signature": {
+        "algorithm": {
+          "hash": "sha512",
+          "encryption": "EdDSAOpenPGP"
+        },
+        "value": "d0081828249140282abf9c109c65284a491f8109532e0bd3e378083a1b046a12bbd6a6032f2fff912a53dcbde39ff824d671ce21759bde3fed559ee72eb04c0c",
+        "signer": "self"
+      }
+    }
+  }
+}

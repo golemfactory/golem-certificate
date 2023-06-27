@@ -35,12 +35,15 @@ fn happy_path() {
 }
 
 #[test_case("not_signed.json", Error::JsonDoesNotConformToSchema("missing field `signature`".to_string()))]
-#[test_case("invalid_signature.signed.json", Error::InvalidSignature)]
+#[test_case("invalid_signature.signed.json", Error::InvalidSignatureValue)]
 #[test_case("expired.signed.json", Error::Expired("2023-01-02T00:00:00Z".parse().unwrap()))]
 #[test_case("invalid_permissions_chain.signed.json",
    Error::PermissionsExtended{parent: Permissions::Object(PermissionDetails{outbound: Some(OutboundPermissions::Unrestricted)}), child: Permissions::All}
 )]
-#[test_case("invalid_cert_chain_signature.signed.json", Error::InvalidSignature)]
+#[test_case(
+    "invalid_cert_chain_signature.signed.json",
+    Error::InvalidSignatureValue
+)]
 #[test_case("cert_cannot_sign_node.signed.json", Error::NodeSignNotPermitted)]
 fn should_return_err(filename: &str, expected_err: Error) {
     let node_descriptor =
