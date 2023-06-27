@@ -52,7 +52,10 @@ impl Key {
 
     fn from_bytes_vec(bytes: Vec<u8>) -> Result<Self, String> {
         if bytes.len() != 32 {
-           Err(format!("Invalid key length: {} expected 32 bytes.", bytes.len()))
+            Err(format!(
+                "Invalid key length: {} expected 32 bytes.",
+                bytes.len()
+            ))
         } else {
             Ok(Self {
                 algorithm: EncryptionAlgorithm::EdDSA,
@@ -142,10 +145,10 @@ pub fn verify_signature_json(
         .map_err(|_| Error::InvalidSignatureValue)?;
     let public_key = PublicKey::from_bytes(&public_key.key).map_err(|_| Error::InvalidPublicKey)?;
     match signature_algorithm {
-        EncryptionAlgorithm::EdDSA =>
-            verify_bytes(canonical_json, &eddsa_signature, &public_key),
-        EncryptionAlgorithm::EdDSAOpenPGP =>
-            verify_bytes_openpgp(canonical_json, &eddsa_signature, &public_key),
+        EncryptionAlgorithm::EdDSA => verify_bytes(canonical_json, &eddsa_signature, &public_key),
+        EncryptionAlgorithm::EdDSAOpenPGP => {
+            verify_bytes_openpgp(canonical_json, &eddsa_signature, &public_key)
+        }
     }
 }
 
