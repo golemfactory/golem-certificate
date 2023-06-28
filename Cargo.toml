@@ -1,16 +1,17 @@
 [package]
 name = "golem-certificate"
 version = "0.1.0"
+description = "Golem Certificate format support"
+authors = ["Golem Factory <contact@golem.network>"]
+repository = "https://github.com/golemfactory/golem-certificate"
+licence = "LGPL-3.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 ed25519-dalek = "1"
 hex = "0.4.3"
-pbkdf2 = "0.11"
 rand = "0.7"
 ryu-js = { version = "0.2", default-features = false }
 sha2 = "0.10.6"
