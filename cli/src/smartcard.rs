@@ -196,25 +196,26 @@ fn verify_key_algo(transaction: &mut Transaction<'_>) -> Result<()> {
 }
 
 fn read_public_key(transaction: &mut Transaction<'_>) -> Result<Key> {
+    verify_key_algo(transaction)?;
     // Specification section
     // 7.2.14 GENERATE ASYMMETRIC KEY PAIR
     const CMD: [u8; 11] = [
         0x00, 0x47, 0x81, 0x00, 0x05, 0xb6, 0x03, 0x84, 0x01, 0x01, 0x00,
     ];
     let cmd_result = transaction.transmit(&CMD, 40)?;
-    if cmd_result.len() != 39 {
+    if cmd_result.len() != 39 || cmd_result[37..39] != [0x90, 0x00] {
         Err(anyhow!(
-            "Unexpected response length. Response {:x?}",
+            "Reading public key failed. Response {:x?}",
             cmd_result
         ))
     } else {
-        let key_bytes: Vec<u8> = cmd_result[5..37].into();
-        Ok(key_bytes.try_into().unwrap())
+        let key_bytes: [u8; 32] = cmd_result[5..37].try_into()?;
+        Ok(key_bytes.into())
     }
 }
 
 fn login(transaction: &mut Transaction<'_>) -> Result<()> {
-    let pin = rpassword::prompt_password("Enter PIN: ")?;
+    let pin = rpassword::prompt_password("Enter PIN:")?;
     let mut cmd = vec![0x00, 0x20, 0x00, 0x81];
     cmd.push(pin.len() as u8);
     cmd.extend_from_slice(pin.as_bytes());
@@ -232,15 +233,10 @@ fn sign_hash(transaction: &mut Transaction<'_>, hash: &[u8]) -> Result<Vec<u8>> 
     cmd.extend_from_slice(hash);
     cmd.push(0x00);
     let cmd_result = transaction.transmit(&cmd, 1024)?;
-    if cmd_result.len() != 66 {
-        Err(anyhow!(
-            "Unexpected response length. Response {:x?}",
-            cmd_result
-        ))
-    } else if cmd_result[64..66] != [0x90, 0x00] {
-        Err(anyhow!("Signing failed. Response: {:x?}", cmd_result))
+    if cmd_result.len() != 66 || cmd_result[64..66] != [0x90, 0x00] {
+        Err(anyhow!("Signing failed. Response {:x?}", cmd_result))
     } else {
-        let signature = &cmd_result[..cmd_result.len() - 2];
+        let signature = &cmd_result[..64];
         Ok(signature.into())
     }
 }

@@ -49,7 +49,7 @@ The command allows verification of certificate or node descriptor JSON files. Ap
 
 ## Smartcard Support
 
-To CLI can utilize smartcards that support OpenPGP with ed25519 signature scheme. This capability is enabled with the `smartcard` feature.
+The CLI can utilize smartcards that support OpenPGP with ed25519 signature scheme. This capability is enabled with the `smartcard` feature.
 On Linux this requires `pkg-config`, `libpcsclite-dev` to compile and `libpcsclite` to run. You will need to use some other software to generate the appropriate signing OpenPGP key on the device or migrate a generated key to a device. If a key is uploaded to the device, make sure that the public key is also accessible on the device as some devices might not be able to calculate the public key and it is verified during sign operations. The existence of the public key can be verified via the `export-public-key` command.
 
 ## Smartcard commands
