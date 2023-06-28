@@ -1,8 +1,11 @@
 # Golem certificate command line utility
 
+The command line utility provides an easy way to work with Golem Certificates and also an example on how to use the golem-certificate library.
+
 ## Golem Certificate Manager
 
 Golem Certificate Manager is a terminal utility that helps in checking the details of signed documents (certificates or node descriptors) and guides through the document creation and signing process.
+It can be started with the `ui` command of the CLI tool.
 
 It is controlled with the keyboard:
 - the arrow keys used to move around in menus, scroll verification views and to move the select the active part in the editor
