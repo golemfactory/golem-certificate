@@ -56,6 +56,7 @@ fn happy_path(filename: &str) {
 
 #[test_case("not_signed.json", Error::JsonDoesNotConformToSchema("missing field `signature`".to_string()))]
 #[test_case("expired.signed.json", Error::Expired("2023-01-02T00:00:00Z".parse().unwrap()))]
+#[test_case("invalid_public_key.signed.json", Error::InvalidPublicKey)]
 #[test_case("invalid_signature.signed.json", Error::InvalidSignature)]
 #[test_case(
     "invalid_key_usage.signed.json",

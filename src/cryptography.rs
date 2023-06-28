@@ -45,38 +45,13 @@ pub struct Key {
     parameters: Option<Value>,
 }
 
-impl Key {
-    fn from_bytes(bytes: [u8; 32]) -> Self {
-        Self::from_bytes_vec(bytes.into()).unwrap()
-    }
-
-    fn from_bytes_vec(bytes: Vec<u8>) -> Result<Self, String> {
-        if bytes.len() != 32 {
-            Err(format!(
-                "Invalid key length: {} expected 32 bytes.",
-                bytes.len()
-            ))
-        } else {
-            Ok(Self {
-                algorithm: EncryptionAlgorithm::EdDSA,
-                parameters: Some(json!({ "scheme": "Ed25519" })),
-                key: bytes,
-            })
-        }
-    }
-}
-
 impl From<[u8; 32]> for Key {
     fn from(value: [u8; 32]) -> Self {
-        Self::from_bytes(value)
-    }
-}
-
-impl TryFrom<Vec<u8>> for Key {
-    type Error = String;
-
-    fn try_from(value: Vec<u8>) -> std::result::Result<Self, Self::Error> {
-        Self::from_bytes_vec(value)
+        Self {
+            algorithm: EncryptionAlgorithm::EdDSA,
+            parameters: Some(json!({ "scheme": "Ed25519" })),
+            key: value.into(),
+        }
     }
 }
 
