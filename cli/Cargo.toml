@@ -3,7 +3,7 @@ name = "golem-certificate-cli"
 version = "0.1.0"
 description = "Golem Certificate command line utility"
 authors = ["Golem Factory <contact@golem.network>"]
-licence = "GPL-3.0"
+license = "GPL-3.0"
 edition = "2021"
 
 [features]
