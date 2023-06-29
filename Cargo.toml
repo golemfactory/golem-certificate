@@ -3,8 +3,9 @@ name = "golem-certificate"
 version = "0.1.0"
 description = "Golem Certificate format support"
 authors = ["Golem Factory <contact@golem.network>"]
+documentation = "https://github.com/golemfactory/golem-certificate"
 repository = "https://github.com/golemfactory/golem-certificate"
-licence = "LGPL-3.0"
+license = "LGPL-3.0"
 edition = "2021"
 
 [dependencies]
