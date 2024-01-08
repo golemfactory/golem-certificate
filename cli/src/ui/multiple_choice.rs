@@ -94,7 +94,7 @@ impl Component for MultipleChoice {
         self.choices
             .iter()
             .zip(choice_areas.iter())
-            .zip(styles.into_iter())
+            .zip(styles)
             .for_each(|((choice, &area), style)| {
                 let line = if area.width > choice.len() as u16 + 2 {
                     let padding = (area.width - choice.len() as u16) / 2;
