@@ -1,0 +1,65 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - v*
+      - pre-rel-*
+env:
+  CARGO_TERM_COLOR: always
+  rust_stable: 1.76.0
+
+jobs:
+  release:
+    name: CI
+    runs-on: ${{ matrix.os }}-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu
+          - windows
+          - macos
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.rust_stable }}
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install smartcard libraries ( Linux only )
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt install -y libpcsclite-dev
+
+      - name: Build
+        if: runner.os != 'Linux'
+        run: cargo build --workspace --release
+
+      - name: Build cli with smartcard ( Linux only )
+        if: runner.os == 'Linux'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --workspace --release --features smartcard
+
+      - name: Pack
+        id: pack
+        shell: bash
+        env:
+          OS_NAME: ${{ matrix.os }}
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          bash .ci/pack-build.sh
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            releases/golem-certificate-cli-*
+          prerelease: ${{ startsWith(github.ref, 'refs/tags/pre-rel-v') }}
