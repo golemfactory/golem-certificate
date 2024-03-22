@@ -100,8 +100,8 @@ fn parse_timestamp(timestamp: &str) -> Result<DateTime<Utc>> {
 
 fn create_key_pair(key_pair_path: &Path) -> Result<()> {
     let key_pair = gcert::create_key_pair();
-    save_json_with_extension(key_pair_path, &key_pair.public_key, "pub")?;
-    save_json_with_extension(key_pair_path, &key_pair.private_key, "key")
+    save_json_with_extension(key_pair_path, &key_pair.public_key, "pub.json")?;
+    save_json_with_extension(key_pair_path, &key_pair.private_key, "key.json")
 }
 
 fn print_fingerprint(input_file_path: &Path) -> Result<()> {
