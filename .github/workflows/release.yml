@@ -45,7 +45,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: -p golem-certificate-cli --features smartcard
+          args: --workspace --release --features smartcard
 
       - name: Pack
         id: pack
