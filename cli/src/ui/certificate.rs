@@ -166,7 +166,7 @@ impl DocumentEditor for CertificateEditor {
             subject: Some(self.subject_editor.get_subject()),
             validity_period: Some(self.validity_period_editor.get_validity_period()),
         };
-        json!({ "certificate": certificate })
+        json!({ "$schema": SIGNED_CERTIFICATE_SCHEMA_ID, "certificate": certificate })
     }
 
     fn create_signed_document(
