@@ -146,7 +146,7 @@ impl DocumentEditor for NodeDescriptorEditor {
             permissions: Some(self.permissions.get_permissions()),
             validity_period: Some(self.validity_period.get_validity_period()),
         };
-        json!({ "nodeDescriptor": template })
+        json!({ "$schema": SIGNED_NODE_DESCRIPTOR_SCHEMA_ID, "nodeDescriptor": template })
     }
 
     fn create_signed_document(
