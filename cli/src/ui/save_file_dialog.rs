@@ -41,7 +41,7 @@ impl SaveFileDialog {
     fn file_browser_key_event(&mut self, key_event: KeyEvent) -> Result<ComponentStatus> {
         let status = self.file_browser.handle_key_event(key_event)?;
         match status {
-            ComponentStatus::Closed => self.save_path = self.file_browser.selected.clone(),
+            ComponentStatus::Closed => self.save_path.clone_from(&self.file_browser.selected),
             ComponentStatus::Active => {
                 if let Some(filename) = self.file_browser.get_selected_filename() {
                     self.filename_input.set_text(filename);
