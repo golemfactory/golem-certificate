@@ -9,7 +9,7 @@ on:
       - main
 
 env:
-  rust_stable: 1.76.0
+  rust_stable: 1.81.0
 
 jobs:
   build:
