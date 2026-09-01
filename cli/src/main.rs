@@ -188,6 +188,6 @@ fn main() -> Result<()> {
         #[cfg(feature = "tui")]
         GolemCertificateCli::Ui => app::start(),
         #[cfg(feature = "smartcard")]
-        GolemCertificateCli::Smartcard { cmd } => smartcard(cmd).map_err(Into::into),
+        GolemCertificateCli::Smartcard { cmd } => smartcard(cmd),
     }
 }

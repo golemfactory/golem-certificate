@@ -73,10 +73,8 @@ impl TextInput {
                     self.text.remove(self.cursor_position);
                 }
             }
-            KeyCode::Delete => {
-                if self.cursor_position < self.text.len() {
-                    self.text.remove(self.cursor_position);
-                }
+            KeyCode::Delete if self.cursor_position < self.text.len() => {
+                self.text.remove(self.cursor_position);
             }
             _ => (),
         }

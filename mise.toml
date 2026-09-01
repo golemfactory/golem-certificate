@@ -1,0 +1,33 @@
+[tools]
+rust = { version = "1.97.0", components = ["rustfmt", "clippy"], profile = "minimal" }
+
+[settings.task]
+run_auto_install = false
+
+[tasks."ci:fmt"]
+description = "Check Rust formatting"
+run = "cargo fmt --all -- --check"
+
+[tasks."ci:clippy"]
+description = "Run workspace Clippy with default features"
+run = "cargo clippy --all-targets --workspace -- -D warnings"
+
+[tasks."ci:clippy-all-features"]
+description = "Run workspace Clippy with all features"
+run = "cargo clippy --all-targets --all-features --workspace -- -D warnings"
+
+[tasks."ci:test"]
+description = "Run workspace tests"
+run = "cargo test --workspace"
+
+[tasks."ci:build-smartcard"]
+description = "Build the CLI with smartcard support"
+run = "cargo build -p golem-certificate-cli --features smartcard"
+
+[tasks."release:build"]
+description = "Build the release workspace"
+run = "cargo build --workspace --release"
+
+[tasks."release:build-smartcard"]
+description = "Build the release workspace with smartcard support"
+run = "cargo build --workspace --release --features smartcard"

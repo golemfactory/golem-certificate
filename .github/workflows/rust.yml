@@ -8,14 +8,11 @@ on:
     branches:
       - main
 
-env:
-  rust_stable: 1.81.0
-
 jobs:
   build:
     name: Tests
     env:
-      RUSTFLAGS: "-D warnings -C opt-level=z -C target-cpu=x86-64 -C debuginfo=1"
+      RUSTFLAGS: "-D warnings -C opt-level=z -C debuginfo=1"
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -23,13 +20,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v5
 
-      - name: Install Rust ${{ env.rust_stable }}
-        uses: actions-rs/toolchain@v1
+      - name: Install tools
+        uses: ./.github/actions/setup-tools
         with:
-          toolchain: ${{ env.rust_stable }}
-          components: rustfmt, clippy
+          tools: rust
 
       - name: Setup build cache
         uses: Swatinem/rust-cache@v2
@@ -41,33 +37,18 @@ jobs:
 
       - name: Clippy ( all-features on Linux )
         if: runner.os == 'Linux'
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all-targets --all-features --workspace -- -D warnings
+        run: mise run ci:clippy-all-features
 
       - name: Clippy ( default features on not Linux )
         if: runner.os != 'Linux'
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all-targets --workspace -- -D warnings
+        run: mise run ci:clippy
 
       - name: Check formatting
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: mise run ci:fmt
 
       - name: Unit tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --workspace
+        run: mise run ci:test
 
       - name: Build cli with smartcard ( Linux only )
         if: runner.os == 'Linux'
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -p golem-certificate-cli --features smartcard
+        run: mise run ci:build-smartcard

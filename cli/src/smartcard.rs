@@ -192,7 +192,6 @@ fn verify_key_algo(transaction: &mut Transaction<'_>) -> Result<()> {
         }
         _ => Err(anyhow!("Unknown signing key algorithm")),
     }
-    .map_err(Into::into)
 }
 
 fn read_public_key(transaction: &mut Transaction<'_>) -> Result<Key> {
