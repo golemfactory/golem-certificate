@@ -1,6 +1,6 @@
 [package]
 name = "golem-certificate"
-version = "0.1.1"
+version = "0.1.2"
 description = "Golem Certificate format support"
 authors = ["Golem Factory <contact@golem.network>"]
 documentation = "https://github.com/golemfactory/golem-certificate"
