@@ -1,6 +1,6 @@
 [package]
 name = "golem-certificate-cli"
-version = "0.1.0"
+version = "0.1.2"
 description = "Golem Certificate command line utility"
 authors = ["Golem Factory <contact@golem.network>"]
 license = "GPL-3.0"

@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use anyhow::Result;
+use chrono::Utc;
 use crossterm::event::KeyEvent;
 use golem_certificate::{
     validate_certificate, validate_node_descriptor, Error::*, SignedCertificate,
@@ -96,15 +97,18 @@ fn verify_selected_file(path: &Path) -> Result<VerifiedDocument, String> {
 }
 
 fn verify_json(json: Value) -> Result<VerifiedDocument, String> {
-    match validate_certificate(json.clone(), None) {
+    let timestamp = Some(Utc::now());
+    match validate_certificate(json.clone(), timestamp) {
         Ok(_) => {
             let signed_cert = serde_json::from_value(json).unwrap();
             Ok(VerifiedDocument::Certificate(signed_cert))
         }
-        Err(UnsupportedSchema { .. }) => validate_node_descriptor(json.clone(), None).map(|_| {
-            let signed_node_descriptor = serde_json::from_value(json).unwrap();
-            VerifiedDocument::NodeDescriptor(signed_node_descriptor)
-        }),
+        Err(UnsupportedSchema { .. }) => {
+            validate_node_descriptor(json.clone(), timestamp).map(|_| {
+                let signed_node_descriptor = serde_json::from_value(json).unwrap();
+                VerifiedDocument::NodeDescriptor(signed_node_descriptor)
+            })
+        }
         Err(e) => Err(e),
     }
     .map_err(|err| err.to_string())

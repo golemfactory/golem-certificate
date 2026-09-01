@@ -48,7 +48,7 @@ The output is saved on the input file path with the extension set to `.signed.js
 
 ### verify
 
-The command allows verification of certificate or node descriptor JSON files. Apart from the document to be verified an optional timestamp in RFC 3339 format (ex: 2020-01-01T13:42:32Z) can be provided or 'now' to refer to the current time. If the timestamp is provided the document will be verified (beside all other verification) if it is valid at the point of time (the timestamp is within the validity period of the document).
+The command allows verification of certificate or node descriptor JSON files. Apart from the document to be verified an optional timestamp in RFC 3339 format (ex: 2020-01-01T13:42:32Z) can be provided or 'now' to refer to the current time. If omitted, the current time is used. The document is verified (beside all other verification) to be valid at that point in time.
 
 ## Smartcard Support
 

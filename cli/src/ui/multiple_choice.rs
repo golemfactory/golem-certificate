@@ -52,11 +52,7 @@ impl MultipleChoice {
     fn selection_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Left => self.selected = self.selected.saturating_sub(1),
-            KeyCode::Right => {
-                if self.selected < self.choices.len() - 1 {
-                    self.selected += 1;
-                }
-            }
+            KeyCode::Right if self.selected < self.choices.len() - 1 => self.selected += 1,
             _ => (),
         }
     }

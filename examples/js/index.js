@@ -1,6 +1,8 @@
 const fs = require('fs');
+const crypto = require('crypto');
 const canonicalize = require('canonicalize');
-const elliptic = require('elliptic');
+
+const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
 
 const filename = process.argv[process.argv.length - 1];
 console.log("Reading certificate from file " + filename);
@@ -16,10 +18,22 @@ if (certificate.signature.algorithm.hash !== "sha512"
     process.exit(1);
 }
 
-const encoder = new TextEncoder();
-const signed_bytes = encoder.encode(canonicalize(certificate.certificate)); // encode the string into bytes with UTF-8 encoding
+const signed_bytes = Buffer.from(canonicalize(certificate.certificate), 'utf8');
+const public_key = crypto.createPublicKey({
+    key: Buffer.concat([
+        ED25519_SPKI_PREFIX,
+        Buffer.from(signing_certificate.certificate.publicKey.key, 'hex'),
+    ]),
+    format: 'der',
+    type: 'spki',
+});
 
-const result = elliptic.eddsa('ed25519').verify(signed_bytes, certificate.signature.value, signing_certificate.certificate.publicKey.key);
+const result = crypto.verify(
+    null,
+    signed_bytes,
+    public_key,
+    Buffer.from(certificate.signature.value, 'hex'),
+);
 
 if (result) {
     console.log("The signature is valid.");

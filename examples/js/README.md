@@ -1,4 +1,4 @@
-To use this example install dependencies via `npm install`.
+This example requires Node.js 12.0.0 or newer. Install dependencies via `npm install`.
 
 Verifying a certificate signature (just the signature, not the certificate chain) can be accomplished by running the program:  
 `node . certificate-path` where certificate path is the path to a Golem certificate json.

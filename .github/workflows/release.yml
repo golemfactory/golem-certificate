@@ -7,7 +7,6 @@ on:
       - pre-rel-*
 env:
   CARGO_TERM_COLOR: always
-  rust_stable: 1.81.0
 
 jobs:
   release:
@@ -23,11 +22,12 @@ jobs:
           - macos
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v5
+
+      - name: Install tools
+        uses: ./.github/actions/setup-tools
         with:
-          toolchain: ${{ env.rust_stable }}
-          components: clippy, rustfmt
+          tools: rust
 
       - uses: Swatinem/rust-cache@v2
 
@@ -38,14 +38,11 @@ jobs:
 
       - name: Build
         if: runner.os != 'Linux'
-        run: cargo build --workspace --release
+        run: mise run release:build
 
       - name: Build cli with smartcard ( Linux only )
         if: runner.os == 'Linux'
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --workspace --release --features smartcard
+        run: mise run release:build-smartcard
 
       - name: Pack
         id: pack
@@ -57,7 +54,7 @@ jobs:
           bash .ci/pack-build.sh
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
