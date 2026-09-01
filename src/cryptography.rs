@@ -7,7 +7,7 @@ use sha2::{Digest, Sha224, Sha256, Sha384, Sha512};
 use sha3::{Sha3_224, Sha3_256, Sha3_384, Sha3_512};
 
 use ed25519_dalek::{Signature as EdDSASignature, Signer, SigningKey, VerifyingKey};
-use rand::rngs::OsRng;
+use rand::{rand_core::UnwrapErr, rngs::SysRng};
 
 use crate::schemas::signature::SignatureAlgorithm;
 use crate::serde_utils::{bytes_to_hex, hex_to_bytes};
@@ -64,7 +64,7 @@ pub struct KeyPair {
 }
 
 pub fn create_key_pair() -> KeyPair {
-    let signing_key = SigningKey::generate(&mut OsRng);
+    let signing_key = SigningKey::generate(&mut UnwrapErr(SysRng));
     KeyPair {
         public_key: signing_key.verifying_key().to_bytes().into(),
         private_key: signing_key.to_bytes().into(),
