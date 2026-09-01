@@ -107,7 +107,7 @@ fn validate_schema(value: &Value, schema_id: &str, structure_name: &str) -> Resu
 /// # Arguments
 /// * `signed_node_descriptor`
 /// * `timestamp` optional timestamp to verify validity of the leaf certificate (last certificate in the chain).
-///    Validity periods of parent (issuer) certificates from the chain must fully include validity period of a child.
+///   Validity periods of parent (issuer) certificates from the chain must fully include validity period of a child.
 fn validate_signed_node_descriptor(
     signed_node_descriptor: SignedNodeDescriptor,
     timestamp: Option<DateTime<Utc>>,
@@ -123,7 +123,7 @@ fn validate_signed_node_descriptor(
         .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
     verify_signature_json(
         &signed_node_descriptor.node_descriptor,
-        &signed_node_descriptor.signature.algorithm.encryption,
+        &signed_node_descriptor.signature.algorithm,
         &signed_node_descriptor.signature.value,
         &leaf_certificate.public_key,
     )?;
@@ -161,7 +161,7 @@ fn create_fingerprint_for_value(value: &Value) -> Result<Fingerprint> {
 /// # Arguments
 /// * `signed_certificate`
 /// * `timestamp` optional timestamp to verify validity of the leaf certificate (last certificate in the chain).
-///    Validity periods of parent (issuer) certificates from the chain must fully include validity period of a child.
+///   Validity periods of parent (issuer) certificates from the chain must fully include validity period of a child.
 fn validate_signed_certificate(
     signed_certificate: &SignedCertificate,
     timestamp: Option<DateTime<Utc>>,
@@ -173,7 +173,7 @@ fn validate_signed_certificate(
                     .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
             verify_signature_json(
                 &signed_certificate.certificate,
-                &signed_certificate.signature.algorithm.encryption,
+                &signed_certificate.signature.algorithm,
                 &signed_certificate.signature.value,
                 &certificate.public_key,
             )?;
@@ -190,7 +190,7 @@ fn validate_signed_certificate(
                 .map_err(|e| Error::JsonDoesNotConformToSchema(e.to_string()))?;
             verify_signature_json(
                 &signed_certificate.certificate,
-                &signed_certificate.signature.algorithm.encryption,
+                &signed_certificate.signature.algorithm,
                 &signed_certificate.signature.value,
                 &parent.public_key,
             )?;

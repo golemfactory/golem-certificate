@@ -14,12 +14,16 @@ use golem_certificate::{
 use pretty_assertions::assert_eq;
 use test_case::test_case;
 
+fn validation_time() -> DateTime<Utc> {
+    "2024-01-01T00:00:00Z".parse().unwrap()
+}
+
 #[test]
 fn happy_path_details() {
     let certificate =
         std::fs::read_to_string("tests/resources/certificate/happy_path.signed.json").unwrap();
 
-    let result = validate_certificate_str(&certificate, Some(Utc::now())).unwrap();
+    let result = validate_certificate_str(&certificate, Some(validation_time())).unwrap();
 
     assert_eq!(
         result,
@@ -51,7 +55,7 @@ fn happy_path(filename: &str) {
     let certificate =
         std::fs::read_to_string(format!("tests/resources/certificate/{filename}")).unwrap();
 
-    assert!(validate_certificate_str(&certificate, Some(Utc::now())).is_ok());
+    assert!(validate_certificate_str(&certificate, Some(validation_time())).is_ok());
 }
 
 #[test_case("not_signed.json", Error::JsonDoesNotConformToSchema("missing field `signature`".to_string()))]
@@ -72,7 +76,7 @@ fn should_return_err(filename: &str, expected_err: Error) {
     let certificate =
         std::fs::read_to_string(format!("tests/resources/certificate/{filename}")).unwrap();
 
-    let result = validate_certificate_str(&certificate, Some(Utc::now()));
+    let result = validate_certificate_str(&certificate, Some(validation_time()));
 
     assert_eq!(result.unwrap_err(), expected_err);
 }

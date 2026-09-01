@@ -11,9 +11,9 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
-ed25519-dalek = "1"
+ed25519-dalek = { version = "2", features = ["rand_core"] }
 hex = "0.4.3"
-rand = "0.7"
+rand = "0.8"
 ryu-js = { version = "0.2", default-features = false }
 sha2 = "0.10.6"
 sha3 = "0.10.6"

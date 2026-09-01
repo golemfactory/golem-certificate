@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use golem_certificate::{
     schemas::permissions::{OutboundPermissions, PermissionDetails, Permissions},
     validator::{validate_node_descriptor_str, validated_data::ValidatedNodeDescriptor},
@@ -8,12 +8,16 @@ use test_case::test_case;
 use url::Url;
 use ya_client_model::NodeId;
 
+fn validation_time() -> DateTime<Utc> {
+    "2024-01-01T00:00:00Z".parse().unwrap()
+}
+
 #[test]
 fn happy_path() {
     let node_descriptor =
         std::fs::read_to_string("tests/resources/node_descriptor/happy_path.signed.json").unwrap();
 
-    let result = validate_node_descriptor_str(&node_descriptor, Some(Utc::now())).unwrap();
+    let result = validate_node_descriptor_str(&node_descriptor, Some(validation_time())).unwrap();
 
     assert_eq!(
         result,
@@ -49,7 +53,7 @@ fn should_return_err(filename: &str, expected_err: Error) {
     let node_descriptor =
         std::fs::read_to_string(format!("tests/resources/node_descriptor/{filename}")).unwrap();
 
-    let result = validate_node_descriptor_str(&node_descriptor, Some(Utc::now()));
+    let result = validate_node_descriptor_str(&node_descriptor, Some(validation_time()));
 
     assert_eq!(result.unwrap_err(), expected_err);
 }

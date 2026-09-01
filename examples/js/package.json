@@ -9,7 +9,6 @@
   "author": "evik (https://github.com/evik42)",
   "license": "GPLv3",
   "dependencies": {
-    "canonicalize": "^2.0.0",
-    "elliptic": "^6.5.4"
+    "canonicalize": "^2.0.0"
   }
 }

@@ -51,7 +51,7 @@ enum GolemCertificateCli {
         signed_file_path: PathBuf,
         #[arg(value_parser = parse_timestamp)]
         #[arg(
-            help = "Optional RFC 3339 formatted timestamp (ex: 2020-01-01T13:42:33Z) to verify validity. 'now' can be used to refer to current time."
+            help = "Optional RFC 3339 formatted timestamp (ex: 2020-01-01T13:42:33Z) to verify validity. Defaults to the current time; 'now' can be used explicitly."
         )]
         timestamp: Option<DateTime<Utc>>,
     },
@@ -162,6 +162,7 @@ fn sign_json(sign_arguments: &SignArguments) -> Result<()> {
 /// * `timestamp` optional timestamp to verify validity
 fn verify_signature(signed_file: &Path, timestamp: Option<DateTime<Utc>>) -> Result<()> {
     let signed_json = deserialize_from_file::<Value>(signed_file)?;
+    let timestamp = Some(timestamp.unwrap_or_else(Utc::now));
     match determine_file_type(&signed_json)? {
         FileType::Certificate => gcert::validate_certificate(signed_json, timestamp)
             .map(|result| println!("{:?}", result))

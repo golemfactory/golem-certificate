@@ -32,6 +32,10 @@ pub enum Error {
     InvalidSignatureValue,
     #[error("Invalid public key")]
     InvalidPublicKey,
+    #[error("Unsupported public key algorithm")]
+    UnsupportedPublicKeyAlgorithm,
+    #[error("Unsupported signature algorithm")]
+    UnsupportedSignatureAlgorithm,
     #[error("Invalid json: {0}")]
     InvalidJson(String),
     #[error("JCS serialization error: {0}")]
